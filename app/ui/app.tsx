@@ -1,9 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type { Source } from "@/app/lib/definitions";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { CreateWorkspaceOptions, Source } from "@/app/lib/definitions";
+import { APP_PATH } from "@/app/lib/site";
 import { useWorkspaces } from "@/hooks/use-workspace";
+import { useWorkspaceTemplate } from "@/hooks/use-workspace-template";
 import { apiFetch, apiJson, ApiError } from "@/lib/api/client";
+import { trackEvent } from "@/lib/analytics/track";
+import { trackPaidIntent } from "@/lib/analytics/paid-intent";
+import { trackLimitBoundary } from "@/lib/analytics/limit-boundary";
+import {
+  peekPendingPrompt,
+  setPendingPrompt,
+  clearPendingPrompt,
+} from "@/lib/templates/pending-prompt";
 import { LandingHome } from "@/app/ui/home/landing-home";
 import { AppShell } from "@/app/ui/layout/app-shell";
 import { CrawlTeaser } from "@/app/ui/upsell/crawl-teaser";
@@ -14,6 +25,7 @@ interface UrlResponse {
   source?: Source;
   teaser?: boolean;
   message?: string;
+  notice?: string;
   url?: string;
 }
 
@@ -21,7 +33,9 @@ interface SourcesResponse {
   sources: Source[];
 }
 
-export function App() {
+function AppContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     workspaces,
     activeWorkspace,
@@ -41,6 +55,16 @@ export function App() {
   const [crawlTeaserOpen, setCrawlTeaserOpen] = useState(false);
   const [crawlTeaserUrl, setCrawlTeaserUrl] = useState<string | undefined>();
   const [crawlTeaserMessage, setCrawlTeaserMessage] = useState<string | undefined>();
+  const [pendingPromptHint, setPendingPromptHint] = useState<string | null>(null);
+  const [templateRoutingDismissed, setTemplateRoutingDismissed] = useState(false);
+  const { template, isApplyingTemplate } = useWorkspaceTemplate({
+    isReady,
+    workspaces,
+    activeWorkspace,
+    createWorkspace,
+    switchWorkspace,
+    templateRoutingDismissed,
+  });
 
   const activeWorkspaceId = activeWorkspace?.id ?? null;
 
@@ -72,9 +96,56 @@ export function App() {
     void fetchSources();
   }, [activeWorkspaceId, fetchSources, headers, isReady, refreshToken]);
 
+  useEffect(() => {
+    setPendingPromptHint(peekPendingPrompt());
+  }, []);
+
   const bumpRefresh = useCallback(() => {
     setRefreshToken((current) => current + 1);
   }, []);
+
+  const handlePromptChipSelect = useCallback((prompt: string) => {
+    setPendingPrompt(prompt);
+    setPendingPromptHint(prompt);
+  }, []);
+
+  useEffect(() => {
+    if (!searchParams.get("template")) {
+      setTemplateRoutingDismissed(false);
+    }
+  }, [searchParams]);
+
+  const dismissTemplateUrlRoute = useCallback(() => {
+    if (!searchParams.get("template")) {
+      return;
+    }
+
+    setTemplateRoutingDismissed(true);
+    router.replace(APP_PATH);
+  }, [router, searchParams]);
+
+  const clearQueuedPrompt = useCallback(() => {
+    clearPendingPrompt();
+    setPendingPromptHint(null);
+  }, []);
+
+  const handleSwitchWorkspace = useCallback(
+    (id: string) => {
+      clearQueuedPrompt();
+      switchWorkspace(id);
+      dismissTemplateUrlRoute();
+    },
+    [clearQueuedPrompt, dismissTemplateUrlRoute, switchWorkspace],
+  );
+
+  const handleCreateWorkspace = useCallback(
+    async (options?: CreateWorkspaceOptions) => {
+      clearQueuedPrompt();
+      await createWorkspace(options);
+      dismissTemplateUrlRoute();
+    },
+    [clearQueuedPrompt, createWorkspace, dismissTemplateUrlRoute],
+  );
 
   const handleUpload = useCallback(
     async (file: File) => {
@@ -101,14 +172,31 @@ export function App() {
         } catch {
           // ignore
         }
-        throw new ApiError(message, response.status);
+        const apiError = new ApiError(message, response.status);
+        trackLimitBoundary(apiError);
+        throw apiError;
       }
+
+      trackEvent("file_uploaded", {
+        extension: file.name.split(".").pop()?.toLowerCase() ?? "unknown",
+      });
 
       await fetchSources();
       bumpRefresh();
     },
     [bumpRefresh, fetchSources, headers],
   );
+
+  const openCrawlTeaser = useCallback((url?: string, message?: string) => {
+    trackPaidIntent("full_site_crawl", { surface: "crawl_teaser" });
+    if (url) {
+      setCrawlTeaserUrl(url);
+    }
+    if (message) {
+      setCrawlTeaserMessage(message);
+    }
+    setCrawlTeaserOpen(true);
+  }, []);
 
   const handleUrlSubmit = useCallback(
     async (url: string) => {
@@ -124,17 +212,19 @@ export function App() {
       });
 
       if (data.teaser) {
-        setCrawlTeaserUrl(data.url ?? url);
-        setCrawlTeaserMessage(data.message);
-        setCrawlTeaserOpen(true);
+        openCrawlTeaser(data.url ?? url, data.message);
         return data;
       }
+
+      trackEvent("url_ingested", {
+        is_homepage: Boolean(data.notice),
+      });
 
       await fetchSources();
       bumpRefresh();
       return data;
     },
-    [bumpRefresh, fetchSources, headers],
+    [bumpRefresh, fetchSources, headers, openCrawlTeaser],
   );
 
   const handleWorkspaceDeleted = useCallback(async () => {
@@ -149,12 +239,14 @@ export function App() {
     bumpRefresh();
   }, [activeWorkspace, bumpRefresh, deleteWorkspace]);
 
-  if (!isReady) {
+  if (!isReady || isApplyingTemplate) {
     return (
       <div className="flex min-h-dvh items-center justify-center p-4 pt-safe sm:p-6">
         <div className="text-muted-foreground flex items-center gap-2 text-center text-sm">
           <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-          Setting up your private workspace…
+          {template
+            ? `Setting up ${template.workspaceName}…`
+            : "Setting up your private workspace…"}
         </div>
       </div>
     );
@@ -175,8 +267,8 @@ export function App() {
   const workspaceSwitcherProps = {
     workspaces,
     activeWorkspace,
-    onSwitch: switchWorkspace,
-    onCreate: createWorkspace,
+    onSwitch: handleSwitchWorkspace,
+    onCreate: handleCreateWorkspace,
     onRename: renameWorkspace,
     onDelete: deleteWorkspace,
   };
@@ -195,7 +287,9 @@ export function App() {
           onSourcesChange={setSources}
           onUpload={handleUpload}
           onUrlSubmit={handleUrlSubmit}
+          onCrawlTeaserOpen={() => openCrawlTeaser()}
           onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
+          template={template}
         />
 
         <CrawlTeaser
@@ -214,7 +308,15 @@ export function App() {
         onUrlSubmit={handleUrlSubmit}
         onUpload={handleUpload}
         onOpenSettings={() => setSettingsOpen(true)}
+        onPromptChipSelect={handlePromptChipSelect}
+        onCrawlTeaserOpen={() => openCrawlTeaser()}
+        pendingPromptHint={
+          pendingPromptHint
+            ? `Queued: "${pendingPromptHint}" — we'll ask this when your first document is ready.`
+            : undefined
+        }
         disabled={!headers}
+        template={template}
         workspaceSwitcherProps={workspaceSwitcherProps}
       />
 
@@ -238,5 +340,22 @@ export function App() {
         message={crawlTeaserMessage}
       />
     </>
+  );
+}
+
+export function App() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-dvh items-center justify-center p-4 pt-safe sm:p-6">
+          <div className="text-muted-foreground flex items-center gap-2 text-center text-sm">
+            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+            Loading workspace…
+          </div>
+        </div>
+      }
+    >
+      <AppContent />
+    </Suspense>
   );
 }

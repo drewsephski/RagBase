@@ -4,8 +4,10 @@ import { useCallback, useState } from "react";
 import { Check, ChevronDown, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import {
   LIMITS,
+  type CreateWorkspaceOptions,
   type StoredWorkspace,
 } from "@/app/lib/definitions";
+import { getWorkspaceTemplate } from "@/app/lib/templates";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,12 +28,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import {
+  TemplateSelector,
+  type TemplateSelectorValue,
+} from "@/app/ui/workspace/template-selector";
 
 export interface WorkspaceSwitcherProps {
   workspaces: StoredWorkspace[];
   activeWorkspace: StoredWorkspace | null;
   onSwitch: (id: string) => void;
-  onCreate: (name?: string) => Promise<void>;
+  onCreate: (options?: CreateWorkspaceOptions) => Promise<void>;
   onRename: (id: string, name: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   className?: string;
@@ -50,6 +56,7 @@ export function WorkspaceSwitcher({
   const [renameOpen, setRenameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [nameInput, setNameInput] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<TemplateSelectorValue>("");
   const [targetWorkspace, setTargetWorkspace] = useState<StoredWorkspace | null>(
     null,
   );
@@ -61,9 +68,21 @@ export function WorkspaceSwitcher({
 
   const handleOpenCreate = useCallback(() => {
     setNameInput("");
+    setSelectedTemplateId("");
     setError(null);
     setCreateOpen(true);
   }, []);
+
+  const handleTemplateChange = useCallback(
+    (nextTemplateId: TemplateSelectorValue) => {
+      setSelectedTemplateId(nextTemplateId);
+
+      if (nextTemplateId && nameInput.trim().length === 0) {
+        setNameInput(getWorkspaceTemplate(nextTemplateId).workspaceName);
+      }
+    },
+    [nameInput],
+  );
 
   const handleOpenRename = useCallback((workspace: StoredWorkspace) => {
     setTargetWorkspace(workspace);
@@ -83,9 +102,13 @@ export function WorkspaceSwitcher({
     setError(null);
 
     try {
-      await onCreate(nameInput.trim() || undefined);
+      await onCreate({
+        name: nameInput.trim() || undefined,
+        templateId: selectedTemplateId || undefined,
+      });
       setCreateOpen(false);
       setNameInput("");
+      setSelectedTemplateId("");
     } catch (createError) {
       setError(
         createError instanceof Error
@@ -95,7 +118,7 @@ export function WorkspaceSwitcher({
     } finally {
       setIsSubmitting(false);
     }
-  }, [nameInput, onCreate]);
+  }, [nameInput, onCreate, selectedTemplateId]);
 
   const handleRename = useCallback(async () => {
     if (!targetWorkspace) {
@@ -247,12 +270,19 @@ export function WorkspaceSwitcher({
               maxLength={64}
               aria-label="Workspace name"
             />
-            {error ? (
-              <p className="text-destructive text-sm" role="alert">
-                {error}
-              </p>
-            ) : null}
           </div>
+
+          <TemplateSelector
+            value={selectedTemplateId}
+            onChange={handleTemplateChange}
+            disabled={isSubmitting}
+          />
+
+          {error ? (
+            <p className="text-destructive text-sm" role="alert">
+              {error}
+            </p>
+          ) : null}
 
           <DialogFooter className="gap-3">
             <Button
@@ -336,7 +366,7 @@ export function WorkspaceSwitcher({
             </p>
           ) : null}
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-3">
             <Button
               type="button"
               variant="outline"

@@ -192,13 +192,13 @@ export function getStatusBadgeVariant(
 export function getStatusLabel(status: SourceStatus): string {
   switch (status) {
     case "pending":
-      return "Waiting";
+      return "Queued";
     case "processing":
       return "Reading";
     case "ready":
       return "Ready";
     case "error":
-      return "Error";
+      return "Could not read";
     default:
       return status;
   }

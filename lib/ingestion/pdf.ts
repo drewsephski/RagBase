@@ -17,7 +17,7 @@ export interface ParsedPdf {
 
 export class ScannedPdfError extends Error {
   constructor(
-    message = "This PDF looks scanned or image-only. Upload a text-based PDF instead.",
+    message = "This looks like a scanned PDF. OCR support is coming soon — try a text-based PDF or Word file instead.",
   ) {
     super(message);
     this.name = "ScannedPdfError";

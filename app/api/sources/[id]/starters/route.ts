@@ -5,11 +5,13 @@ import {
 } from "@/lib/workspace/auth";
 import {
   generateStarterQuestions,
+  parseStarterTemplateId,
   STARTER_QUESTIONS_PER_SOURCE,
 } from "@/lib/chat/starters";
 import { createServiceClient } from "@/lib/supabase/server";
 import { handleRouteError, jsonError } from "@/lib/api/errors";
 import type { StarterQuestion } from "@/app/lib/definitions";
+import type { TemplateId } from "@/app/lib/templates";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -17,12 +19,60 @@ interface RouteParams {
 
 function getCachedStarters(
   metadata: Record<string, unknown> | null,
+  templateId?: TemplateId,
 ): StarterQuestion[] | null {
+  if (templateId) {
+    const byTemplate = metadata?.starter_questions_by_template;
+    if (
+      byTemplate &&
+      typeof byTemplate === "object" &&
+      !Array.isArray(byTemplate)
+    ) {
+      const cached = (byTemplate as Record<string, unknown>)[templateId];
+      if (Array.isArray(cached) && cached.length > 0) {
+        return cached as StarterQuestion[];
+      }
+    }
+
+    return null;
+  }
+
   const cached = metadata?.starter_questions;
   if (!Array.isArray(cached) || cached.length === 0) {
     return null;
   }
   return cached as StarterQuestion[];
+}
+
+function buildStarterMetadataUpdate(
+  metadata: Record<string, unknown> | null,
+  starters: StarterQuestion[],
+  templateId?: TemplateId,
+): Record<string, unknown> {
+  if (templateId) {
+    const existingByTemplate =
+      metadata?.starter_questions_by_template &&
+      typeof metadata.starter_questions_by_template === "object" &&
+      !Array.isArray(metadata.starter_questions_by_template)
+        ? (metadata.starter_questions_by_template as Record<
+            string,
+            StarterQuestion[]
+          >)
+        : {};
+
+    return {
+      ...(metadata ?? {}),
+      starter_questions_by_template: {
+        ...existingByTemplate,
+        [templateId]: starters,
+      },
+    };
+  }
+
+  return {
+    ...(metadata ?? {}),
+    starter_questions: starters,
+  };
 }
 
 export async function GET(
@@ -54,7 +104,10 @@ export async function GET(
     }
 
     const metadata = source.metadata as Record<string, unknown> | null;
-    const cached = getCachedStarters(metadata);
+    const templateId = parseStarterTemplateId(
+      request.nextUrl.searchParams.get("template"),
+    );
+    const cached = getCachedStarters(metadata, templateId);
     if (cached) {
       return Response.json({
         starters: cached.slice(0, STARTER_QUESTIONS_PER_SOURCE),
@@ -82,15 +135,13 @@ export async function GET(
     const starters = await generateStarterQuestions({
       sourceName: source.name,
       chunkTexts,
+      templateId,
     });
 
     await supabase
       .from("sources")
       .update({
-        metadata: {
-          ...(metadata ?? {}),
-          starter_questions: starters,
-        },
+        metadata: buildStarterMetadataUpdate(metadata, starters, templateId),
       })
       .eq("id", id);
 

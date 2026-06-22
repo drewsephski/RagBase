@@ -11,6 +11,7 @@ import {
   hashSecret,
 } from "@/lib/workspace/crypto";
 import { handleRouteError } from "@/lib/api/errors";
+import { enforceWorkspaceCreateRateLimit } from "@/lib/rate-limit/enforce";
 
 const createWorkspaceBodySchema = z.object({
   name: z.string().trim().min(1).max(64).optional(),
@@ -22,6 +23,8 @@ const renameWorkspaceBodySchema = z.object({
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
+    enforceWorkspaceCreateRateLimit(request);
+
     let name: string | undefined;
 
     try {

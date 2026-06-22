@@ -7,10 +7,13 @@ import {
 import { checkSourceLimit } from "@/lib/limits";
 import { runIngestionPipeline } from "@/lib/ingestion/pipeline";
 import {
+  isRootUrl,
   normalizeUrl,
   scrapeUrl,
   UrlScrapeError,
 } from "@/lib/ingestion/url";
+import { ROOT_URL_INGESTION_NOTICE } from "@/lib/ingestion/user-errors";
+import { enforceUrlIngestRateLimit } from "@/lib/rate-limit/enforce";
 import { createServiceClient } from "@/lib/supabase/server";
 import { handleRouteError, jsonError } from "@/lib/api/errors";
 
@@ -23,6 +26,7 @@ const UPLOADS_BUCKET = "uploads";
 export async function POST(request: NextRequest): Promise<Response> {
   try {
     const workspace = await requireWorkspace(request);
+    enforceUrlIngestRateLimit(request, workspace.id);
     await checkSourceLimit(workspace.id);
 
     const body: unknown = await request.json();
@@ -41,6 +45,8 @@ export async function POST(request: NextRequest): Promise<Response> {
       }
       throw error;
     }
+
+    const isHomepage = isRootUrl(normalizedUrl);
 
     let scraped;
     try {
@@ -84,6 +90,7 @@ export async function POST(request: NextRequest): Promise<Response> {
           url: scraped.url,
           title: scraped.title,
           scrapedAt: new Date().toISOString(),
+          isHomepage,
         },
       })
       .select("id, name, status, type, created_at")
@@ -106,7 +113,13 @@ export async function POST(request: NextRequest): Promise<Response> {
       .eq("id", source.id)
       .single();
 
-    return Response.json({ source: updatedSource ?? source }, { status: 201 });
+    return Response.json(
+      {
+        source: updatedSource ?? source,
+        notice: isHomepage ? ROOT_URL_INGESTION_NOTICE : undefined,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof Error && error.name === "WorkspaceAuthError") {
       return authErrorResponse(error);

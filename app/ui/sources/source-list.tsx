@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Source } from "@/app/lib/definitions";
 import { LIMITS } from "@/app/lib/definitions";
 import { apiFetch, apiJson, ApiError } from "@/lib/api/client";
+import { trackEvent } from "@/lib/analytics/track";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SourceItem } from "@/app/ui/sources/source-item";
@@ -32,6 +33,7 @@ export function SourceList({
   const [sources, setSources] = useState<Source[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const trackedErrorSourceIdsRef = useRef<Set<string>>(new Set());
 
   const fetchSources = useCallback(async () => {
     if (!workspaceHeaders) {
@@ -44,6 +46,19 @@ export function SourceList({
       });
       setSources(data.sources);
       onSourcesChange?.(data.sources);
+
+      for (const source of data.sources) {
+        if (
+          source.status === "error" &&
+          !trackedErrorSourceIdsRef.current.has(source.id)
+        ) {
+          trackedErrorSourceIdsRef.current.add(source.id);
+          trackEvent("ingestion_failed", {
+            source_type: source.type,
+          });
+        }
+      }
+
       setError(null);
     } catch (fetchError) {
       setError(

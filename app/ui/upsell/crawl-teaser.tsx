@@ -43,12 +43,17 @@ export function CrawlTeaser({
         ) : null}
 
         <p className="text-muted-foreground text-sm">
-          For now, paste a link to a single public page — like an article,
-          policy, or help doc — and we&apos;ll read just that page.
+          For now, paste a link to one public page — like an article, policy, or
+          help doc. We&apos;ll read just that page and cite the source in every
+          answer.
         </p>
 
-        <Button type="button" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
-          Got it
+        <Button
+          type="button"
+          className="w-full sm:w-auto"
+          onClick={() => onOpenChange(false)}
+        >
+          Got it — paste a single page
         </Button>
       </DialogContent>
     </Dialog>

@@ -224,6 +224,7 @@ export function createStoredWorkspace(
   id: string,
   secret: string,
   name?: string,
+  templateId?: StoredWorkspace["templateId"],
 ): StoredWorkspace {
   const trimmed = name?.trim();
   return {
@@ -231,5 +232,6 @@ export function createStoredWorkspace(
     secret,
     name: trimmed && trimmed.length > 0 ? trimmed.slice(0, 64) : DEFAULT_WORKSPACE_NAME,
     createdAt: new Date().toISOString(),
+    ...(templateId ? { templateId } : {}),
   };
 }

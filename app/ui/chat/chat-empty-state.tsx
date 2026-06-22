@@ -27,7 +27,7 @@ export function ChatEmptyState({
       </p>
 
       {children ? (
-        <div className="mt-6 w-full max-w-lg sm:mt-8">{children}</div>
+        <div className="mt-6 w-full max-w-2xl sm:mt-8">{children}</div>
       ) : null}
     </div>
   );

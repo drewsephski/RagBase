@@ -23,6 +23,7 @@ import {
 } from "@/lib/openrouter/client";
 import { createServiceClient } from "@/lib/supabase/server";
 import { handleRouteError, jsonError } from "@/lib/api/errors";
+import { enforceFreeChatRateLimit } from "@/lib/rate-limit/enforce";
 
 const chatBodySchema = z.object({
   message: z.string().min(1).max(4000),
@@ -45,6 +46,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     const { message, sourceId, model, openRouterKey } = parsed.data;
     const hasUserKey = Boolean(openRouterKey?.trim());
     const apiKey = openRouterKey?.trim() || getServerApiKey();
+
+    if (!hasUserKey) {
+      enforceFreeChatRateLimit(request, workspace.id);
+    }
 
     await checkMessageLimit(workspace.id, hasUserKey);
 

@@ -69,7 +69,7 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           aria-label="Ask a question"
           className={cn(
-            "border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring min-h-[2.75rem] max-h-40 min-w-0 flex-1 resize-none rounded-md border px-3 py-2.5 text-sm shadow-xs focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.25rem] sm:py-3",
+            "border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring min-h-[2.75rem] max-h-40 min-w-0 flex-1 resize-none rounded-md border px-3 py-2.5 text-base shadow-xs focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.25rem] sm:py-3 sm:text-sm",
           )}
         />
 

@@ -15,6 +15,7 @@ import {
 } from "@/lib/ingestion/pdf";
 import { scrapeUrl, UrlScrapeError } from "@/lib/ingestion/url";
 import { getFileKind, type FileKind } from "@/lib/ingestion/validate";
+import { normalizeIngestionError, normalizeIngestionErrorFromUnknown } from "@/lib/ingestion/user-errors";
 import { createServiceClient } from "@/lib/supabase/server";
 
 const UPLOADS_BUCKET = "uploads";
@@ -338,22 +339,22 @@ async function storeDocumentAndChunks(
 
 function toUserFacingError(error: unknown): string {
   if (error instanceof ScannedPdfError) {
-    return error.message;
+    return normalizeIngestionError(error.message).message;
   }
 
   if (error instanceof UrlScrapeError) {
-    return error.message;
+    return normalizeIngestionError(error.message).message;
   }
 
   if (error instanceof IngestionError) {
-    return error.message;
+    return normalizeIngestionError(error.message).message;
   }
 
   if (error instanceof Error) {
-    return error.message;
+    return normalizeIngestionErrorFromUnknown(error);
   }
 
-  return "Document processing failed. Try again or upload a different file.";
+  return normalizeIngestionErrorFromUnknown(error);
 }
 
 export async function runIngestionPipeline(sourceId: string): Promise<void> {

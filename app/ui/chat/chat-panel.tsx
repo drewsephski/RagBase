@@ -2,81 +2,69 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "ai/react";
-import type { Source, StarterQuestion } from "@/app/lib/definitions";
+import { Loader2 } from "lucide-react";
+import type { Source } from "@/app/lib/definitions";
+import type { WorkspaceTemplate } from "@/app/lib/templates";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
-import { apiJson } from "@/lib/api/client";
-import { STARTER_QUESTIONS_PER_SOURCE } from "@/lib/chat/starters";
+import { DOCUMENT_STARTER_PROMPTS } from "@/lib/chat/starter-prompts";
+import {
+  buildAnswerAnalyticsProperties,
+  categorizeChatError,
+  getAnswerLengthBucket,
+} from "@/lib/analytics/answer-quality";
+import { trackEvent } from "@/lib/analytics/track";
+import { trackPaidIntent } from "@/lib/analytics/paid-intent";
+import {
+  getDisplayContent,
+  parseMessageCitations,
+} from "@/lib/chat/parse-message";
+import { getIngestionProgressMessage } from "@/lib/sources/ingestion-status";
 import {
   getOpenRouterKey,
   getSelectedModel,
   hasOpenRouterKey,
 } from "@/lib/openrouter/client-key";
+import { consumePendingPrompt } from "@/lib/templates/pending-prompt";
 import { MessageList } from "@/app/ui/chat/message-list";
 import { ChatInput } from "@/app/ui/chat/chat-input";
-import { StarterQuestions } from "@/app/ui/chat/starter-questions";
 import { ChatEmptyState } from "@/app/ui/chat/chat-empty-state";
+import { PromptChips } from "@/app/ui/home/prompt-chips";
+import { SafeUseNote } from "@/app/ui/templates/safe-use-note";
+import { TemplateBanner } from "@/app/ui/templates/template-banner";
 import { RagBaseLogo } from "@/components/brand/ragbase-logo";
+import { BetaFeedbackCta } from "@/app/ui/feedback/beta-feedback-cta";
+import { QualityDebugPanel } from "@/app/ui/chat/quality-debug-panel";
+import { isDebugPanelEnabled } from "@/lib/env/public";
 
 interface ChatPanelProps {
   workspaceHeaders: WorkspaceHeaders | null;
   sources: Source[];
   scopedSourceId: string | null;
+  template?: WorkspaceTemplate | null;
 }
 
-interface StartersResponse {
-  starters: StarterQuestion[];
+function trackFirstMessage(sourceCount: number) {
+  trackEvent("first_message_sent", { source_count: sourceCount });
 }
 
 export function ChatPanel({
   workspaceHeaders,
   sources,
   scopedSourceId,
+  template = null,
 }: ChatPanelProps) {
-  const [startersBySourceId, setStartersBySourceId] = useState<
-    Record<string, StarterQuestion[]>
-  >({});
-  const startersBySourceIdRef = useRef(startersBySourceId);
-  const loadingSourceIdsRef = useRef<Set<string>>(new Set());
+  const pendingPromptSentRef = useRef(false);
+  const firstMessageTrackedRef = useRef(false);
+  const answerStartRef = useRef<number | null>(null);
+  const prevIsLoadingRef = useRef(false);
+  const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(null);
+  const [lastErrorCategory, setLastErrorCategory] = useState<string | null>(null);
+  const [lastCitationCount, setLastCitationCount] = useState(0);
 
   const readySources = useMemo(
     () => sources.filter((source) => source.status === "ready"),
     [sources],
   );
-
-  const targetSources = useMemo(() => {
-    if (scopedSourceId) {
-      return readySources.filter((source) => source.id === scopedSourceId);
-    }
-
-    return readySources;
-  }, [readySources, scopedSourceId]);
-
-  const targetSourceIds = useMemo(
-    () => targetSources.map((source) => source.id).join(","),
-    [targetSources],
-  );
-
-  const showSourceNames = !scopedSourceId && targetSources.length > 1;
-
-  const starters = useMemo(
-    () =>
-      targetSources.flatMap((source) =>
-        (startersBySourceId[source.id] ?? []).map((starter) => ({
-          ...starter,
-          sourceName: showSourceNames ? source.name : undefined,
-        })),
-      ),
-    [showSourceNames, startersBySourceId, targetSources],
-  );
-
-  const isLoadingStarters =
-    targetSources.length > 0 &&
-    starters.length === 0 &&
-    targetSources.some((source) => !startersBySourceId[source.id]);
-
-  useEffect(() => {
-    startersBySourceIdRef.current = startersBySourceId;
-  }, [startersBySourceId]);
 
   const chatHeaders = useMemo(() => {
     if (!workspaceHeaders) {
@@ -113,96 +101,131 @@ export function ChatPanel({
     },
   });
 
-  useEffect(() => {
-    if (!workspaceHeaders || targetSources.length === 0) {
-      setStartersBySourceId({});
-      loadingSourceIdsRef.current = new Set();
-      return;
-    }
-
-    const activeIds = new Set(targetSources.map((source) => source.id));
-
-    setStartersBySourceId((current) => {
-      const next: Record<string, StarterQuestion[]> = {};
-
-      for (const sourceId of activeIds) {
-        if (current[sourceId]) {
-          next[sourceId] = current[sourceId];
-        }
-      }
-
-      return next;
-    });
-
-    let cancelled = false;
-
-    async function loadStartersForSource(source: Source) {
-      if (
-        startersBySourceIdRef.current[source.id] ||
-        loadingSourceIdsRef.current.has(source.id)
-      ) {
-        return;
-      }
-
-      loadingSourceIdsRef.current.add(source.id);
-
-      try {
-        const data = await apiJson<StartersResponse>(
-          `/api/sources/${source.id}/starters`,
-          { workspaceHeaders },
-        );
-
-        if (cancelled) {
-          return;
-        }
-
-        const normalized = data.starters
-          .slice(0, STARTER_QUESTIONS_PER_SOURCE)
-          .map((starter, index) => ({
-            ...starter,
-            id: `${source.id}-starter-${index + 1}`,
-          }));
-
-        setStartersBySourceId((current) => ({
-          ...current,
-          [source.id]: normalized,
-        }));
-      } catch {
-        if (!cancelled) {
-          setStartersBySourceId((current) => {
-            const next = { ...current };
-            delete next[source.id];
-            return next;
-          });
-        }
-      } finally {
-        loadingSourceIdsRef.current.delete(source.id);
-      }
-    }
-
-    for (const source of targetSources) {
-      void loadStartersForSource(source);
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [targetSourceIds, targetSources, workspaceHeaders]);
-
-  const handleStarterSelect = useCallback(
-    (text: string) => {
-      void append({ role: "user", content: text });
-    },
-    [append],
-  );
-
   const hasAnySource = sources.length > 0;
   const hasReadySource = readySources.length > 0;
   const isChatEmpty = messages.length === 0;
+  const ingestionProgress = getIngestionProgressMessage(sources);
+  const failedSources = sources.filter((source) => source.status === "error");
+  const chatLimitTrackedRef = useRef(false);
+
+  const answerAnalyticsContext = useMemo(
+    () =>
+      buildAnswerAnalyticsProperties({
+        sourceCount: sources.length,
+        workspaceId: workspaceHeaders?.["X-Workspace-Id"],
+        model: hasOpenRouterKey() ? getSelectedModel() : "free",
+      }),
+    [sources.length, workspaceHeaders],
+  );
+
+  useEffect(() => {
+    if (isLoading && !prevIsLoadingRef.current) {
+      answerStartRef.current = Date.now();
+      trackEvent("answer_started", answerAnalyticsContext);
+    }
+
+    if (!isLoading && prevIsLoadingRef.current) {
+      const latencyMs =
+        answerStartRef.current === null
+          ? undefined
+          : Date.now() - answerStartRef.current;
+
+      if (error) {
+        const errorCategory = categorizeChatError(error.message);
+        setLastLatencyMs(latencyMs ?? null);
+        setLastErrorCategory(errorCategory);
+        trackEvent("answer_failed", {
+          ...answerAnalyticsContext,
+          latency_ms: latencyMs ?? 0,
+          error_category: errorCategory,
+        });
+      } else {
+        const lastAssistantMessage = [...messages]
+          .reverse()
+          .find((message) => message.role === "assistant");
+
+        if (lastAssistantMessage) {
+          const citations = parseMessageCitations(lastAssistantMessage.content);
+          const displayContent = getDisplayContent(lastAssistantMessage.content);
+
+          setLastLatencyMs(latencyMs ?? null);
+          setLastErrorCategory(null);
+          setLastCitationCount(citations.length);
+
+          trackEvent("answer_completed", {
+            ...answerAnalyticsContext,
+            latency_ms: latencyMs ?? 0,
+            citation_count: citations.length,
+            has_citations: citations.length > 0,
+            answer_length_bucket: getAnswerLengthBucket(displayContent.length),
+          });
+        }
+      }
+
+      answerStartRef.current = null;
+    }
+
+    prevIsLoadingRef.current = isLoading;
+  }, [answerAnalyticsContext, error, isLoading, messages]);
+
+  useEffect(() => {
+    if (!error || chatLimitTrackedRef.current) {
+      return;
+    }
+
+    if (/limit reached|too many messages|429/i.test(error.message)) {
+      chatLimitTrackedRef.current = true;
+      trackPaidIntent("larger_limits", { surface: "chat_error" });
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (!hasReadySource || messages.length > 0 || pendingPromptSentRef.current) {
+      return;
+    }
+
+    const pendingPrompt = consumePendingPrompt();
+    if (!pendingPrompt) {
+      return;
+    }
+
+    pendingPromptSentRef.current = true;
+
+    if (!firstMessageTrackedRef.current) {
+      firstMessageTrackedRef.current = true;
+      trackFirstMessage(sources.length);
+    }
+
+    void append({ role: "user", content: pendingPrompt });
+  }, [append, hasReadySource, messages.length, sources.length]);
+
+  const sendMessage = useCallback(
+    (text: string) => {
+      if (!firstMessageTrackedRef.current) {
+        firstMessageTrackedRef.current = true;
+        trackFirstMessage(sources.length);
+      }
+
+      void append({ role: "user", content: text });
+    },
+    [append, sources.length],
+  );
+
+  const handlePromptSelect = useCallback(
+    (text: string) => {
+      sendMessage(text);
+    },
+    [sendMessage],
+  );
 
   const handleFormSubmit = useCallback(() => {
     if (!input.trim() || !hasReadySource) {
       return;
+    }
+
+    if (!firstMessageTrackedRef.current) {
+      firstMessageTrackedRef.current = true;
+      trackFirstMessage(sources.length);
     }
 
     handleSubmit(undefined, {
@@ -210,9 +233,11 @@ export function ChatPanel({
         sourceId: scopedSourceId ?? undefined,
       },
     });
-  }, [handleSubmit, hasReadySource, input, scopedSourceId]);
+  }, [handleSubmit, hasReadySource, input, scopedSourceId, sources.length]);
 
   const chatDisabled = !workspaceHeaders || !hasAnySource;
+  const selectedModel = hasOpenRouterKey() ? getSelectedModel() : "free";
+  const showDebugPanel = isDebugPanelEnabled();
 
   return (
     <section
@@ -225,18 +250,57 @@ export function ChatPanel({
             <ChatEmptyState
               description={
                 hasAnySource
-                  ? "Reading your document… you can type while we finish indexing."
+                  ? (ingestionProgress ??
+                    "Reading your document — you'll be able to ask questions in a moment.")
                   : "Add a link or file to start asking questions."
               }
-            />
+            >
+              {hasAnySource ? (
+                <div
+                  className="text-muted-foreground flex items-center justify-center gap-2 text-sm"
+                  aria-live="polite"
+                >
+                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                  {ingestionProgress ?? "Reading your document…"}
+                </div>
+              ) : null}
+              {failedSources.length > 0 ? (
+                <p className="text-destructive mt-4 text-sm" role="alert">
+                  {failedSources.length === 1
+                    ? `Could not read “${failedSources[0]!.name}”. Check the documents panel for details.`
+                    : `${failedSources.length} documents could not be read. Check the documents panel for details.`}
+                </p>
+              ) : null}
+            </ChatEmptyState>
           ) : (
-            <ChatEmptyState>
-              <StarterQuestions
-                starters={starters}
-                isLoading={isLoadingStarters}
-                onSelect={handleStarterSelect}
-                disabled={isLoading}
-              />
+            <ChatEmptyState
+              description={
+                template
+                  ? "Your documents are ready. Pick an example question or ask your own."
+                  : "Your document is ready. Pick a starter question or ask your own."
+              }
+            >
+              {template ? (
+                <div className="space-y-4 text-left sm:space-y-5">
+                  <TemplateBanner template={template} />
+                  <SafeUseNote safeUse={template.safeUse} />
+                  <PromptChips
+                    prompts={template.promptChips}
+                    onSelect={handlePromptSelect}
+                    disabled={isLoading}
+                    columns={2}
+                    label="Example questions:"
+                  />
+                </div>
+              ) : (
+                <PromptChips
+                  prompts={DOCUMENT_STARTER_PROMPTS}
+                  onSelect={handlePromptSelect}
+                  disabled={isLoading}
+                  columns={2}
+                  label="Try asking:"
+                />
+              )}
             </ChatEmptyState>
           )}
         </div>
@@ -250,12 +314,18 @@ export function ChatPanel({
               </p>
             ) : (
               <p className="text-muted-foreground mt-1.5 text-xs sm:mt-2">
-                Answers draw from all ready documents.
+                Answers draw from all ready documents, with citations.
               </p>
             )}
           </div>
 
-          <MessageList messages={messages} isLoading={isLoading} />
+          <MessageList
+            messages={messages}
+            isLoading={isLoading}
+            sourceCount={sources.length}
+            workspaceId={workspaceHeaders?.["X-Workspace-Id"]}
+            model={hasOpenRouterKey() ? getSelectedModel() : "free"}
+          />
         </>
       )}
 
@@ -264,6 +334,8 @@ export function ChatPanel({
           {error.message}
         </p>
       ) : null}
+
+      <BetaFeedbackCta className="px-4 pb-2" />
 
       <ChatInput
         value={input}
@@ -275,9 +347,19 @@ export function ChatPanel({
         placeholder={
           hasReadySource
             ? "Ask anything about your documents…"
-            : "Reading your document…"
+            : ingestionProgress ?? "Reading your document…"
         }
       />
+
+      {showDebugPanel ? (
+        <QualityDebugPanel
+          sourceCount={sources.length}
+          citationCount={lastCitationCount}
+          model={selectedModel}
+          latencyMs={lastLatencyMs}
+          lastErrorCategory={lastErrorCategory}
+        />
+      ) : null}
     </section>
   );
 }

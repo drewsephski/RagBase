@@ -1,4 +1,5 @@
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
+import { trackLimitBoundary } from "@/lib/analytics/limit-boundary";
 
 export class ApiError extends Error {
   status: number;
@@ -59,7 +60,9 @@ export async function apiJson<T>(
       // ignore parse errors
     }
 
-    throw new ApiError(message, response.status);
+    const apiError = new ApiError(message, response.status);
+    trackLimitBoundary(apiError);
+    throw apiError;
   }
 
   return (await response.json()) as T;

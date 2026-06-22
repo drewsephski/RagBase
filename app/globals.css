@@ -76,6 +76,7 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -91,5 +92,49 @@
   .px-safe {
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .landing-grid {
+    background-color: var(--background);
+    background-image:
+      linear-gradient(to right, oklch(0.5 0 0 / 1.25%) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.5 0 0 / 1.25%) 1px, transparent 1px);
+    background-size: 4.5rem 4.5rem;
+    background-position: center top;
+  }
+
+  .dark .landing-grid {
+    background-image:
+      linear-gradient(to right, oklch(1 0 0 / 1.75%) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(1 0 0 / 1.75%) 1px, transparent 1px);
+  }
+
+  .icon-arrow-nudge {
+    transition: transform 200ms ease-out;
+  }
+
+  .group:hover .icon-arrow-nudge,
+  .group:focus-visible .icon-arrow-nudge {
+    transform: translateX(3px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .icon-arrow-nudge {
+      transition: none;
+    }
+
+    .group:hover .icon-arrow-nudge,
+    .group:focus-visible .icon-arrow-nudge {
+      transform: none;
+    }
+  }
+}
+
+@keyframes cite-draw {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
   }
 }

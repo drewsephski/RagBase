@@ -1,0 +1,39 @@
+export const ANALYTICS_EVENTS = [
+  "workspace_created",
+  "file_uploaded",
+  "url_ingested",
+  "ingestion_failed",
+  "first_message_sent",
+  "answer_started",
+  "answer_completed",
+  "answer_failed",
+  "starter_prompt_clicked",
+  "citation_clicked",
+  "source_opened",
+  "copy_answer_clicked",
+  "answer_feedback_submitted",
+  "openrouter_key_added",
+  "paid_feature_clicked",
+  "paid_intent",
+  "workspace_deleted",
+] as const;
+
+export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
+
+export const PAID_INTENT_FEATURES = [
+  "full_site_crawl",
+  "ocr",
+  "larger_limits",
+  "cross_device_workspace",
+] as const;
+
+export type PaidIntentFeature = (typeof PAID_INTENT_FEATURES)[number];
+
+export type AnalyticsProperties = Record<string, string | number | boolean>;
+
+export interface AnalyticsPayload {
+  event: AnalyticsEvent;
+  properties?: AnalyticsProperties;
+  timestamp: number;
+  anonymousId?: string;
+}

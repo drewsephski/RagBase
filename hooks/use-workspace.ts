@@ -3,9 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DEFAULT_WORKSPACE_NAME,
+  type CreateWorkspaceOptions,
   type StoredWorkspace,
 } from "@/app/lib/definitions";
+import { getWorkspaceTemplate } from "@/app/lib/templates";
+import { writeTemplateWorkspaceId } from "@/lib/templates/keys";
 import { apiFetch, apiJson } from "@/lib/api/client";
+import { trackEvent } from "@/lib/analytics/track";
 import {
   addWorkspace,
   createStoredWorkspace,
@@ -35,7 +39,7 @@ interface UseWorkspacesState {
   isReady: boolean;
   error: string | null;
   switchWorkspace: (id: string) => void;
-  createWorkspace: (name?: string) => Promise<void>;
+  createWorkspace: (options?: CreateWorkspaceOptions) => Promise<void>;
   renameWorkspace: (id: string, name: string) => Promise<void>;
   deleteWorkspace: (id: string) => Promise<void>;
   refreshRegistry: () => void;
@@ -103,6 +107,7 @@ export function useWorkspaces(): UseWorkspacesState {
             DEFAULT_WORKSPACE_NAME,
           );
           addWorkspace(stored);
+          trackEvent("workspace_created", { trigger: "first_visit" });
           ({ registry, active } = syncFromStorage());
         }
 
@@ -148,18 +153,32 @@ export function useWorkspaces(): UseWorkspacesState {
   );
 
   const createWorkspace = useCallback(
-    async (name?: string) => {
+    async (options?: CreateWorkspaceOptions) => {
       try {
+        const template = options?.templateId
+          ? getWorkspaceTemplate(options.templateId)
+          : null;
+        const name =
+          options?.name?.trim() ||
+          template?.workspaceName ||
+          undefined;
         const data = await createWorkspaceOnServer(name);
         const stored = createStoredWorkspace(
           data.workspaceId,
           data.workspaceSecret,
           name,
+          options?.templateId,
         );
+        if (options?.templateId) {
+          writeTemplateWorkspaceId(options.templateId, stored.id);
+        }
         const next = addWorkspace(stored);
         setWorkspaces(next);
         setActiveWorkspaceState(stored);
         setError(null);
+        trackEvent("workspace_created", {
+          trigger: options?.templateId ? "template" : "manual",
+        });
       } catch (createError) {
         const message =
           createError instanceof WorkspaceRegistryError
@@ -228,6 +247,8 @@ export function useWorkspaces(): UseWorkspacesState {
           throw new Error("Could not delete workspace.");
         }
       }
+
+      trackEvent("workspace_deleted");
 
       const { workspaces: next, nextActiveId } = removeWorkspace(id);
       setWorkspaces(next);

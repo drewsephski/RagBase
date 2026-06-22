@@ -41,7 +41,7 @@ export async function checkSourceLimit(workspaceId: string): Promise<void> {
 
   if ((count ?? 0) >= LIMITS.MAX_SOURCES) {
     throw new LimitError(
-      `You've reached the limit of ${LIMITS.MAX_SOURCES} documents. Delete one to add more.`,
+      `You've reached the limit of ${LIMITS.MAX_SOURCES} documents in this workspace. Delete one to add more, or save a higher-limit plan for later.`,
     );
   }
 }
@@ -74,7 +74,7 @@ export async function checkMessageLimit(
 
   if (count >= limit) {
     throw new LimitError(
-      `Daily message limit reached (${limit}/day). Try again tomorrow${hasUserKey ? "" : " or add your OpenRouter key for higher limits"}.`,
+      `Daily message limit reached (${limit}/day). Try again tomorrow${hasUserKey ? "" : ", add your OpenRouter key in Settings, or save a higher-limit plan for later"}.`,
       429,
     );
   }

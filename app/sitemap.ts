@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
-import { getSiteUrl } from "@/app/lib/site";
+import { APP_PATH, getSiteUrl } from "@/app/lib/site";
+import { TEMPLATE_LIST, getTemplateLandingPath } from "@/app/lib/templates";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = getSiteUrl();
@@ -10,6 +11,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
+    },
+    {
+      url: `${siteUrl}${APP_PATH}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    ...TEMPLATE_LIST.map((template) => ({
+      url: `${siteUrl}${getTemplateLandingPath(template.id)}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+    {
+      url: `${siteUrl}/hospital-qi`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
     },
   ];
 }

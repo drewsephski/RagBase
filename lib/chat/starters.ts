@@ -6,6 +6,11 @@ import {
   type StarterQuestion,
 } from "@/app/lib/definitions";
 import {
+  getWorkspaceTemplate,
+  parseTemplateId,
+  type TemplateId,
+} from "@/app/lib/templates";
+import {
   createOpenRouter,
   createOpenRouterWithKey,
 } from "@/lib/openrouter/client";
@@ -39,6 +44,31 @@ export interface GenerateStarterQuestionsOptions {
   sourceName: string;
   chunkTexts: string[];
   apiKey?: string;
+  templateId?: TemplateId;
+}
+
+function buildStarterPrompt(options: {
+  sourceName: string;
+  sampleText: string;
+  templateId?: TemplateId;
+}): string {
+  const { sourceName, sampleText, templateId } = options;
+  const template = templateId ? getWorkspaceTemplate(templateId) : null;
+
+  const audienceHint = template?.starterAudienceHint ??
+    "Questions should be practical for a consumer (summarize, find key terms, explain in plain English, compare sections, etc.).";
+
+  return `Generate exactly ${STARTER_QUESTIONS_PER_SOURCE} short starter questions a user might ask about this document.
+
+Document title: "${sourceName}"
+
+Document excerpt:
+${sampleText || "(No text available)"}
+
+Requirements:
+- ${audienceHint}
+- Keep each question under 120 characters.
+- Use plain language. No technical jargon.`;
 }
 
 function buildSampleText(chunkTexts: string[], maxChars = 4000): string {
@@ -58,7 +88,7 @@ function buildSampleText(chunkTexts: string[], maxChars = 4000): string {
 export async function generateStarterQuestions(
   options: GenerateStarterQuestionsOptions,
 ): Promise<StarterQuestion[]> {
-  const { sourceName, chunkTexts, apiKey } = options;
+  const { sourceName, chunkTexts, apiKey, templateId } = options;
   const sampleText = buildSampleText(chunkTexts);
 
   const openrouter = apiKey
@@ -69,17 +99,7 @@ export async function generateStarterQuestions(
     const { object } = await generateObject({
       model: openrouter.chat(DEFAULT_MODEL),
       schema: starterResponseSchema,
-      prompt: `Generate exactly ${STARTER_QUESTIONS_PER_SOURCE} short starter questions a user might ask about this document.
-
-Document title: "${sourceName}"
-
-Document excerpt:
-${sampleText || "(No text available)"}
-
-Requirements:
-- Questions should be practical for a consumer (summarize, find key terms, explain in plain English, compare sections, etc.).
-- Keep each question under 120 characters.
-- Use plain language. No technical jargon.`,
+      prompt: buildStarterPrompt({ sourceName, sampleText, templateId }),
     });
 
     return object.questions.map((question, index) => ({
@@ -94,7 +114,7 @@ Requirements:
 
 export async function generateStarterQuestionsForSource(
   sourceId: string,
-  options?: { apiKey?: string },
+  options?: { apiKey?: string; templateId?: TemplateId },
 ): Promise<StarterQuestion[]> {
   const supabase = createServiceClient();
 
@@ -142,5 +162,13 @@ export async function generateStarterQuestionsForSource(
     sourceName: source.name,
     chunkTexts,
     apiKey: options?.apiKey,
+    templateId: options?.templateId,
   });
+}
+
+export function parseStarterTemplateId(
+  value: string | null | undefined,
+): TemplateId | undefined {
+  const parsed = parseTemplateId(value);
+  return parsed ?? undefined;
 }

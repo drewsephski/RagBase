@@ -13,6 +13,7 @@ import {
   setSelectedModel,
 } from "@/lib/openrouter/client-key";
 import { apiFetch } from "@/lib/api/client";
+import { trackEvent } from "@/lib/analytics/track";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,6 +85,7 @@ export function SettingsPanel({
     setOpenRouterKey(trimmed);
     setHasKey(true);
     setSavedMessage("Key saved on this device only.");
+    trackEvent("openrouter_key_added");
   }, [openRouterKeyInput]);
 
   const handleModelChange = useCallback(
@@ -316,7 +318,7 @@ export function SettingsPanel({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"

@@ -1,5 +1,5 @@
-import { App } from "@/app/ui/app";
+import { LandingPage } from "@/app/ui/marketing/landing-page";
 
 export default function Page() {
-  return <App />;
+  return <LandingPage />;
 }

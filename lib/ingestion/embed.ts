@@ -74,8 +74,13 @@ function createOpenRouterEmbeddingModel(apiKey: string) {
 
       if (!response.ok) {
         const errorBody = await response.text();
+        if (response.status === 429) {
+          throw new Error(
+            "OpenRouter rate limit reached while reading this document. Try again shortly.",
+          );
+        }
         throw new Error(
-          `OpenRouter embedding request failed (${response.status}): ${errorBody}`,
+          `OpenRouter embedding request failed (${response.status}): ${errorBody.slice(0, 120)}`,
         );
       }
 

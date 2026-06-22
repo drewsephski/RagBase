@@ -1,4 +1,10 @@
 import { z } from "zod";
+import { templateIdSchema, type TemplateId } from "@/app/lib/templates";
+
+export interface CreateWorkspaceOptions {
+  name?: string;
+  templateId?: TemplateId;
+}
 
 export const sourceTypeSchema = z.enum(["file", "url"]);
 export type SourceType = z.infer<typeof sourceTypeSchema>;
@@ -31,6 +37,7 @@ export const storedWorkspaceSchema = z.object({
   secret: z.string().min(32),
   name: z.string().min(1).max(64),
   createdAt: z.string(),
+  templateId: templateIdSchema.optional(),
 });
 export type StoredWorkspace = z.infer<typeof storedWorkspaceSchema>;
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import {
   Menu,
@@ -9,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import type { Source } from "@/app/lib/definitions";
+import type { WorkspaceTemplate } from "@/app/lib/templates";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { RagBaseLogo } from "@/components/brand/ragbase-logo";
@@ -18,6 +20,8 @@ import { ChatPanel } from "@/app/ui/chat/chat-panel";
 import { SettingsPanel } from "@/app/ui/settings/settings-panel";
 import { UploadZone } from "@/app/ui/home/upload-zone";
 import { UrlInput } from "@/app/ui/home/url-input";
+import { TrustMicrocopy } from "@/app/ui/home/trust-microcopy";
+import { CrawlTeaserHint } from "@/app/ui/home/crawl-teaser-hint";
 import {
   WorkspaceSwitcher,
   type WorkspaceSwitcherProps,
@@ -35,7 +39,9 @@ interface AppShellProps {
   onSourcesChange: (sources: Source[]) => void;
   onUpload: (file: File) => Promise<void>;
   onUrlSubmit: (url: string) => Promise<{ teaser?: boolean; message?: string; url?: string } | void>;
+  onCrawlTeaserOpen?: () => void;
   onWorkspaceDeleted: () => void;
+  template?: WorkspaceTemplate | null;
 }
 
 const SIDEBAR_WIDTH = "min(280px, 85vw)";
@@ -48,6 +54,7 @@ function SidebarContent({
   onSourcesChange,
   onUpload,
   onUrlSubmit,
+  onCrawlTeaserOpen,
 }: Pick<
   AppShellProps,
   | "workspaceHeaders"
@@ -57,6 +64,7 @@ function SidebarContent({
   | "onSourcesChange"
   | "onUpload"
   | "onUrlSubmit"
+  | "onCrawlTeaserOpen"
 >) {
   return (
     <>
@@ -73,6 +81,10 @@ function SidebarContent({
       <div className="shrink-0 space-y-2 border-t pt-2.5 sm:pt-3">
         <UploadZone onUpload={onUpload} compact />
         <UrlInput onSubmit={onUrlSubmit} />
+        {onCrawlTeaserOpen ? (
+          <CrawlTeaserHint onLearnMore={onCrawlTeaserOpen} />
+        ) : null}
+        <TrustMicrocopy compact className="text-left" />
       </div>
     </>
   );
@@ -89,7 +101,9 @@ export function AppShell({
   onSourcesChange,
   onUpload,
   onUrlSubmit,
+  onCrawlTeaserOpen,
   onWorkspaceDeleted,
+  template = null,
 }: AppShellProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -173,10 +187,16 @@ export function AppShell({
   }, []);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-hidden overscroll-none">
       <header className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5 pt-safe sm:gap-3 sm:px-4 sm:py-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <RagBaseLogo markSize={28} className="min-w-0 shrink" />
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
+          <Link
+            href="/"
+            className="min-w-0 shrink rounded-md outline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
+            aria-label="RagBase home"
+          >
+            <RagBaseLogo markSize={28} className="min-w-0 shrink max-sm:[&_p]:text-xs" />
+          </Link>
           <WorkspaceSwitcher {...workspaceSwitcherProps} />
           {sidebarToggle}
         </div>
@@ -239,6 +259,7 @@ export function AppShell({
               onSourcesChange={onSourcesChange}
               onUpload={onUpload}
               onUrlSubmit={onUrlSubmit}
+              onCrawlTeaserOpen={onCrawlTeaserOpen}
             />
           </div>
         </aside>
@@ -249,6 +270,7 @@ export function AppShell({
             workspaceHeaders={workspaceHeaders}
             sources={sources}
             scopedSourceId={scopedSourceId}
+            template={template}
           />
         </main>
       </div>

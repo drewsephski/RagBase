@@ -9,7 +9,15 @@ import { Label } from "@/components/ui/label";
 interface UrlInputProps {
   onSubmit: (
     url: string,
-  ) => Promise<{ teaser?: boolean; message?: string; source?: { name: string } } | void>;
+  ) => Promise<
+    | {
+        teaser?: boolean;
+        message?: string;
+        notice?: string;
+        source?: { name: string };
+      }
+    | void
+  >;
   disabled?: boolean;
   variant?: "default" | "minimal";
 }
@@ -23,6 +31,7 @@ export function UrlInput({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -36,6 +45,7 @@ export function UrlInput({
 
       setError(null);
       setSuccessMessage(null);
+      setNoticeMessage(null);
       setIsSubmitting(true);
 
       try {
@@ -46,8 +56,12 @@ export function UrlInput({
           return;
         }
 
-        if (result?.source?.name && variant === "default") {
-          setSuccessMessage(`Added "${result.source.name}". Indexing now…`);
+        if (result?.notice) {
+          setNoticeMessage(result.notice);
+        }
+
+        if (result?.source?.name) {
+          setSuccessMessage(`Added "${result.source.name}". Reading now…`);
         }
       } catch (submitError) {
         setError(
@@ -122,6 +136,12 @@ export function UrlInput({
       {successMessage ? (
         <p className="text-sm text-emerald-600 dark:text-emerald-400" role="status">
           {successMessage}
+        </p>
+      ) : null}
+
+      {noticeMessage ? (
+        <p className="text-muted-foreground text-xs leading-relaxed" role="status">
+          {noticeMessage}
         </p>
       ) : null}
     </form>

@@ -48,7 +48,7 @@ export function RagBaseLogo({
                 : "text-xs",
             )}
           >
-            Ask your documents. Get answers with quotes.
+            Chat with PDFs and links. Every answer cites the source.
           </p>
         ) : null}
       </div>
