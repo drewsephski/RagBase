@@ -1,6 +1,7 @@
 "use client";
 
 import type { ParsedMessageCitation } from "@/lib/chat/parse-message";
+import { MarkdownContent } from "@/components/markdown-content";
 import {
   Dialog,
   DialogContent,
@@ -36,9 +37,9 @@ export function CitationDrawer({
         </DialogHeader>
 
         <ScrollArea className="max-h-[40vh] rounded-md border p-3 sm:max-h-[50vh] sm:p-4">
-          <blockquote className="border-primary border-l-2 pl-3 text-sm leading-relaxed">
-            {citation.snippet}
-          </blockquote>
+          <div className="border-primary border-l-2 pl-3">
+            <MarkdownContent content={citation.snippet} size="sm" />
+          </div>
         </ScrollArea>
 
         <p className="text-muted-foreground text-xs">
