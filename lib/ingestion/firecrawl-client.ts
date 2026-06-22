@@ -1,0 +1,73 @@
+import Firecrawl from "@mendable/firecrawl-js";
+
+export interface FirecrawlScrapeMetadata {
+  title?: string;
+  sourceURL?: string;
+  url?: string;
+  statusCode?: number;
+  error?: string;
+}
+
+export interface FirecrawlScrapeResult {
+  markdown?: string;
+  metadata?: FirecrawlScrapeMetadata;
+}
+
+const SCRAPE_CACHE_MAX_AGE_MS = 172_800_000;
+const SCRAPE_TIMEOUT_MS = 60_000;
+
+type ScrapeOptions = Parameters<Firecrawl["scrape"]>[1];
+
+function getFirecrawlApiKey(): string {
+  const apiKey = process.env.FIRECRAWL_API_KEY?.trim();
+
+  if (!apiKey) {
+    throw new Error("Missing FIRECRAWL_API_KEY");
+  }
+
+  return apiKey;
+}
+
+let client: Firecrawl | null = null;
+
+function getFirecrawlClient(): Firecrawl {
+  if (!client) {
+    client = new Firecrawl({ apiKey: getFirecrawlApiKey() });
+  }
+
+  return client;
+}
+
+function buildScrapeAttempts(): ScrapeOptions[] {
+  const baseOptions: ScrapeOptions = {
+    formats: ["markdown"],
+    maxAge: SCRAPE_CACHE_MAX_AGE_MS,
+    timeout: SCRAPE_TIMEOUT_MS,
+    proxy: "auto",
+    blockAds: true,
+  };
+
+  return [
+    { ...baseOptions, onlyMainContent: true },
+    { ...baseOptions, onlyMainContent: false },
+    { ...baseOptions, onlyMainContent: false, waitFor: 3000 },
+  ];
+}
+
+export async function scrapePageWithFirecrawl(
+  url: string,
+): Promise<FirecrawlScrapeResult> {
+  const firecrawl = getFirecrawlClient();
+  const attempts = buildScrapeAttempts();
+  let lastResult: FirecrawlScrapeResult = {};
+
+  for (const options of attempts) {
+    lastResult = await firecrawl.scrape(url, options);
+
+    if (lastResult.markdown?.trim()) {
+      return lastResult;
+    }
+  }
+
+  return lastResult;
+}

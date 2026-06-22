@@ -1,0 +1,34 @@
+# Facts
+
+- The product is positioned as a consumer "instant document brain" — users upload or paste content and ask questions immediately. The main UI never uses developer jargon (RAG, embeddings, chunks, vectors, index).
+- The homepage is the app: above the fold shows upload drop zone, URL paste field, trust row, and example prompt chips — no marketing funnel.
+- On first visit, the app generates a workspaceId and workspaceSecret, stores both in localStorage, and creates a matching server-side workspace record. All API access requires both credentials.
+- A workspace cannot access another workspace's documents, messages, or settings even if the workspaceId is guessed without the secret.
+- Returning users on the same browser with intact localStorage see their existing workspace without signup.
+- Anonymous workspaces are automatically deleted after 14 days of inactivity, with a visible message: "Saved in this browser for 14 days after your last visit. Delete anytime."
+- Users can upload PDF, DOCX, TXT, and Markdown files, and paste one clean public URL per source.
+- Free anonymous workspaces are limited to 5 documents (files + URLs combined).
+- Each uploaded file is limited to 10 MB.
+- PDFs are limited to 50 pages; uploads exceeding this are rejected with a clear error.
+- Free anonymous workspaces can hold up to 5 public URLs total (same cap as documents).
+- Free anonymous users are limited to 30 chat messages per day, enforced via a Postgres counter on the workspace that resets daily.
+- After upload or URL paste, ingestion starts immediately. The client polls for source status (pending → processing → ready/error) via a sync API route.
+- Text-based PDFs are supported in v1. Scanned/low-text PDFs are detected and show: "This looks like a scanned PDF. OCR support is coming soon." — no silent garbage output.
+- Every chat answer includes concise text, citations with source snippets, and confidence/limitations when relevant.
+- Clicking a citation opens a viewer showing document name, page number (if available), exact snippet, surrounding text, and highlighted passage.
+- After a source is ready, the chat panel shows auto-generated starter questions (e.g. summarize, find terms, explain in plain English).
+- Contract-focused starter prompts or first relevant responses include safe wording: "I can help explain and summarize this document, but I'm not a lawyer."
+- Main layout: left panel for sources/documents, center/right for chat, citation drawer when needed.
+- Source panel shows uploaded files and URLs with ingestion status, delete, reprocess, and "ask only this source" actions.
+- A prominent Delete Workspace button removes all documents, chunks, messages, and the workspace record. It is not buried in settings.
+- Visible privacy copy includes: private to this browser, delete anytime, no model training on files, 14-day inactive auto-delete, and do-not-upload-sensitive warning.
+- User's OpenRouter API key is stored client-side only (localStorage) and sent with chat requests when set. The server never persists third-party API keys.
+- Anonymous users without a key use google/gemini-2.0-flash-001 via the server's OpenRouter integration.
+- When a user adds their OpenRouter key, a model picker appears with higher message limits and access to larger context models.
+- Vector search uses openai/text-embedding-3-small (1536 dimensions) stored in Supabase Postgres with pgvector.
+- Uploaded files are stored in Supabase Storage, associated with their workspace source record.
+- Settings includes export chat as markdown or JSON.
+- When a user hits a single-page URL limit or tries to paste a site root, a natural upsell appears: "Want to crawl this whole site? Full-site ingestion is coming soon."
+- Payments, accounts, and cloud sync are not built in MVP. The data model includes a plan field (anonymous/free/paid_future) for future use.
+- Stack: Next.js App Router on Vercel, Vercel AI SDK, OpenRouter, Supabase Postgres + pgvector + Storage, server-side PDF/DOCX/URL parsing.
+

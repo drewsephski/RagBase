@@ -1,0 +1,124 @@
+{
+  "stage": "interview",
+  "title": "RagBase Instant Document Brain MVP",
+  "goalSlug": "instant-document-brain-mvp",
+  "questions": [
+    {
+      "id": "url-limit",
+      "prompt": "How many public URLs can a free anonymous workspace hold?",
+      "description": "You mentioned both \"1 at a time\" and \"maybe 5 total\" in the spec.",
+      "answerMode": "single",
+      "recommendedAnswer": "5 URLs total per workspace (same cap as documents).",
+      "recommendedOptionIds": ["five-total"],
+      "options": [
+        { "id": "one-active", "label": "1 URL at a time (replace to add another)" },
+        { "id": "five-total", "label": "5 URLs total (matches document cap)" },
+        { "id": "one-total", "label": "1 URL total per workspace" }
+      ],
+      "required": true
+    },
+    {
+      "id": "file-storage",
+      "prompt": "Where should uploaded files be stored?",
+      "answerMode": "single",
+      "recommendedAnswer": "Supabase Storage — keeps infra in one place with Postgres.",
+      "recommendedOptionIds": ["supabase-storage"],
+      "options": [
+        { "id": "supabase-storage", "label": "Supabase Storage" },
+        { "id": "vercel-blob", "label": "Vercel Blob" },
+        { "id": "s3-compatible", "label": "S3-compatible (R2, etc.)" }
+      ],
+      "required": true
+    },
+    {
+      "id": "ingestion-queue",
+      "prompt": "How should document ingestion run in v1?",
+      "description": "Parsing, chunking, and embedding can be slow for large PDFs.",
+      "answerMode": "single",
+      "recommendedAnswer": "Synchronous API route with streaming status updates — simplest for MVP, no extra infra.",
+      "recommendedOptionIds": ["sync-with-polling"],
+      "options": [
+        { "id": "sync-with-polling", "label": "Sync API route + client polling for status" },
+        { "id": "supabase-edge", "label": "Supabase Edge Function background job" },
+        { "id": "inngest", "label": "Inngest / Trigger.dev queue from day one" }
+      ],
+      "required": true
+    },
+    {
+      "id": "default-model",
+      "prompt": "Which free OpenRouter model should be the default for anonymous users?",
+      "answerMode": "single-custom",
+      "recommendedAnswer": "google/gemini-2.0-flash-001 — fast, cheap, good at citations.",
+      "recommendedOptionIds": ["gemini-flash"],
+      "options": [
+        { "id": "gemini-flash", "label": "google/gemini-2.0-flash-001" },
+        { "id": "llama-70b", "label": "meta-llama/llama-3.3-70b-instruct" },
+        { "id": "gpt-4o-mini", "label": "openai/gpt-4o-mini" },
+        { "id": "custom", "label": "Other (specify)" }
+      ],
+      "required": true
+    },
+    {
+      "id": "embedding-model",
+      "prompt": "Which embedding model for vector search?",
+      "answerMode": "single",
+      "recommendedAnswer": "openai/text-embedding-3-small via OpenRouter or direct OpenAI — 1536 dims, well supported by pgvector.",
+      "recommendedOptionIds": ["text-embedding-3-small"],
+      "options": [
+        { "id": "text-embedding-3-small", "label": "openai/text-embedding-3-small (1536 dims)" },
+        { "id": "text-embedding-3-large", "label": "openai/text-embedding-3-large (3072 dims)" },
+        { "id": "nomic-embed", "label": "nomic-embed-text via OpenRouter" }
+      ],
+      "required": true
+    },
+    {
+      "id": "rate-limiting",
+      "prompt": "How should the 30 messages/day limit be enforced?",
+      "answerMode": "single",
+      "recommendedAnswer": "Database-backed counter per workspace — no extra Redis dependency for MVP.",
+      "recommendedOptionIds": ["db-counter"],
+      "options": [
+        { "id": "db-counter", "label": "Postgres counter on workspace (reset daily)" },
+        { "id": "upstash-redis", "label": "Upstash Redis rate limiter" },
+        { "id": "ip-only", "label": "IP-based only (weaker, easier to bypass)" }
+      ],
+      "required": true
+    },
+    {
+      "id": "mvp-extras",
+      "prompt": "Which of these should ship in the MVP (not later)?",
+      "answerMode": "multi",
+      "recommendedAnswer": "Export chat and \"ask only this source\" — both are small and high-value.",
+      "recommendedOptionIds": ["export-chat", "ask-one-source", "reprocess-source"],
+      "options": [
+        { "id": "export-chat", "label": "Export chat (markdown/JSON)" },
+        { "id": "ask-one-source", "label": "\"Ask only this source\" scoped chat" },
+        { "id": "reprocess-source", "label": "Reprocess source button" },
+        { "id": "recovery-link", "label": "Copy recovery link (cross-browser)" },
+        { "id": "batch-upload", "label": "Batch multi-file upload" }
+      ],
+      "required": true
+    },
+    {
+      "id": "hosting",
+      "prompt": "Where should the Next.js app be deployed?",
+      "answerMode": "single",
+      "recommendedAnswer": "Vercel — natural fit for App Router + AI SDK.",
+      "recommendedOptionIds": ["vercel"],
+      "options": [
+        { "id": "vercel", "label": "Vercel" },
+        { "id": "self-hosted", "label": "Self-hosted / Docker" },
+        { "id": "undecided", "label": "Decide later — scaffold locally first" }
+      ],
+      "required": true
+    },
+    {
+      "id": "open-questions",
+      "prompt": "Anything else to lock before we write the fact sheet?",
+      "description": "Optional — call out constraints, non-negotiables, or things I got wrong.",
+      "answerMode": "text",
+      "recommendedAnswer": "Nothing else — proceed with the recommendations above.",
+      "required": false
+    }
+  ]
+}

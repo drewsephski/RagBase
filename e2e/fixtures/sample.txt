@@ -1,0 +1,10 @@
+RagBase E2E Test Document
+
+This document is used for automated end-to-end testing.
+
+Secret phrase: purple elephant forty-two.
+
+The annual renewal date is March 15, 2026.
+The monthly fee is $49.99 unless otherwise stated in writing.
+
+Contact: support@example.com
