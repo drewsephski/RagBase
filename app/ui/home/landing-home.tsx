@@ -30,7 +30,7 @@ interface LandingHomeProps {
   onUpload: (file: File) => Promise<void>;
   onOpenSettings: () => void;
   onPromptChipSelect?: (prompt: string) => void;
-  onCrawlTeaserOpen?: () => void;
+  onFullSitePaywallOpen?: () => void;
   pendingPromptHint?: string | null;
   disabled?: boolean;
   template?: WorkspaceTemplate | null;
@@ -42,7 +42,7 @@ export function LandingHome({
   onUpload,
   onOpenSettings,
   onPromptChipSelect,
-  onCrawlTeaserOpen,
+  onFullSitePaywallOpen,
   pendingPromptHint,
   disabled = false,
   template = null,
@@ -101,8 +101,8 @@ export function LandingHome({
             aria-label="Add a document or link"
           >
             <UrlInput onSubmit={onUrlSubmit} disabled={disabled} variant="minimal" />
-            {onCrawlTeaserOpen ? (
-              <CrawlTeaserHint onLearnMore={onCrawlTeaserOpen} />
+            {onFullSitePaywallOpen ? (
+              <CrawlTeaserHint onLearnMore={onFullSitePaywallOpen} />
             ) : null}
             <FileInputRow onUpload={onUpload} disabled={disabled} />
             <TrustMicrocopy />

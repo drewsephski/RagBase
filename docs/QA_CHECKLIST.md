@@ -10,7 +10,7 @@ Run through this checklist before each beta release or after significant changes
 | DOCX upload | Upload a `.docx` file | Same as PDF |
 | TXT / MD upload | Upload `.txt` or `.md` | Same as PDF |
 | Public URL | Paste a clean article URL (not homepage) | Page ingested; source ready; title reflects page |
-| Root URL | Paste a site homepage URL | Homepage ingested or notice shown; no full-site crawl |
+| Root URL | Paste a site homepage URL | Choice dialog appears; “Add this page only” ingests with Pro notice; “Crawl entire site” opens paywall |
 | Scanned PDF | Upload a image-only / scanned PDF | Graceful failure or OCR upsell; clear error in documents panel |
 | Blocked URL | Paste a URL that blocks scraping (e.g. login wall) | User-friendly error; no stuck “processing” state |
 
@@ -38,6 +38,17 @@ Run through this checklist before each beta release or after significant changes
 | Beta feedback CTA | With `NEXT_PUBLIC_FEEDBACK_URL` set | Subtle feedback link visible; opens external URL |
 | Beta feedback hidden | Without `NEXT_PUBLIC_FEEDBACK_URL` | No feedback CTA shown |
 | Debug panel (dev) | In development or `NEXT_PUBLIC_DEBUG_PANEL=true` | Debug toggle shows counts/model/latency; no secrets or raw text |
+
+## Full-site crawl paywall (phase 6a)
+
+| Scenario | Steps | Expected |
+| --- | --- | --- |
+| Crawl hint click | Click “Crawl an entire site” under URL field | Paywall opens; `paywall_viewed` in PostHog |
+| Waitlist submit | Enter email on paywall → Unlock site crawling | Email in `waitlist_emails`; success message; no email in PostHog properties |
+| Duplicate waitlist | Submit same email twice | Both return success; one DB row |
+| Root URL → single page | Paste `https://example.com/` → Add this page only | Single-page ingest; Pro notice |
+| Root URL → crawl | Paste root URL → Crawl entire site | Paywall opens; no ingest |
+| Non-root URL | Paste article URL | No choice dialog; direct single-page ingest |
 
 ## Analytics (production smoke)
 

@@ -18,4 +18,5 @@ export const RATE_LIMIT_CONFIG = {
   urlPerIp: readInt("RATE_LIMIT_URL_PER_IP", 60),
   chatFreePerIp: readInt("RATE_LIMIT_CHAT_FREE_PER_IP", 120),
   chatFreePerWorkspace: readInt("RATE_LIMIT_CHAT_FREE_PER_WORKSPACE", 0),
+  waitlistPerIp: readInt("RATE_LIMIT_WAITLIST_PER_IP", 10),
 } as const;

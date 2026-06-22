@@ -18,6 +18,9 @@ export const ANALYTICS_EVENTS = [
   "paid_feature_clicked",
   "paid_intent",
   "workspace_deleted",
+  "paywall_viewed",
+  "paywall_primary_clicked",
+  "paywall_waitlist_submitted",
 ] as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];

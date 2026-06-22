@@ -39,7 +39,7 @@ interface AppShellProps {
   onSourcesChange: (sources: Source[]) => void;
   onUpload: (file: File) => Promise<void>;
   onUrlSubmit: (url: string) => Promise<{ teaser?: boolean; message?: string; url?: string } | void>;
-  onCrawlTeaserOpen?: () => void;
+  onFullSitePaywallOpen?: () => void;
   onWorkspaceDeleted: () => void;
   template?: WorkspaceTemplate | null;
 }
@@ -54,7 +54,7 @@ function SidebarContent({
   onSourcesChange,
   onUpload,
   onUrlSubmit,
-  onCrawlTeaserOpen,
+  onFullSitePaywallOpen,
 }: Pick<
   AppShellProps,
   | "workspaceHeaders"
@@ -64,7 +64,7 @@ function SidebarContent({
   | "onSourcesChange"
   | "onUpload"
   | "onUrlSubmit"
-  | "onCrawlTeaserOpen"
+  | "onFullSitePaywallOpen"
 >) {
   return (
     <>
@@ -81,8 +81,8 @@ function SidebarContent({
       <div className="shrink-0 space-y-2 border-t pt-2.5 sm:pt-3">
         <UploadZone onUpload={onUpload} compact />
         <UrlInput onSubmit={onUrlSubmit} />
-        {onCrawlTeaserOpen ? (
-          <CrawlTeaserHint onLearnMore={onCrawlTeaserOpen} />
+        {onFullSitePaywallOpen ? (
+          <CrawlTeaserHint onLearnMore={onFullSitePaywallOpen} />
         ) : null}
         <TrustMicrocopy compact className="text-left" />
       </div>
@@ -101,7 +101,7 @@ export function AppShell({
   onSourcesChange,
   onUpload,
   onUrlSubmit,
-  onCrawlTeaserOpen,
+  onFullSitePaywallOpen,
   onWorkspaceDeleted,
   template = null,
 }: AppShellProps) {
@@ -259,7 +259,7 @@ export function AppShell({
               onSourcesChange={onSourcesChange}
               onUpload={onUpload}
               onUrlSubmit={onUrlSubmit}
-              onCrawlTeaserOpen={onCrawlTeaserOpen}
+              onFullSitePaywallOpen={onFullSitePaywallOpen}
             />
           </div>
         </aside>

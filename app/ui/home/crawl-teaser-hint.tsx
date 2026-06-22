@@ -18,7 +18,7 @@ export function CrawlTeaserHint({ onLearnMore }: CrawlTeaserHintProps) {
         className="text-muted-foreground hover:text-foreground h-auto p-0 text-[11px] sm:text-xs"
         onClick={onLearnMore}
       >
-        Full-site crawling is coming soon
+        Crawl an entire site
       </Button>
     </p>
   );

@@ -10,6 +10,7 @@ import { apiFetch, apiJson, ApiError } from "@/lib/api/client";
 import { trackEvent } from "@/lib/analytics/track";
 import { trackPaidIntent } from "@/lib/analytics/paid-intent";
 import { trackLimitBoundary } from "@/lib/analytics/limit-boundary";
+import { isRootUrl } from "@/lib/ingestion/url-utils";
 import {
   peekPendingPrompt,
   setPendingPrompt,
@@ -20,8 +21,9 @@ import {
   PROMPT_URL_PARAM,
 } from "@/lib/templates/prompt-link";
 import { LandingHome } from "@/app/ui/home/landing-home";
+import { UrlIngestChoiceDialog } from "@/app/ui/home/url-ingest-choice-dialog";
 import { AppShell } from "@/app/ui/layout/app-shell";
-import { CrawlTeaser } from "@/app/ui/upsell/crawl-teaser";
+import { FullSitePaywallDialog } from "@/app/ui/upsell/full-site-paywall-dialog";
 import { Loader2 } from "lucide-react";
 import { SettingsPanel } from "@/app/ui/settings/settings-panel";
 
@@ -56,9 +58,11 @@ function AppContent() {
   const [refreshToken, setRefreshToken] = useState(0);
   const [scopedSourceId, setScopedSourceId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [crawlTeaserOpen, setCrawlTeaserOpen] = useState(false);
-  const [crawlTeaserUrl, setCrawlTeaserUrl] = useState<string | undefined>();
-  const [crawlTeaserMessage, setCrawlTeaserMessage] = useState<string | undefined>();
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallPendingUrl, setPaywallPendingUrl] = useState<string | undefined>();
+  const [paywallSurface, setPaywallSurface] = useState("paywall_dialog");
+  const [urlChoiceOpen, setUrlChoiceOpen] = useState(false);
+  const [pendingRootUrl, setPendingRootUrl] = useState<string | null>(null);
   const [pendingPromptHint, setPendingPromptHint] = useState<string | null>(null);
   const [templateRoutingDismissed, setTemplateRoutingDismissed] = useState(false);
   const promptDeeplinkAppliedRef = useRef(false);
@@ -217,15 +221,11 @@ function AppContent() {
     [bumpRefresh, fetchSources, headers],
   );
 
-  const openCrawlTeaser = useCallback((url?: string, message?: string) => {
-    trackPaidIntent("full_site_crawl", { surface: "crawl_teaser" });
-    if (url) {
-      setCrawlTeaserUrl(url);
-    }
-    if (message) {
-      setCrawlTeaserMessage(message);
-    }
-    setCrawlTeaserOpen(true);
+  const openFullSitePaywall = useCallback((url?: string, surface = "crawl_hint") => {
+    trackPaidIntent("full_site_crawl", { surface });
+    setPaywallSurface(surface);
+    setPaywallPendingUrl(url);
+    setPaywallOpen(true);
   }, []);
 
   const handleUrlSubmit = useCallback(
@@ -241,11 +241,6 @@ function AppContent() {
         workspaceHeaders: headers,
       });
 
-      if (data.teaser) {
-        openCrawlTeaser(data.url ?? url, data.message);
-        return data;
-      }
-
       trackEvent("url_ingested", {
         is_homepage: Boolean(data.notice),
       });
@@ -254,8 +249,57 @@ function AppContent() {
       bumpRefresh();
       return data;
     },
-    [bumpRefresh, fetchSources, headers, openCrawlTeaser],
+    [bumpRefresh, fetchSources, headers],
   );
+
+  const handleUrlSubmitWithChoice = useCallback(
+    async (url: string) => {
+      try {
+        if (isRootUrl(url)) {
+          setPendingRootUrl(url);
+          setUrlChoiceOpen(true);
+          return;
+        }
+
+        return await handleUrlSubmit(url);
+      } catch (error) {
+        if (error instanceof ApiError) {
+          trackLimitBoundary(error);
+        }
+        throw error;
+      }
+    },
+    [handleUrlSubmit],
+  );
+
+  const handleRootUrlSinglePage = useCallback(
+    async (url: string) => {
+      try {
+        return await handleUrlSubmit(url);
+      } catch (error) {
+        if (error instanceof ApiError) {
+          trackLimitBoundary(error);
+        }
+        throw error;
+      }
+    },
+    [handleUrlSubmit],
+  );
+
+  const handleRootUrlCrawlSite = useCallback(
+    (url: string) => {
+      openFullSitePaywall(url, "root_url_choice");
+    },
+    [openFullSitePaywall],
+  );
+
+  const handlePaywallAddPageOnly = useCallback(() => {
+    if (!paywallPendingUrl) {
+      return;
+    }
+
+    void handleRootUrlSinglePage(paywallPendingUrl);
+  }, [handleRootUrlSinglePage, paywallPendingUrl]);
 
   const handleWorkspaceDeleted = useCallback(async () => {
     if (!activeWorkspace) {
@@ -268,6 +312,27 @@ function AppContent() {
     setScopedSourceId(null);
     bumpRefresh();
   }, [activeWorkspace, bumpRefresh, deleteWorkspace]);
+
+  const paywallDialogs = (
+    <>
+      <UrlIngestChoiceDialog
+        open={urlChoiceOpen}
+        onOpenChange={setUrlChoiceOpen}
+        url={pendingRootUrl ?? ""}
+        onSinglePage={(url) => void handleRootUrlSinglePage(url)}
+        onCrawlSite={handleRootUrlCrawlSite}
+      />
+
+      <FullSitePaywallDialog
+        open={paywallOpen}
+        onOpenChange={setPaywallOpen}
+        pendingUrl={paywallPendingUrl}
+        workspaceHeaders={headers}
+        onAddPageOnly={paywallPendingUrl ? handlePaywallAddPageOnly : undefined}
+        surface={paywallSurface}
+      />
+    </>
+  );
 
   if (!isReady || isApplyingTemplate) {
     return (
@@ -316,18 +381,13 @@ function AppContent() {
           onScopedSourceChange={setScopedSourceId}
           onSourcesChange={setSources}
           onUpload={handleUpload}
-          onUrlSubmit={handleUrlSubmit}
-          onCrawlTeaserOpen={() => openCrawlTeaser()}
+          onUrlSubmit={handleUrlSubmitWithChoice}
+          onFullSitePaywallOpen={() => openFullSitePaywall(undefined, "crawl_hint")}
           onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
           template={template}
         />
 
-        <CrawlTeaser
-          open={crawlTeaserOpen}
-          onOpenChange={setCrawlTeaserOpen}
-          url={crawlTeaserUrl}
-          message={crawlTeaserMessage}
-        />
+        {paywallDialogs}
       </>
     );
   }
@@ -335,11 +395,11 @@ function AppContent() {
   return (
     <>
       <LandingHome
-        onUrlSubmit={handleUrlSubmit}
+        onUrlSubmit={handleUrlSubmitWithChoice}
         onUpload={handleUpload}
         onOpenSettings={() => setSettingsOpen(true)}
         onPromptChipSelect={handlePromptChipSelect}
-        onCrawlTeaserOpen={() => openCrawlTeaser()}
+        onFullSitePaywallOpen={() => openFullSitePaywall(undefined, "crawl_hint")}
         pendingPromptHint={
           pendingPromptHint
             ? `Queued: "${pendingPromptHint}" — we'll ask this when your first document is ready.`
@@ -363,12 +423,7 @@ function AppContent() {
         onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
       />
 
-      <CrawlTeaser
-        open={crawlTeaserOpen}
-        onOpenChange={setCrawlTeaserOpen}
-        url={crawlTeaserUrl}
-        message={crawlTeaserMessage}
-      />
+      {paywallDialogs}
     </>
   );
 }

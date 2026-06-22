@@ -110,3 +110,12 @@ export function enforceFreeChatRateLimit(
     "This workspace is sending messages too quickly.",
   );
 }
+
+export function enforceWaitlistRateLimit(request: NextRequest): void {
+  const ip = getClientIp(request);
+  enforce(
+    `waitlist:ip:${ip}`,
+    RATE_LIMIT_CONFIG.waitlistPerIp,
+    "Too many waitlist signups from this connection.",
+  );
+}

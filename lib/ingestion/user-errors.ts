@@ -15,7 +15,7 @@ export interface IngestionErrorDetails {
 }
 
 const ROOT_URL_NOTICE =
-  "Only this page was added. Full-site crawling is coming soon.";
+  "Only this page was added. Unlock site crawling with RagBase Pro to read the whole site.";
 
 export const ROOT_URL_INGESTION_NOTICE = ROOT_URL_NOTICE;
 

@@ -24,6 +24,7 @@ const BLOCKED_PROPERTY_KEYS = new Set([
   "workspacesecret",
   "workspace_secret",
   "authorization",
+  "email",
 ]);
 
 const MAX_PROPERTY_VALUE_LENGTH = 200;

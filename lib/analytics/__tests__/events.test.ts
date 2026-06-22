@@ -2,6 +2,16 @@ import { describe, expect, test } from "@jest/globals";
 import { ANALYTICS_EVENTS } from "@/lib/analytics/types";
 
 describe("analytics event taxonomy", () => {
+  test("includes paywall funnel events", () => {
+    expect(ANALYTICS_EVENTS).toEqual(
+      expect.arrayContaining([
+        "paywall_viewed",
+        "paywall_primary_clicked",
+        "paywall_waitlist_submitted",
+      ]),
+    );
+  });
+
   test("includes answer-quality observability events", () => {
     expect(ANALYTICS_EVENTS).toEqual(
       expect.arrayContaining([

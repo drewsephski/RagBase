@@ -9,6 +9,7 @@ describe("sanitizeAnalyticsProperties", () => {
       answer: "raw assistant answer",
       openRouterKey: "sk-or-test",
       workspace_secret: "ws-secret",
+      email: "user@example.com",
       note: "a".repeat(250),
     });
 
