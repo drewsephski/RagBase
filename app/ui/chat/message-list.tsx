@@ -17,8 +17,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AnswerFeedback } from "@/app/ui/chat/answer-feedback";
-import { CitationBadge } from "@/app/ui/chat/citation-badge";
 import { CitationDrawer } from "@/app/ui/chat/citation-drawer";
+import { MarkdownMessage } from "@/app/ui/chat/markdown-message";
 
 interface MessageListProps {
   messages: Message[];
@@ -26,38 +26,6 @@ interface MessageListProps {
   sourceCount?: number;
   workspaceId?: string;
   model?: string;
-}
-
-function renderContentWithCitations(
-  content: string,
-  citations: ParsedMessageCitation[],
-  onCitationClick: (citation: ParsedMessageCitation) => void,
-): React.ReactNode[] {
-  const displayContent = getDisplayContent(content);
-  const parts = displayContent.split(/(\[\d+\])/g);
-
-  return parts.map((part, index) => {
-    const match = part.match(/^\[(\d+)\]$/);
-
-    if (!match) {
-      return <span key={`text-${index}`}>{part}</span>;
-    }
-
-    const ref = Number(match[1]);
-    const citation = citations.find((item) => item.ref === ref);
-
-    if (!citation) {
-      return <span key={`ref-${index}`}>{part}</span>;
-    }
-
-    return (
-      <CitationBadge
-        key={`cite-${citation.ref}-${index}`}
-        citation={citation}
-        onClick={onCitationClick}
-      />
-    );
-  });
 }
 
 function MessageBubble({
@@ -110,15 +78,15 @@ function MessageBubble({
               : "bg-muted/60 text-foreground",
           )}
         >
-          <div className="whitespace-pre-wrap">
-            {isUser
-              ? message.content
-              : renderContentWithCitations(
-                  message.content,
-                  citations,
-                  onCitationClick,
-                )}
-          </div>
+          {isUser ? (
+            <div className="whitespace-pre-wrap">{message.content}</div>
+          ) : (
+            <MarkdownMessage
+              content={displayContent}
+              citations={citations}
+              onCitationClick={onCitationClick}
+            />
+          )}
         </div>
 
         {!isUser ? (
