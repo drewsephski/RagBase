@@ -10,8 +10,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { RefreshCw, Trash2 } from "lucide-react";
-import { useState } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Focus, RefreshCw, Trash2 } from "lucide-react";
+import { useState, type ReactNode } from "react";
 
 interface SourceActionsProps {
   source: Source;
@@ -20,6 +26,21 @@ interface SourceActionsProps {
   onReprocess: () => Promise<void>;
   onDelete: () => Promise<void>;
   disabled?: boolean;
+}
+
+function ActionTooltip({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top">{label}</TooltipContent>
+    </Tooltip>
+  );
 }
 
 export function SourceActions({
@@ -57,56 +78,66 @@ export function SourceActions({
     }
   }
 
+  const scopeTooltip = isScoped
+    ? "Using this document only. Click to search all documents."
+    : "Scope chat to this document only";
+
   return (
-    <>
-      <div className="flex flex-wrap items-center gap-2">
+    <TooltipProvider delayDuration={400}>
+      <div className="flex shrink-0 items-center gap-0.5">
         {canScope ? (
-          <Button
-            type="button"
-            variant={isScoped ? "default" : "outline"}
-            size="sm"
-            disabled={disabled}
-            onClick={onToggleScope}
-            aria-pressed={isScoped}
-            aria-label={
-              isScoped
-                ? `Asking only about ${source.name}. Click to ask about all documents.`
-                : `Ask only about ${source.name}`
-            }
-          >
-            {isScoped ? "This doc only" : "Ask this doc only"}
-          </Button>
+          <ActionTooltip label={scopeTooltip}>
+            <Button
+              type="button"
+              variant={isScoped ? "default" : "ghost"}
+              size="sm"
+              disabled={disabled}
+              onClick={onToggleScope}
+              aria-pressed={isScoped}
+              aria-label={scopeTooltip}
+              className="h-6 gap-1 px-1.5 text-[10px] font-normal whitespace-nowrap"
+            >
+              <Focus className="size-2.5 shrink-0" aria-hidden />
+              {isScoped ? "This doc" : "Scope"}
+            </Button>
+          </ActionTooltip>
         ) : null}
 
         {canReprocess ? (
+          <ActionTooltip label="Re-read and re-index this document">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled || isReprocessing}
+              onClick={() => void handleReprocess()}
+              aria-label={`Reindex ${source.name}`}
+              className="h-6 gap-1 px-1.5 text-[10px] font-normal whitespace-nowrap"
+            >
+              <RefreshCw
+                className={
+                  isReprocessing ? "size-2.5 shrink-0 animate-spin" : "size-2.5 shrink-0"
+                }
+                aria-hidden
+              />
+              Reindex
+            </Button>
+          </ActionTooltip>
+        ) : null}
+
+        <ActionTooltip label="Delete this document">
           <Button
             type="button"
             variant="ghost"
-            size="sm"
-            disabled={disabled || isReprocessing}
-            onClick={() => void handleReprocess()}
-            aria-label={`Re-read ${source.name}`}
+            size="icon"
+            disabled={disabled || isDeleting}
+            onClick={() => setShowDeleteDialog(true)}
+            aria-label={`Delete ${source.name}`}
+            className="text-destructive hover:text-destructive size-6 shrink-0"
           >
-            <RefreshCw
-              className={isReprocessing ? "animate-spin" : undefined}
-              aria-hidden
-            />
-            Re-read
+            <Trash2 className="size-2.5" aria-hidden />
           </Button>
-        ) : null}
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={disabled || isDeleting}
-          onClick={() => setShowDeleteDialog(true)}
-          aria-label={`Delete ${source.name}`}
-          className="text-destructive hover:text-destructive"
-        >
-          <Trash2 aria-hidden />
-          Delete
-        </Button>
+        </ActionTooltip>
       </div>
 
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -119,7 +150,7 @@ export function SourceActions({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
@@ -139,7 +170,7 @@ export function SourceActions({
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </TooltipProvider>
   );
 }
 
@@ -167,15 +198,25 @@ export function getStatusLabel(status: SourceStatus): string {
     case "ready":
       return "Ready";
     case "error":
-      return "Problem";
+      return "Error";
     default:
       return status;
   }
 }
 
-export function StatusBadge({ status }: { status: SourceStatus }) {
+export function StatusBadge({
+  status,
+  className,
+}: {
+  status: SourceStatus;
+  className?: string;
+}) {
   return (
-    <Badge variant={getStatusBadgeVariant(status)} aria-label={`Status: ${getStatusLabel(status)}`}>
+    <Badge
+      variant={getStatusBadgeVariant(status)}
+      aria-label={`Status: ${getStatusLabel(status)}`}
+      className={className}
+    >
       {getStatusLabel(status)}
     </Badge>
   );

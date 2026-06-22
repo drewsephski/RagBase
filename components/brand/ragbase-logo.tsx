@@ -19,18 +19,22 @@ export function RagBaseLogo({
   return (
     <div
       className={cn(
-        "flex items-center gap-3",
+        "flex items-center gap-2.5 sm:gap-3",
         isVertical && "flex-col text-center",
         className,
       )}
     >
-      <RagBaseMark size={markSize} />
+      <RagBaseMark size={markSize} className="shrink-0" />
 
-      <div className={cn("min-w-0", isVertical && "space-y-1")}>
+      <div className={cn("min-w-0", isVertical && "space-y-0.5 sm:space-y-1")}>
         <p
           className={cn(
             "font-semibold tracking-tight",
-            markSize >= 48 ? "text-2xl sm:text-3xl" : "text-sm",
+            markSize >= 48
+              ? "text-xl sm:text-2xl md:text-3xl"
+              : markSize >= 40
+                ? "text-lg sm:text-xl"
+                : "text-sm",
           )}
         >
           RagBase
@@ -38,8 +42,10 @@ export function RagBaseLogo({
         {showTagline ? (
           <p
             className={cn(
-              "text-muted-foreground",
-              markSize >= 48 ? "text-sm sm:text-base" : "text-xs",
+              "text-muted-foreground text-pretty",
+              markSize >= 48
+                ? "text-xs sm:text-sm md:text-base"
+                : "text-xs",
             )}
           >
             Ask your documents. Get answers with quotes.

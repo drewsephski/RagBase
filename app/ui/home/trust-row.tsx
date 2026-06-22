@@ -32,11 +32,11 @@ export function TrustRow() {
         information.
       </p>
 
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
         {TRUST_ITEMS.map((item) => (
           <li
             key={item.label}
-            className="bg-muted/30 flex gap-3 rounded-lg border p-3"
+            className="bg-muted/30 flex gap-2.5 rounded-lg border p-2.5 sm:gap-3 sm:p-3"
           >
             <item.icon
               className="text-muted-foreground mt-0.5 size-4 shrink-0"

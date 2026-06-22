@@ -69,7 +69,7 @@ function MessageBubble({
     >
       <div
         className={cn(
-          "max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[85%]",
+          "max-w-[min(92%,20rem)] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed sm:max-w-[85%] sm:px-4 sm:py-3",
           isUser
             ? "bg-primary text-primary-foreground"
             : "bg-muted/60 text-foreground",
@@ -101,8 +101,8 @@ export function MessageList({ messages, isLoading = false }: MessageListProps) {
 
   return (
     <>
-      <ScrollArea className="min-h-0 flex-1 px-3 py-4 sm:px-4">
-        <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <ScrollArea className="min-h-0 flex-1 px-2 py-3 sm:px-4 sm:py-4">
+        <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:gap-4">
           {messages.length === 0 ? (
             <p className="text-muted-foreground text-center text-sm">
               Ask a question to get started. Answers include quotes from your

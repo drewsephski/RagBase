@@ -47,7 +47,7 @@ export function CrawlTeaser({
           policy, or help doc — and we&apos;ll read just that page.
         </p>
 
-        <Button type="button" onClick={() => onOpenChange(false)}>
+        <Button type="button" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
           Got it
         </Button>
       </DialogContent>

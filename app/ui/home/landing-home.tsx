@@ -24,13 +24,14 @@ export function LandingHome({
   disabled = false,
 }: LandingHomeProps) {
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="flex items-center justify-end gap-2 px-4 py-4 sm:px-6">
+    <div className="flex min-h-dvh flex-col overflow-hidden">
+      <header className="flex shrink-0 items-center justify-end gap-1.5 px-3 py-3 pt-safe sm:gap-2 sm:px-6 sm:py-4">
         <ThemeToggle />
         <Button
           type="button"
           variant="ghost"
           size="icon"
+          className="size-8"
           onClick={onOpenSettings}
           aria-label="Open settings"
         >
@@ -38,16 +39,16 @@ export function LandingHome({
         </Button>
       </header>
 
-      <main className="flex flex-1 flex-col items-center justify-center px-4 pb-6 sm:px-6">
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-center px-3 pb-4 sm:px-6 sm:pb-6">
         <RagBaseLogo
           layout="vertical"
-          markSize={64}
+          markSize={56}
           showTagline
-          className="mb-10"
+          className="mb-6 sm:mb-10"
         />
 
         <div
-          className="w-full max-w-xl space-y-3"
+          className="w-full max-w-xl space-y-2.5 sm:space-y-3"
           aria-label="Add a document or link"
         >
           <UrlInput onSubmit={onUrlSubmit} disabled={disabled} variant="minimal" />
@@ -55,7 +56,7 @@ export function LandingHome({
         </div>
       </main>
 
-      <div className="mt-auto border-t">
+      <div className="mt-auto shrink-0 border-t">
         <ChatInput
           value=""
           onChange={() => {}}

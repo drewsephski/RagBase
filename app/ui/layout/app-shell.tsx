@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Menu, Settings, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import {
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+  Trash2,
+  X,
+} from "lucide-react";
 import type { Source } from "@/app/lib/definitions";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -26,6 +33,46 @@ interface AppShellProps {
   onWorkspaceDeleted: () => void;
 }
 
+const SIDEBAR_WIDTH = "min(280px, 85vw)";
+
+function SidebarContent({
+  workspaceHeaders,
+  scopedSourceId,
+  onScopedSourceChange,
+  refreshToken,
+  onSourcesChange,
+  onUpload,
+  onUrlSubmit,
+}: Pick<
+  AppShellProps,
+  | "workspaceHeaders"
+  | "scopedSourceId"
+  | "onScopedSourceChange"
+  | "refreshToken"
+  | "onSourcesChange"
+  | "onUpload"
+  | "onUrlSubmit"
+>) {
+  return (
+    <>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <SourceList
+          workspaceHeaders={workspaceHeaders}
+          scopedSourceId={scopedSourceId}
+          onScopedSourceChange={onScopedSourceChange}
+          refreshToken={refreshToken}
+          onSourcesChange={onSourcesChange}
+        />
+      </div>
+
+      <div className="shrink-0 space-y-2 border-t pt-2.5 sm:pt-3">
+        <UploadZone onUpload={onUpload} compact />
+        <UrlInput onSubmit={onUrlSubmit} />
+      </div>
+    </>
+  );
+}
+
 export function AppShell({
   workspaceHeaders,
   sources,
@@ -38,36 +85,102 @@ export function AppShell({
   onWorkspaceDeleted,
 }: AppShellProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [mobilePanel, setMobilePanel] = useState<"sources" | "chat">("chat");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  const sidebarVisible = isDesktop ? desktopSidebarOpen : mobileSidebarOpen;
+
+  const handleCloseMobileSidebar = useCallback(() => {
+    setMobileSidebarOpen(false);
+  }, []);
+
+  const handleToggleSidebar = useCallback(() => {
+    if (isDesktop) {
+      setDesktopSidebarOpen((current) => !current);
+      return;
+    }
+
+    setMobileSidebarOpen((current) => !current);
+  }, [isDesktop]);
+
+  const sidebarToggle = (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      className="size-8 shrink-0"
+      onClick={handleToggleSidebar}
+      aria-expanded={sidebarVisible}
+      aria-controls="documents-sidebar"
+      aria-label={
+        sidebarVisible
+          ? isDesktop
+            ? "Collapse documents panel"
+            : "Close documents panel"
+          : "Open documents panel"
+      }
+    >
+      {sidebarVisible ? (
+        isDesktop ? (
+          <PanelLeftClose className="size-4" aria-hidden />
+        ) : (
+          <X className="size-4" aria-hidden />
+        )
+      ) : isDesktop ? (
+        <PanelLeftOpen className="size-4" aria-hidden />
+      ) : (
+        <Menu className="size-4" aria-hidden />
+      )}
+    </Button>
+  );
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) {
+      return;
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMobileSidebarOpen(false);
+      }
+    }
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [mobileSidebarOpen]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+
+    function handleChange(event: MediaQueryListEvent | MediaQueryList) {
+      setIsDesktop(event.matches);
+      if (event.matches) {
+        setMobileSidebarOpen(false);
+      }
+    }
+
+    handleChange(mediaQuery);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
   return (
-    <div className="flex h-dvh flex-col">
-      <header className="flex items-center justify-between gap-3 border-b px-4 py-3">
-        <RagBaseLogo markSize={28} className="min-w-0" />
+    <div className="flex h-dvh flex-col overflow-hidden">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5 pt-safe sm:gap-3 sm:px-4 sm:py-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <RagBaseLogo markSize={28} className="min-w-0 shrink" />
+          {sidebarToggle}
+        </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="md:hidden"
-            onClick={() =>
-              setMobilePanel((current) =>
-                current === "sources" ? "chat" : "sources",
-              )
-            }
-            aria-label="Toggle documents panel"
-          >
-            <Menu aria-hidden />
-            {mobilePanel === "sources" ? "Chat" : "Docs"}
-          </Button>
-
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <ThemeToggle />
 
           <Button
             type="button"
             variant="outline"
             size="icon"
+            className="size-8"
             onClick={() => setSettingsOpen(true)}
             aria-label="Open settings"
           >
@@ -87,36 +200,53 @@ export function AppShell({
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 md:grid-cols-[minmax(280px,340px)_1fr]">
-        <aside
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+        <button
+          type="button"
           className={cn(
-            "border-b md:border-r md:border-b-0",
-            mobilePanel === "sources" ? "flex min-h-0 flex-col" : "hidden md:flex md:min-h-0 md:flex-col",
+            "absolute inset-0 z-20 bg-black/40 transition-opacity duration-300 ease-out motion-reduce:transition-none md:hidden",
+            mobileSidebarOpen
+              ? "pointer-events-auto opacity-100"
+              : "pointer-events-none opacity-0",
           )}
+          onClick={handleCloseMobileSidebar}
+          aria-label="Close documents panel"
+          tabIndex={mobileSidebarOpen ? 0 : -1}
+        />
+
+        <aside
+          id="documents-sidebar"
+          className={cn(
+            "bg-background z-30 flex min-h-0 flex-col overflow-hidden border-r shadow-lg transition-[transform,width] duration-300 ease-in-out motion-reduce:transition-none",
+            "absolute inset-y-0 left-0 md:relative md:inset-auto md:shadow-none",
+            "max-md:w-[var(--sidebar-width)] max-md:pb-safe",
+            mobileSidebarOpen
+              ? "max-md:translate-x-0"
+              : "max-md:pointer-events-none max-md:-translate-x-full",
+            desktopSidebarOpen
+              ? "md:w-[var(--sidebar-width)] md:shrink-0"
+              : "md:w-0 md:shrink-0 md:border-r-0",
+          )}
+          style={{ "--sidebar-width": SIDEBAR_WIDTH } as CSSProperties}
           aria-label="Documents panel"
+          aria-hidden={!sidebarVisible}
         >
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4">
-            <SourceList
+          <div
+            className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2.5 overflow-hidden p-2.5 sm:gap-3 sm:p-3"
+          >
+            <SidebarContent
               workspaceHeaders={workspaceHeaders}
               scopedSourceId={scopedSourceId}
               onScopedSourceChange={onScopedSourceChange}
               refreshToken={refreshToken}
               onSourcesChange={onSourcesChange}
+              onUpload={onUpload}
+              onUrlSubmit={onUrlSubmit}
             />
-
-            <div className="space-y-3 border-t pt-4">
-              <UploadZone onUpload={onUpload} compact />
-              <UrlInput onSubmit={onUrlSubmit} />
-            </div>
           </div>
         </aside>
 
-        <main
-          className={cn(
-            "min-h-0",
-            mobilePanel === "chat" ? "flex flex-col" : "hidden md:flex md:flex-col",
-          )}
-        >
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <ChatPanel
             workspaceHeaders={workspaceHeaders}
             sources={sources}

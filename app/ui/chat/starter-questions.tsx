@@ -34,26 +34,26 @@ export function StarterQuestions({
   }
 
   return (
-    <section aria-label="Suggested questions" className="space-y-2">
-      <p className="text-muted-foreground text-sm">Suggested questions</p>
-      <div className="flex flex-col gap-2">
+    <section aria-label="Suggested questions" className="space-y-2 text-left">
+      <p className="text-muted-foreground text-xs sm:text-sm">Suggested questions</p>
+      <div className="grid grid-cols-2 gap-2">
         {starters.map((starter) => (
           <div key={starter.id} className="space-y-1">
+            {starter.sourceName ? (
+              <p className="text-muted-foreground truncate px-1 text-[9px] leading-tight sm:text-[10px]">
+                {starter.sourceName}
+              </p>
+            ) : null}
             <Button
               type="button"
               variant="outline"
               disabled={disabled}
               onClick={() => onSelect(starter.text)}
-              className="h-auto w-full justify-start whitespace-normal px-3 py-2 text-left text-sm"
+              className="h-auto w-full justify-start whitespace-normal px-3 py-2.5 text-left text-xs sm:text-sm"
               aria-label={`Suggested question: ${starter.text}`}
             >
               {starter.text}
             </Button>
-            {starter.disclaimer ? (
-              <p className="text-muted-foreground px-1 text-xs">
-                {starter.disclaimer}
-              </p>
-            ) : null}
           </div>
         ))}
       </div>

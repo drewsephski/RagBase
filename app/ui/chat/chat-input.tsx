@@ -53,15 +53,15 @@ export function ChatInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-t bg-background px-4 py-5 sm:px-6 sm:py-7"
+      className="border-t bg-background px-3 py-3 pb-safe sm:px-6 sm:py-5"
     >
-      <div className="mx-auto flex w-full max-w-4xl items-end justify-center gap-2 sm:gap-3">
+      <div className="mx-auto flex w-full max-w-3xl items-end gap-2 sm:gap-3">
         <label htmlFor="chat-input" className="sr-only">
           Message
         </label>
         <textarea
           id="chat-input"
-          rows={3}
+          rows={2}
           value={value}
           disabled={disabled || isLoading}
           placeholder={placeholder}
@@ -69,7 +69,7 @@ export function ChatInput({
           onKeyDown={handleKeyDown}
           aria-label="Ask a question"
           className={cn(
-            "border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring w-full max-w-xs min-h-[4.5rem] max-h-40 resize-none rounded-md border px-3 py-3 text-sm shadow-xs focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:max-w-sm md:max-w-md lg:max-w-lg",
+            "border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring min-h-[2.75rem] max-h-40 min-w-0 flex-1 resize-none rounded-md border px-3 py-2.5 text-sm shadow-xs focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-[3.25rem] sm:py-3",
           )}
         />
 
@@ -78,7 +78,7 @@ export function ChatInput({
           size="icon"
           disabled={disabled || sendDisabled || isLoading || !value.trim()}
           aria-label="Send message"
-          className="mb-0.5 size-10 shrink-0 sm:size-11"
+          className="mb-0.5 size-9 shrink-0 sm:size-10"
         >
           {isLoading ? (
             <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -89,8 +89,11 @@ export function ChatInput({
       </div>
 
       {showHint ? (
-        <p className="text-muted-foreground mx-auto mt-3 hidden max-w-4xl text-center text-xs sm:block">
-          Enter to send · Shift+Enter for a new line
+        <p className="text-muted-foreground mx-auto mt-2 max-w-3xl text-center text-[11px] sm:mt-3 sm:text-xs">
+          <span className="sm:hidden">Enter to send</span>
+          <span className="hidden sm:inline">
+            Enter to send · Shift+Enter for a new line
+          </span>
         </p>
       ) : null}
     </form>

@@ -11,27 +11,17 @@ import {
 } from "@/lib/openrouter/client";
 import { createServiceClient } from "@/lib/supabase/server";
 
-const CONTRACT_KEYWORDS =
-  /\b(contract|lease|agreement|terms\s+of\s+service|nda|warranty|indemnif)/i;
+export const STARTER_QUESTIONS_PER_SOURCE = 2;
 
-const LEGAL_DISCLAIMER =
-  "I can help explain and summarize this document, but I'm not a lawyer.";
-
-function staticStarterQuestions(
-  _sourceName: string,
-  contractLike: boolean,
-): StarterQuestion[] {
+function staticStarterQuestions(): StarterQuestion[] {
   const questions = [
     "Summarize this document in plain English",
     "What are the key points I should know?",
-    "Are there any important dates or deadlines?",
-    "Explain the most important terms simply",
   ];
 
   return questions.map((text, index) => ({
     id: `starter-${index + 1}`,
     text,
-    ...(contractLike && index === 0 ? { disclaimer: LEGAL_DISCLAIMER } : {}),
   }));
 }
 
@@ -40,23 +30,15 @@ const starterResponseSchema = z.object({
     .array(
       z.object({
         text: z.string().min(8).max(120),
-        includeDisclaimer: z.boolean().optional(),
       }),
     )
-    .min(4)
-    .max(6),
+    .length(STARTER_QUESTIONS_PER_SOURCE),
 });
 
 export interface GenerateStarterQuestionsOptions {
   sourceName: string;
   chunkTexts: string[];
   apiKey?: string;
-}
-
-function isContractLike(sourceName: string, sampleText: string): boolean {
-  return (
-    CONTRACT_KEYWORDS.test(sourceName) || CONTRACT_KEYWORDS.test(sampleText)
-  );
 }
 
 function buildSampleText(chunkTexts: string[], maxChars = 4000): string {
@@ -78,7 +60,6 @@ export async function generateStarterQuestions(
 ): Promise<StarterQuestion[]> {
   const { sourceName, chunkTexts, apiKey } = options;
   const sampleText = buildSampleText(chunkTexts);
-  const contractLike = isContractLike(sourceName, sampleText);
 
   const openrouter = apiKey
     ? createOpenRouterWithKey(apiKey)
@@ -88,7 +69,7 @@ export async function generateStarterQuestions(
     const { object } = await generateObject({
       model: openrouter.chat(DEFAULT_MODEL),
       schema: starterResponseSchema,
-      prompt: `Generate 4-6 short starter questions a user might ask about this document.
+      prompt: `Generate exactly ${STARTER_QUESTIONS_PER_SOURCE} short starter questions a user might ask about this document.
 
 Document title: "${sourceName}"
 
@@ -98,24 +79,16 @@ ${sampleText || "(No text available)"}
 Requirements:
 - Questions should be practical for a consumer (summarize, find key terms, explain in plain English, compare sections, etc.).
 - Keep each question under 120 characters.
-- Use plain language. No technical jargon.
-${contractLike ? `- This appears to be a contract or legal document. Mark at least one question with includeDisclaimer: true.` : ""}`,
+- Use plain language. No technical jargon.`,
     });
 
-    return object.questions.map((question, index) => {
-      const needsDisclaimer =
-        question.includeDisclaimer === true ||
-        (contractLike && index === 0 && question.includeDisclaimer !== false);
-
-      return {
-        id: `starter-${index + 1}`,
-        text: question.text,
-        ...(needsDisclaimer ? { disclaimer: LEGAL_DISCLAIMER } : {}),
-      };
-    });
+    return object.questions.map((question, index) => ({
+      id: `starter-${index + 1}`,
+      text: question.text,
+    }));
   } catch (error) {
     console.error("Starter question generation failed, using defaults:", error);
-    return staticStarterQuestions(sourceName, contractLike);
+    return staticStarterQuestions();
   }
 }
 

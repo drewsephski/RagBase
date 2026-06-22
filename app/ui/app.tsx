@@ -128,9 +128,9 @@ export function App() {
 
   if (!isReady) {
     return (
-      <div className="flex min-h-dvh items-center justify-center p-6">
-        <div className="text-muted-foreground flex items-center gap-2 text-sm">
-          <Loader2 className="size-4 animate-spin" aria-hidden />
+      <div className="flex min-h-dvh items-center justify-center p-4 pt-safe sm:p-6">
+        <div className="text-muted-foreground flex items-center gap-2 text-center text-sm">
+          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
           Setting up your private workspace…
         </div>
       </div>
@@ -139,8 +139,8 @@ export function App() {
 
   if (workspaceError) {
     return (
-      <div className="flex min-h-dvh items-center justify-center p-6">
-        <p className="text-destructive text-center text-sm" role="alert">
+      <div className="flex min-h-dvh items-center justify-center p-4 pt-safe sm:p-6">
+        <p className="text-destructive max-w-sm text-center text-sm" role="alert">
           {workspaceError}
         </p>
       </div>

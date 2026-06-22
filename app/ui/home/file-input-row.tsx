@@ -56,7 +56,7 @@ export function FileInputRow({ onUpload, disabled = false }: FileInputRowProps) 
 
   return (
     <div className="space-y-2">
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <FileUp
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
@@ -92,7 +92,7 @@ export function FileInputRow({ onUpload, disabled = false }: FileInputRowProps) 
           type="button"
           variant="secondary"
           disabled={disabled || isUploading}
-          className="shrink-0"
+          className="w-full shrink-0 sm:w-auto"
           onClick={() => inputRef.current?.click()}
           aria-label="Choose file"
         >

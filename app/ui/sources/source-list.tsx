@@ -113,41 +113,49 @@ export function SourceList({
 
   if (isLoading) {
     return (
-      <p className="text-muted-foreground text-sm" aria-live="polite">
-        Loading your documents…
-      </p>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <p className="text-muted-foreground text-xs" aria-live="polite">
+          Loading your documents…
+        </p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <p className="text-destructive text-sm" role="alert">
-        {error}
-      </p>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <p className="text-destructive text-xs" role="alert">
+          {error}
+        </p>
+      </div>
     );
   }
 
   if (sources.length === 0) {
     return (
-      <p className="text-muted-foreground text-sm">
-        No documents yet. Upload a file or paste a link to get started.
-      </p>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          No documents yet. Upload a file or paste a link below.
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">Your documents</h2>
-        <span className="text-muted-foreground text-xs">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between gap-2">
+        <h2 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          Documents
+        </h2>
+        <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
           {sources.length}/{LIMITS.MAX_SOURCES}
         </span>
       </div>
 
-      <ScrollArea className="min-h-0 flex-1 pr-3">
-        <ul className="space-y-2 pb-2">
+      <ScrollArea className="h-full min-h-0 min-w-0 flex-1 overflow-x-hidden">
+        <ul className="w-full min-w-0 space-y-1 pr-0.5">
           {sources.map((source) => (
-            <li key={source.id}>
+            <li key={source.id} className="min-w-0">
               <SourceItem
                 source={source}
                 isScoped={scopedSourceId === source.id}

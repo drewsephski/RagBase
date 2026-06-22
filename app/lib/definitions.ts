@@ -115,6 +115,6 @@ export type FormState = {
 export const starterQuestionSchema = z.object({
   id: z.string(),
   text: z.string(),
-  disclaimer: z.string().optional(),
+  sourceName: z.string().optional(),
 });
 export type StarterQuestion = z.infer<typeof starterQuestionSchema>;

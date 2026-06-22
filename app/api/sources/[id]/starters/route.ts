@@ -3,7 +3,10 @@ import {
   authErrorResponse,
   requireWorkspace,
 } from "@/lib/workspace/auth";
-import { generateStarterQuestions } from "@/lib/chat/starters";
+import {
+  generateStarterQuestions,
+  STARTER_QUESTIONS_PER_SOURCE,
+} from "@/lib/chat/starters";
 import { createServiceClient } from "@/lib/supabase/server";
 import { handleRouteError, jsonError } from "@/lib/api/errors";
 import type { StarterQuestion } from "@/app/lib/definitions";
@@ -53,7 +56,9 @@ export async function GET(
     const metadata = source.metadata as Record<string, unknown> | null;
     const cached = getCachedStarters(metadata);
     if (cached) {
-      return Response.json({ starters: cached });
+      return Response.json({
+        starters: cached.slice(0, STARTER_QUESTIONS_PER_SOURCE),
+      });
     }
 
     const { data: documents } = await supabase

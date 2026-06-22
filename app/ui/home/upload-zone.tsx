@@ -114,7 +114,7 @@ export function UploadZone({
         }}
         className={cn(
           "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          compact ? "gap-2 px-4 py-6" : "gap-3 px-6 py-10",
+          compact ? "gap-1.5 px-3 py-4 sm:gap-2 sm:px-4 sm:py-6" : "gap-2 px-4 py-8 sm:gap-3 sm:px-6 sm:py-10",
           isDragging
             ? "border-primary bg-primary/5"
             : "border-border hover:border-muted-foreground/50 hover:bg-muted/30",
@@ -122,16 +122,19 @@ export function UploadZone({
         )}
       >
         {isUploading ? (
-          <Loader2 className="text-muted-foreground size-8 animate-spin" aria-hidden />
+          <Loader2
+            className="text-muted-foreground size-6 animate-spin sm:size-8"
+            aria-hidden
+          />
         ) : (
-          <FileUp className="text-muted-foreground size-8" aria-hidden />
+          <FileUp className="text-muted-foreground size-6 sm:size-8" aria-hidden />
         )}
 
         <div className="text-center">
-          <p className={cn("font-medium", compact ? "text-sm" : "text-base")}>
+          <p className={cn("font-medium", compact ? "text-xs sm:text-sm" : "text-sm sm:text-base")}>
             {isUploading ? "Uploading…" : "Drop a file here"}
           </p>
-          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
+          <p className="text-muted-foreground mt-0.5 text-[11px] sm:mt-1 sm:text-xs md:text-sm">
             PDF, Word, text, or Markdown · up to 10 MB
           </p>
         </div>

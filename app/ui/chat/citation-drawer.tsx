@@ -27,7 +27,7 @@ export function CitationDrawer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-lg overflow-hidden sm:max-w-xl">
+      <DialogContent className="max-h-[min(85vh,32rem)] overflow-hidden sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Source [{citation.ref}]</DialogTitle>
           <DialogDescription>
@@ -35,7 +35,7 @@ export function CitationDrawer({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[50vh] rounded-md border p-4">
+        <ScrollArea className="max-h-[40vh] rounded-md border p-3 sm:max-h-[50vh] sm:p-4">
           <blockquote className="border-primary border-l-2 pl-3 text-sm leading-relaxed">
             {citation.snippet}
           </blockquote>

@@ -70,8 +70,8 @@ export function UrlInput({
         </Label>
       ) : null}
 
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+        <div className="relative min-w-0 flex-1">
           <Link2
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
             aria-hidden
@@ -96,7 +96,7 @@ export function UrlInput({
         <Button
           type="submit"
           disabled={disabled || isSubmitting || !url.trim()}
-          className="shrink-0"
+          className="w-full shrink-0 sm:w-auto"
           aria-label="Add link"
           variant={variant === "minimal" ? "secondary" : "default"}
         >

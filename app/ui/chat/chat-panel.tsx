@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "ai/react";
 import type { Source, StarterQuestion } from "@/app/lib/definitions";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { apiJson } from "@/lib/api/client";
+import { STARTER_QUESTIONS_PER_SOURCE } from "@/lib/chat/starters";
 import {
   getOpenRouterKey,
   getSelectedModel,
@@ -31,15 +32,51 @@ export function ChatPanel({
   sources,
   scopedSourceId,
 }: ChatPanelProps) {
-  const [starters, setStarters] = useState<StarterQuestion[]>([]);
-  const [isLoadingStarters, setIsLoadingStarters] = useState(false);
+  const [startersBySourceId, setStartersBySourceId] = useState<
+    Record<string, StarterQuestion[]>
+  >({});
+  const startersBySourceIdRef = useRef(startersBySourceId);
+  const loadingSourceIdsRef = useRef<Set<string>>(new Set());
 
   const readySources = useMemo(
     () => sources.filter((source) => source.status === "ready"),
     [sources],
   );
 
-  const activeSourceId = scopedSourceId ?? readySources[0]?.id ?? null;
+  const targetSources = useMemo(() => {
+    if (scopedSourceId) {
+      return readySources.filter((source) => source.id === scopedSourceId);
+    }
+
+    return readySources;
+  }, [readySources, scopedSourceId]);
+
+  const targetSourceIds = useMemo(
+    () => targetSources.map((source) => source.id).join(","),
+    [targetSources],
+  );
+
+  const showSourceNames = !scopedSourceId && targetSources.length > 1;
+
+  const starters = useMemo(
+    () =>
+      targetSources.flatMap((source) =>
+        (startersBySourceId[source.id] ?? []).map((starter) => ({
+          ...starter,
+          sourceName: showSourceNames ? source.name : undefined,
+        })),
+      ),
+    [showSourceNames, startersBySourceId, targetSources],
+  );
+
+  const isLoadingStarters =
+    targetSources.length > 0 &&
+    starters.length === 0 &&
+    targetSources.some((source) => !startersBySourceId[source.id]);
+
+  useEffect(() => {
+    startersBySourceIdRef.current = startersBySourceId;
+  }, [startersBySourceId]);
 
   const chatHeaders = useMemo(() => {
     if (!workspaceHeaders) {
@@ -77,42 +114,80 @@ export function ChatPanel({
   });
 
   useEffect(() => {
-    if (!workspaceHeaders || !activeSourceId) {
-      setStarters([]);
+    if (!workspaceHeaders || targetSources.length === 0) {
+      setStartersBySourceId({});
+      loadingSourceIdsRef.current = new Set();
       return;
     }
 
+    const activeIds = new Set(targetSources.map((source) => source.id));
+
+    setStartersBySourceId((current) => {
+      const next: Record<string, StarterQuestion[]> = {};
+
+      for (const sourceId of activeIds) {
+        if (current[sourceId]) {
+          next[sourceId] = current[sourceId];
+        }
+      }
+
+      return next;
+    });
+
     let cancelled = false;
 
-    async function loadStarters() {
-      setIsLoadingStarters(true);
+    async function loadStartersForSource(source: Source) {
+      if (
+        startersBySourceIdRef.current[source.id] ||
+        loadingSourceIdsRef.current.has(source.id)
+      ) {
+        return;
+      }
+
+      loadingSourceIdsRef.current.add(source.id);
 
       try {
         const data = await apiJson<StartersResponse>(
-          `/api/sources/${activeSourceId}/starters`,
+          `/api/sources/${source.id}/starters`,
           { workspaceHeaders },
         );
 
-        if (!cancelled) {
-          setStarters(data.starters);
+        if (cancelled) {
+          return;
         }
+
+        const normalized = data.starters
+          .slice(0, STARTER_QUESTIONS_PER_SOURCE)
+          .map((starter, index) => ({
+            ...starter,
+            id: `${source.id}-starter-${index + 1}`,
+          }));
+
+        setStartersBySourceId((current) => ({
+          ...current,
+          [source.id]: normalized,
+        }));
       } catch {
         if (!cancelled) {
-          setStarters([]);
+          setStartersBySourceId((current) => {
+            const next = { ...current };
+            delete next[source.id];
+            return next;
+          });
         }
       } finally {
-        if (!cancelled) {
-          setIsLoadingStarters(false);
-        }
+        loadingSourceIdsRef.current.delete(source.id);
       }
     }
 
-    void loadStarters();
+    for (const source of targetSources) {
+      void loadStartersForSource(source);
+    }
 
     return () => {
       cancelled = true;
     };
-  }, [activeSourceId, workspaceHeaders]);
+  }, [targetSourceIds, targetSources, workspaceHeaders]);
 
   const handleStarterSelect = useCallback(
     (text: string) => {
@@ -167,14 +242,14 @@ export function ChatPanel({
         </div>
       ) : (
         <>
-          <div className="border-b px-4 py-3">
+          <div className="border-b px-3 py-2.5 sm:px-4 sm:py-3">
             <RagBaseLogo markSize={24} />
             {scopedSourceId ? (
-              <p className="text-muted-foreground mt-2 text-xs">
+              <p className="text-muted-foreground mt-1.5 text-xs sm:mt-2">
                 Answers use only the selected document.
               </p>
             ) : (
-              <p className="text-muted-foreground mt-2 text-xs">
+              <p className="text-muted-foreground mt-1.5 text-xs sm:mt-2">
                 Answers draw from all ready documents.
               </p>
             )}

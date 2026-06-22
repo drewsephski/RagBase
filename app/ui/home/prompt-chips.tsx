@@ -18,7 +18,7 @@ export function PromptChips({ onSelect, disabled = false }: PromptChipsProps) {
   return (
     <section aria-label="Example questions" className="space-y-2">
       <p className="text-muted-foreground text-sm">Try asking:</p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">
         {EXAMPLE_PROMPTS.map((prompt) => (
           <Button
             key={prompt}
@@ -28,7 +28,7 @@ export function PromptChips({ onSelect, disabled = false }: PromptChipsProps) {
             disabled={disabled}
             onClick={() => onSelect(prompt)}
             aria-label={`Example question: ${prompt}`}
-            className="h-auto whitespace-normal px-3 py-2 text-left text-xs sm:text-sm"
+            className="h-auto max-w-full whitespace-normal px-2.5 py-1.5 text-left text-[11px] sm:px-3 sm:py-2 sm:text-sm"
           >
             {prompt}
           </Button>
