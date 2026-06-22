@@ -12,6 +12,7 @@ import { APP_PATH, SITE_NAME } from "@/app/lib/site";
 import { Button } from "@/components/ui/button";
 import { SafeUseNote } from "@/app/ui/templates/safe-use-note";
 import { TemplateBanner } from "@/app/ui/templates/template-banner";
+import { TemplatePromptLinks } from "@/app/ui/templates/template-prompt-links";
 import { LandingHeader } from "@/app/ui/marketing/landing-header";
 
 interface TemplatePageProps {
@@ -73,6 +74,8 @@ export default async function TemplateLandingPage({ params }: TemplatePageProps)
               ))}
             </ol>
           </section>
+
+          <TemplatePromptLinks template={template} />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button asChild size="lg" className="group h-11 gap-2 px-6">

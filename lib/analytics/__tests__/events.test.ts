@@ -12,6 +12,8 @@ describe("analytics event taxonomy", () => {
         "source_opened",
         "copy_answer_clicked",
         "answer_feedback_submitted",
+        "prompt_deeplink_opened",
+        "prompt_link_copied",
       ]),
     );
   });

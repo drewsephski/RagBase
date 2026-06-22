@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CreateWorkspaceOptions, Source } from "@/app/lib/definitions";
 import { APP_PATH } from "@/app/lib/site";
@@ -15,6 +15,10 @@ import {
   setPendingPrompt,
   clearPendingPrompt,
 } from "@/lib/templates/pending-prompt";
+import {
+  parsePromptUrlParam,
+  PROMPT_URL_PARAM,
+} from "@/lib/templates/prompt-link";
 import { LandingHome } from "@/app/ui/home/landing-home";
 import { AppShell } from "@/app/ui/layout/app-shell";
 import { CrawlTeaser } from "@/app/ui/upsell/crawl-teaser";
@@ -57,6 +61,7 @@ function AppContent() {
   const [crawlTeaserMessage, setCrawlTeaserMessage] = useState<string | undefined>();
   const [pendingPromptHint, setPendingPromptHint] = useState<string | null>(null);
   const [templateRoutingDismissed, setTemplateRoutingDismissed] = useState(false);
+  const promptDeeplinkAppliedRef = useRef(false);
   const { template, isApplyingTemplate } = useWorkspaceTemplate({
     isReady,
     workspaces,
@@ -99,6 +104,31 @@ function AppContent() {
   useEffect(() => {
     setPendingPromptHint(peekPendingPrompt());
   }, []);
+
+  useEffect(() => {
+    if (promptDeeplinkAppliedRef.current) {
+      return;
+    }
+
+    const prompt = parsePromptUrlParam(searchParams.get(PROMPT_URL_PARAM));
+
+    if (!prompt) {
+      return;
+    }
+
+    promptDeeplinkAppliedRef.current = true;
+    setPendingPrompt(prompt);
+    setPendingPromptHint(prompt);
+    trackEvent("prompt_deeplink_opened", {
+      has_template: Boolean(searchParams.get("template")),
+      prompt_length: prompt.length,
+    });
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete(PROMPT_URL_PARAM);
+    const query = nextParams.toString();
+    router.replace(query ? `${APP_PATH}?${query}` : APP_PATH);
+  }, [router, searchParams]);
 
   const bumpRefresh = useCallback(() => {
     setRefreshToken((current) => current + 1);

@@ -1,10 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useState } from "react";
+import { Check, Link2 } from "lucide-react";
+import { useCallback, useState } from "react";
+import type { TemplateId } from "@/app/lib/templates";
 import { Button } from "@/components/ui/button";
 import { LANDING_PROMPT_CHIPS } from "@/lib/chat/starter-prompts";
 import { trackEvent } from "@/lib/analytics/track";
+import { buildAbsolutePromptAppUrl } from "@/lib/templates/prompt-link";
 import { cn } from "@/lib/utils";
 
 export const DEFAULT_PROMPT_CHIPS = LANDING_PROMPT_CHIPS;
@@ -16,6 +19,8 @@ interface PromptChipsProps {
   label?: string;
   hint?: string;
   columns?: 1 | 2;
+  templateId?: TemplateId | null;
+  enableShareLinks?: boolean;
 }
 
 export function PromptChips({
@@ -25,9 +30,12 @@ export function PromptChips({
   label = "Try asking:",
   hint,
   columns = 1,
+  templateId = null,
+  enableShareLinks = false,
 }: PromptChipsProps) {
   const reduceMotion = useReducedMotion();
   const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
+  const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null);
   const useGrid = columns === 2;
 
   const hintTransition = reduceMotion
@@ -43,6 +51,36 @@ export function PromptChips({
     setSelectedPrompt(prompt);
     onSelect(prompt);
   }
+
+  const handleCopyLink = useCallback(
+    async (prompt: string, promptIndex: number) => {
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : undefined;
+      const url = buildAbsolutePromptAppUrl(prompt, {
+        templateId: templateId ?? undefined,
+        origin,
+      });
+
+      if (!url) {
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopiedPrompt(prompt);
+        trackEvent("prompt_link_copied", {
+          prompt_index: promptIndex,
+          has_template: Boolean(templateId),
+        });
+        window.setTimeout(() => {
+          setCopiedPrompt((current) => (current === prompt ? null : current));
+        }, 2000);
+      } catch {
+        // Clipboard access may be blocked; sharing is optional.
+      }
+    },
+    [templateId],
+  );
 
   return (
     <section aria-label="Example questions" className="space-y-2 text-left">
@@ -72,13 +110,14 @@ export function PromptChips({
       >
         {prompts.map((prompt, promptIndex) => {
           const isSelected = selectedPrompt === prompt;
+          const isCopied = copiedPrompt === prompt;
 
           return (
             <motion.div
               key={prompt}
               layout={!reduceMotion}
               transition={cardTransition}
-              className={useGrid ? "min-w-0" : undefined}
+              className={cn("group/chip relative", useGrid ? "min-w-0" : undefined)}
             >
               <Button
                 type="button"
@@ -90,6 +129,7 @@ export function PromptChips({
                 aria-label={`Example question: ${prompt}`}
                 className={cn(
                   "h-auto whitespace-normal text-left transition-[border-color,background-color,box-shadow]",
+                  enableShareLinks && "pr-9",
                   useGrid
                     ? "w-full justify-start px-3 py-2.5 text-xs sm:text-sm"
                     : "max-w-full px-2.5 py-1.5 text-[11px] sm:px-3 sm:py-2 sm:text-sm",
@@ -99,6 +139,31 @@ export function PromptChips({
               >
                 {prompt}
               </Button>
+
+              {enableShareLinks ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={disabled}
+                  onClick={() => void handleCopyLink(prompt, promptIndex)}
+                  aria-label={
+                    isCopied
+                      ? "Copied share link for this question"
+                      : `Copy share link for: ${prompt}`
+                  }
+                  className={cn(
+                    "text-muted-foreground hover:text-foreground absolute top-1.5 right-1 size-7 opacity-70 transition-opacity sm:opacity-0 sm:group-hover/chip:opacity-100 sm:focus-visible:opacity-100",
+                    useGrid && "top-2",
+                  )}
+                >
+                  {isCopied ? (
+                    <Check className="size-3.5" aria-hidden />
+                  ) : (
+                    <Link2 className="size-3.5" aria-hidden />
+                  )}
+                </Button>
+              ) : null}
             </motion.div>
           );
         })}

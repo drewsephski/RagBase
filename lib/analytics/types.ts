@@ -12,6 +12,8 @@ export const ANALYTICS_EVENTS = [
   "source_opened",
   "copy_answer_clicked",
   "answer_feedback_submitted",
+  "prompt_deeplink_opened",
+  "prompt_link_copied",
   "openrouter_key_added",
   "paid_feature_clicked",
   "paid_intent",

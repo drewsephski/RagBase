@@ -117,11 +117,13 @@ export function LandingHome({
               onSelect={onPromptChipSelect}
               disabled={disabled}
               columns={template ? 2 : 1}
+              templateId={template?.id ?? null}
+              enableShareLinks={Boolean(template)}
               label={template ? "Example questions:" : "Try asking:"}
               hint={
                 pendingPromptHint ??
                 (template
-                  ? "Pick a question now — we'll ask it automatically once your first document is ready."
+                  ? "Pick a question now — we'll ask it automatically once your first document is ready. Copy a link to share a question with a teammate."
                   : "Pick a question — we'll send it when your document is ready.")
               }
             />
