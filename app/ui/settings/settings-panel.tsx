@@ -5,10 +5,6 @@ import { Download, KeyRound, Trash2 } from "lucide-react";
 import { DEFAULT_MODEL, LIMITS } from "@/app/lib/definitions";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import {
-  WORKSPACE_ID_KEY,
-  WORKSPACE_SECRET_KEY,
-} from "@/lib/workspace/keys";
-import {
   clearOpenRouterKey,
   getOpenRouterKey,
   getSelectedModel,
@@ -39,6 +35,8 @@ interface SettingsPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workspaceHeaders: WorkspaceHeaders | null;
+  activeWorkspaceName?: string;
+  onRenameWorkspace?: (name: string) => Promise<void>;
   onWorkspaceDeleted?: () => void;
 }
 
@@ -46,14 +44,19 @@ export function SettingsPanel({
   open,
   onOpenChange,
   workspaceHeaders,
+  activeWorkspaceName,
+  onRenameWorkspace,
   onWorkspaceDeleted,
 }: SettingsPanelProps) {
   const [openRouterKeyInput, setOpenRouterKeyInput] = useState("");
   const [selectedModel, setSelectedModelState] = useState(DEFAULT_MODEL);
   const [hasKey, setHasKey] = useState(false);
+  const [workspaceNameInput, setWorkspaceNameInput] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
+  const [renameError, setRenameError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -63,8 +66,10 @@ export function SettingsPanel({
     setOpenRouterKeyInput(getOpenRouterKey() ?? "");
     setSelectedModelState(getSelectedModel());
     setHasKey(hasOpenRouterKey());
+    setWorkspaceNameInput(activeWorkspaceName ?? "");
     setSavedMessage(null);
-  }, [open]);
+    setRenameError(null);
+  }, [activeWorkspaceName, open]);
 
   const handleSaveKey = useCallback(() => {
     const trimmed = openRouterKeyInput.trim();
@@ -89,6 +94,32 @@ export function SettingsPanel({
     },
     [],
   );
+
+  const handleRenameWorkspace = useCallback(async () => {
+    if (!onRenameWorkspace) {
+      return;
+    }
+
+    const trimmed = workspaceNameInput.trim();
+    if (trimmed.length === 0) {
+      setRenameError("Workspace name is required.");
+      return;
+    }
+
+    setIsRenaming(true);
+    setRenameError(null);
+
+    try {
+      await onRenameWorkspace(trimmed);
+      setSavedMessage("Workspace name updated.");
+    } catch (error) {
+      setRenameError(
+        error instanceof Error ? error.message : "Could not rename workspace.",
+      );
+    } finally {
+      setIsRenaming(false);
+    }
+  }, [onRenameWorkspace, workspaceNameInput]);
 
   const handleExport = useCallback(
     async (format: "markdown" | "json") => {
@@ -117,32 +148,16 @@ export function SettingsPanel({
   );
 
   const handleDeleteWorkspace = useCallback(async () => {
-    if (!workspaceHeaders) {
-      return;
-    }
-
     setIsDeleting(true);
 
     try {
-      const response = await apiFetch("/api/workspaces/delete", {
-        method: "DELETE",
-        workspaceHeaders,
-      });
-
-      if (!response.ok) {
-        return;
-      }
-
-      localStorage.removeItem(WORKSPACE_ID_KEY);
-      localStorage.removeItem(WORKSPACE_SECRET_KEY);
-      clearOpenRouterKey();
       setShowDeleteDialog(false);
       onOpenChange(false);
       onWorkspaceDeleted?.();
     } finally {
       setIsDeleting(false);
     }
-  }, [onOpenChange, onWorkspaceDeleted, workspaceHeaders]);
+  }, [onOpenChange, onWorkspaceDeleted]);
 
   return (
     <>
@@ -151,20 +166,49 @@ export function SettingsPanel({
           <DialogHeader>
             <DialogTitle>Settings</DialogTitle>
             <DialogDescription>
-              Your workspace is private to this browser. Nothing here is shared
-              or used for model training.
+              Workspaces are private to this browser. Nothing here is shared or
+              used for model training.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
+            {onRenameWorkspace ? (
+              <section aria-label="Current workspace" className="space-y-3">
+                <h3 className="text-sm font-semibold">Current workspace</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="workspace-name">Name</Label>
+                  <Input
+                    id="workspace-name"
+                    value={workspaceNameInput}
+                    onChange={(event) => setWorkspaceNameInput(event.target.value)}
+                    maxLength={64}
+                    aria-label="Workspace name"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void handleRenameWorkspace()}
+                    disabled={isRenaming}
+                  >
+                    {isRenaming ? "Saving…" : "Save name"}
+                  </Button>
+                  {renameError ? (
+                    <p className="text-destructive text-xs" role="alert">
+                      {renameError}
+                    </p>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
+
             <section aria-label="OpenRouter API key" className="space-y-3">
               <div className="flex items-center gap-2">
                 <KeyRound className="size-4" aria-hidden />
                 <h3 className="text-sm font-semibold">OpenRouter key</h3>
               </div>
               <p className="text-muted-foreground text-xs">
-                Optional. Stored only in this browser and sent with chat
-                requests. Unlock higher daily limits and choose your model.
+                Optional. Stored only in this browser and shared across
+                workspaces. Unlock higher daily limits and choose your model.
               </p>
               <div className="space-y-2">
                 <Label htmlFor="openrouter-key">API key</Label>
@@ -212,6 +256,9 @@ export function SettingsPanel({
                 <Download className="size-4" aria-hidden />
                 <h3 className="text-sm font-semibold">Export chat</h3>
               </div>
+              <p className="text-muted-foreground text-xs">
+                Downloads chat history for the current workspace only.
+              </p>
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -237,9 +284,9 @@ export function SettingsPanel({
             <section aria-label="Privacy" className="space-y-2">
               <h3 className="text-sm font-semibold">Privacy</h3>
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Documents are stored for {LIMITS.RETENTION_DAYS} days after
-                your last visit, then automatically removed. You can delete
-                everything below at any time.
+                Documents are stored for {LIMITS.RETENTION_DAYS} days after your
+                last visit, then automatically removed. You can delete the
+                current workspace below at any time.
               </p>
             </section>
 
@@ -251,7 +298,7 @@ export function SettingsPanel({
                 onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 aria-hidden />
-                Delete workspace
+                Delete current workspace
               </Button>
             </section>
           </div>
@@ -261,10 +308,11 @@ export function SettingsPanel({
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete this workspace?</DialogTitle>
+            <DialogTitle>Delete {activeWorkspaceName ?? "this workspace"}?</DialogTitle>
             <DialogDescription>
-              All documents, messages, and settings will be permanently removed
-              from our servers. This browser will start fresh.
+              All documents and messages in this workspace will be permanently
+              removed from our servers. Your other workspaces on this device are
+              not affected.
             </DialogDescription>
           </DialogHeader>
 
@@ -283,7 +331,7 @@ export function SettingsPanel({
               onClick={() => void handleDeleteWorkspace()}
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting…" : "Delete everything"}
+              {isDeleting ? "Deleting…" : "Delete workspace"}
             </Button>
           </div>
         </DialogContent>

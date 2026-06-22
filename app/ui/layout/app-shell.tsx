@@ -6,7 +6,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
-  Trash2,
   X,
 } from "lucide-react";
 import type { Source } from "@/app/lib/definitions";
@@ -19,10 +18,16 @@ import { ChatPanel } from "@/app/ui/chat/chat-panel";
 import { SettingsPanel } from "@/app/ui/settings/settings-panel";
 import { UploadZone } from "@/app/ui/home/upload-zone";
 import { UrlInput } from "@/app/ui/home/url-input";
+import {
+  WorkspaceSwitcher,
+  type WorkspaceSwitcherProps,
+} from "@/app/ui/workspace/workspace-switcher";
 import { cn } from "@/lib/utils";
 
 interface AppShellProps {
   workspaceHeaders: WorkspaceHeaders | null;
+  activeWorkspaceId: string | null;
+  workspaceSwitcherProps: WorkspaceSwitcherProps;
   sources: Source[];
   refreshToken: number;
   scopedSourceId: string | null;
@@ -75,6 +80,8 @@ function SidebarContent({
 
 export function AppShell({
   workspaceHeaders,
+  activeWorkspaceId,
+  workspaceSwitcherProps,
   sources,
   refreshToken,
   scopedSourceId,
@@ -170,6 +177,7 @@ export function AppShell({
       <header className="flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5 pt-safe sm:gap-3 sm:px-4 sm:py-3">
         <div className="flex min-w-0 items-center gap-2">
           <RagBaseLogo markSize={28} className="min-w-0 shrink" />
+          <WorkspaceSwitcher {...workspaceSwitcherProps} />
           {sidebarToggle}
         </div>
 
@@ -185,17 +193,6 @@ export function AppShell({
             aria-label="Open settings"
           >
             <Settings aria-hidden />
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="hidden sm:inline-flex"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Delete workspace"
-          >
-            <Trash2 className="text-destructive" aria-hidden />
           </Button>
         </div>
       </header>
@@ -248,6 +245,7 @@ export function AppShell({
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <ChatPanel
+            key={activeWorkspaceId ?? "no-workspace"}
             workspaceHeaders={workspaceHeaders}
             sources={sources}
             scopedSourceId={scopedSourceId}
@@ -259,6 +257,16 @@ export function AppShell({
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         workspaceHeaders={workspaceHeaders}
+        activeWorkspaceName={workspaceSwitcherProps.activeWorkspace?.name}
+        onRenameWorkspace={
+          workspaceSwitcherProps.activeWorkspace
+            ? (name) =>
+                workspaceSwitcherProps.onRename(
+                  workspaceSwitcherProps.activeWorkspace!.id,
+                  name,
+                )
+            : undefined
+        }
         onWorkspaceDeleted={onWorkspaceDeleted}
       />
     </div>

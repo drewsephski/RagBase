@@ -5,6 +5,7 @@ import { verifySecret } from "@/lib/workspace/crypto";
 export interface WorkspaceContext {
   id: string;
   plan: string;
+  name: string | null;
   messageCount: number;
   messageCountDate: string | null;
 }
@@ -41,7 +42,7 @@ export async function requireWorkspace(
   const supabase = createServiceClient();
   const { data: workspace, error } = await supabase
     .from("workspaces")
-    .select("id, secret_hash, plan, message_count, message_count_date")
+    .select("id, secret_hash, plan, name, message_count, message_count_date")
     .eq("id", workspaceId)
     .maybeSingle();
 
@@ -62,6 +63,7 @@ export async function requireWorkspace(
   return {
     id: workspace.id,
     plan: workspace.plan,
+    name: workspace.name ?? null,
     messageCount: workspace.message_count,
     messageCountDate: workspace.message_count_date,
   };

@@ -7,6 +7,10 @@ import { RagBaseLogo } from "@/components/brand/ragbase-logo";
 import { ChatInput } from "@/app/ui/chat/chat-input";
 import { UrlInput } from "@/app/ui/home/url-input";
 import { FileInputRow } from "@/app/ui/home/file-input-row";
+import {
+  WorkspaceSwitcher,
+  type WorkspaceSwitcherProps,
+} from "@/app/ui/workspace/workspace-switcher";
 
 interface LandingHomeProps {
   onUrlSubmit: (
@@ -15,6 +19,7 @@ interface LandingHomeProps {
   onUpload: (file: File) => Promise<void>;
   onOpenSettings: () => void;
   disabled?: boolean;
+  workspaceSwitcherProps: WorkspaceSwitcherProps;
 }
 
 export function LandingHome({
@@ -22,21 +27,25 @@ export function LandingHome({
   onUpload,
   onOpenSettings,
   disabled = false,
+  workspaceSwitcherProps,
 }: LandingHomeProps) {
   return (
     <div className="flex min-h-dvh flex-col overflow-hidden">
-      <header className="flex shrink-0 items-center justify-end gap-1.5 px-3 py-3 pt-safe sm:gap-2 sm:px-6 sm:py-4">
-        <ThemeToggle />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-8"
-          onClick={onOpenSettings}
-          aria-label="Open settings"
-        >
-          <Settings aria-hidden />
-        </Button>
+      <header className="flex shrink-0 items-center justify-between gap-2 px-3 py-3 pt-safe sm:px-6 sm:py-4">
+        <WorkspaceSwitcher {...workspaceSwitcherProps} />
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <ThemeToggle />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={onOpenSettings}
+            aria-label="Open settings"
+          >
+            <Settings aria-hidden />
+          </Button>
+        </div>
       </header>
 
       <main className="flex min-h-0 flex-1 flex-col items-center justify-center px-3 pb-4 sm:px-6 sm:pb-6">

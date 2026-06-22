@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Source } from "@/app/lib/definitions";
-import { useWorkspace } from "@/hooks/use-workspace";
+import { useWorkspaces } from "@/hooks/use-workspace";
 import { apiFetch, apiJson, ApiError } from "@/lib/api/client";
 import { LandingHome } from "@/app/ui/home/landing-home";
 import { AppShell } from "@/app/ui/layout/app-shell";
@@ -22,7 +22,17 @@ interface SourcesResponse {
 }
 
 export function App() {
-  const { headers, isReady, error: workspaceError } = useWorkspace();
+  const {
+    workspaces,
+    activeWorkspace,
+    headers,
+    isReady,
+    error: workspaceError,
+    switchWorkspace,
+    createWorkspace,
+    renameWorkspace,
+    deleteWorkspace,
+  } = useWorkspaces();
   const [sources, setSources] = useState<Source[]>([]);
   const [hasLoadedSources, setHasLoadedSources] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
@@ -31,6 +41,8 @@ export function App() {
   const [crawlTeaserOpen, setCrawlTeaserOpen] = useState(false);
   const [crawlTeaserUrl, setCrawlTeaserUrl] = useState<string | undefined>();
   const [crawlTeaserMessage, setCrawlTeaserMessage] = useState<string | undefined>();
+
+  const activeWorkspaceId = activeWorkspace?.id ?? null;
 
   const fetchSources = useCallback(async () => {
     if (!headers) {
@@ -50,12 +62,15 @@ export function App() {
   }, [headers]);
 
   useEffect(() => {
-    if (!isReady || !headers) {
+    if (!isReady || !headers || !activeWorkspaceId) {
       return;
     }
 
+    setSources([]);
+    setHasLoadedSources(false);
+    setScopedSourceId(null);
     void fetchSources();
-  }, [fetchSources, headers, isReady, refreshToken]);
+  }, [activeWorkspaceId, fetchSources, headers, isReady, refreshToken]);
 
   const bumpRefresh = useCallback(() => {
     setRefreshToken((current) => current + 1);
@@ -122,9 +137,17 @@ export function App() {
     [bumpRefresh, fetchSources, headers],
   );
 
-  const handleWorkspaceDeleted = useCallback(() => {
-    window.location.reload();
-  }, []);
+  const handleWorkspaceDeleted = useCallback(async () => {
+    if (!activeWorkspace) {
+      return;
+    }
+
+    await deleteWorkspace(activeWorkspace.id);
+    setSources([]);
+    setHasLoadedSources(false);
+    setScopedSourceId(null);
+    bumpRefresh();
+  }, [activeWorkspace, bumpRefresh, deleteWorkspace]);
 
   if (!isReady) {
     return (
@@ -149,11 +172,22 @@ export function App() {
 
   const showAppShell = hasLoadedSources && sources.length > 0;
 
+  const workspaceSwitcherProps = {
+    workspaces,
+    activeWorkspace,
+    onSwitch: switchWorkspace,
+    onCreate: createWorkspace,
+    onRename: renameWorkspace,
+    onDelete: deleteWorkspace,
+  };
+
   if (showAppShell) {
     return (
       <>
         <AppShell
           workspaceHeaders={headers}
+          activeWorkspaceId={activeWorkspaceId}
+          workspaceSwitcherProps={workspaceSwitcherProps}
           sources={sources}
           refreshToken={refreshToken}
           scopedSourceId={scopedSourceId}
@@ -161,7 +195,7 @@ export function App() {
           onSourcesChange={setSources}
           onUpload={handleUpload}
           onUrlSubmit={handleUrlSubmit}
-          onWorkspaceDeleted={handleWorkspaceDeleted}
+          onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
         />
 
         <CrawlTeaser
@@ -181,13 +215,20 @@ export function App() {
         onUpload={handleUpload}
         onOpenSettings={() => setSettingsOpen(true)}
         disabled={!headers}
+        workspaceSwitcherProps={workspaceSwitcherProps}
       />
 
       <SettingsPanel
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         workspaceHeaders={headers}
-        onWorkspaceDeleted={handleWorkspaceDeleted}
+        activeWorkspaceName={activeWorkspace?.name}
+        onRenameWorkspace={
+          activeWorkspace
+            ? (name) => renameWorkspace(activeWorkspace.id, name)
+            : undefined
+        }
+        onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
       />
 
       <CrawlTeaser

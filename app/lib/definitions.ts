@@ -17,12 +17,25 @@ export type Plan = z.infer<typeof planSchema>;
 export const workspaceSchema = z.object({
   id: z.string().uuid(),
   plan: planSchema,
+  name: z.string().nullable().optional(),
+  owner_user_id: z.string().nullable().optional(),
   message_count: z.number(),
   message_count_date: z.string().nullable(),
   last_seen_at: z.string(),
   created_at: z.string(),
 });
 export type Workspace = z.infer<typeof workspaceSchema>;
+
+export const storedWorkspaceSchema = z.object({
+  id: z.string().uuid(),
+  secret: z.string().min(32),
+  name: z.string().min(1).max(64),
+  createdAt: z.string(),
+});
+export type StoredWorkspace = z.infer<typeof storedWorkspaceSchema>;
+
+export const DEFAULT_WORKSPACE_NAME = "My workspace";
+export const UNTITLED_WORKSPACE_NAME = "Untitled workspace";
 
 export const sourceSchema = z.object({
   id: z.string().uuid(),
@@ -98,6 +111,7 @@ export const EMBEDDING_DIMENSIONS = 1536;
 
 export const LIMITS = {
   MAX_SOURCES: 5,
+  MAX_WORKSPACES: 10,
   MAX_FILE_BYTES: 10 * 1024 * 1024,
   MAX_PDF_PAGES: 50,
   MAX_MESSAGES_DAY: 30,
