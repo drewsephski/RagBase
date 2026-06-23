@@ -49,8 +49,11 @@ export function FullSitePaywallDialog({
   auth,
 }: FullSitePaywallDialogProps) {
   const [email, setEmail] = useState("");
+  const [signInEmail, setSignInEmail] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [signInStatusMessage, setSignInStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const formOpenedAtRef = useRef<number | null>(null);
@@ -77,8 +80,10 @@ export function FullSitePaywallDialog({
 
     formOpenedAtRef.current = Date.now();
     setEmail("");
+    setSignInEmail("");
     setHoneypot("");
     setError(null);
+    setSignInStatusMessage(null);
     setSuccess(false);
 
     trackEvent("paywall_viewed", {
@@ -94,8 +99,61 @@ export function FullSitePaywallDialog({
       return;
     }
 
+    if (checkoutAuth.status === "checking" || isStartingCheckout) {
+      return;
+    }
+
     void startCheckout();
-  }, [startCheckout, workspaceId]);
+  }, [checkoutAuth.status, isStartingCheckout, startCheckout, workspaceId]);
+
+  const handleSignInSubmit = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+
+      if (!auth?.signInWithEmail) {
+        setError("Account sign-in is not configured.");
+        return;
+      }
+
+      const trimmedEmail = signInEmail.trim();
+      if (!trimmedEmail) {
+        setError("Enter your email to receive a sign-in link.");
+        return;
+      }
+
+      trackEvent("paywall_primary_clicked", {
+        surface,
+        has_pending_url: Boolean(pendingUrl),
+        checkout_available: checkoutAvailable,
+      });
+
+      setError(null);
+      setSignInStatusMessage(null);
+      setIsSigningIn(true);
+
+      try {
+        await auth.signInWithEmail(trimmedEmail);
+        setSignInStatusMessage("Check your email for a sign-in link, then return here to subscribe.");
+      } catch (signInError) {
+        setError(
+          signInError instanceof Error
+            ? signInError.message
+            : "Could not send sign-in link. Please try again.",
+        );
+      } finally {
+        setIsSigningIn(false);
+      }
+    },
+    [auth, checkoutAvailable, pendingUrl, signInEmail, surface],
+  );
+
+  useEffect(() => {
+    if (!open || checkoutAuth.status !== "ready" || !auth?.user) {
+      return;
+    }
+
+    setSignInStatusMessage(null);
+  }, [auth?.user, checkoutAuth.status, open]);
 
   useEffect(() => {
     if (checkoutStartError) {
@@ -259,39 +317,86 @@ export function FullSitePaywallDialog({
               </p>
             ) : null}
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Button
-                type="button"
-                disabled={
-                  isSubmitting ||
-                  isStartingCheckout ||
-                  !workspaceId ||
-                  !checkoutAuth.canCheckout
-                }
-                className="sm:flex-1"
-                onClick={handleSubscribe}
-                aria-busy={checkoutAuth.status === "checking" || isStartingCheckout}
-              >
-                {checkoutAuth.status === "checking"
-                  ? "Checking account…"
-                  : isStartingCheckout
-                    ? "Redirecting…"
-                    : checkoutAuth.status === "sign_in_required"
-                      ? "Sign in to subscribe"
-                      : "Unlock site crawling"}
-              </Button>
-              {pendingUrl && onAddPageOnly ? (
+            {checkoutAuth.status === "sign_in_required" ? (
+              <form onSubmit={handleSignInSubmit} className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="paywall-sign-in-email" className="text-sm">
+                    Sign in to subscribe
+                  </Label>
+                  <Input
+                    id="paywall-sign-in-email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={signInEmail}
+                    disabled={isSigningIn}
+                    onChange={(event) => setSignInEmail(event.target.value)}
+                    aria-label="Email for account sign in"
+                  />
+                </div>
+
+                {signInStatusMessage ? (
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400" role="status">
+                    {signInStatusMessage}
+                  </p>
+                ) : null}
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <Button
+                    type="submit"
+                    disabled={isSigningIn || !workspaceId}
+                    className="sm:flex-1"
+                    aria-busy={isSigningIn}
+                  >
+                    {isSigningIn ? "Sending link…" : "Send sign-in link"}
+                  </Button>
+                  {pendingUrl && onAddPageOnly ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-muted-foreground"
+                      disabled={isSigningIn}
+                      onClick={handleAddPageOnly}
+                    >
+                      Add this page only
+                    </Button>
+                  ) : null}
+                </div>
+              </form>
+            ) : (
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Button
                   type="button"
-                  variant="ghost"
-                  className="text-muted-foreground"
-                  disabled={isSubmitting}
-                  onClick={handleAddPageOnly}
+                  disabled={
+                    isSubmitting ||
+                    isStartingCheckout ||
+                    !workspaceId ||
+                    checkoutAuth.status === "checking"
+                  }
+                  className="sm:flex-1"
+                  onClick={handleSubscribe}
+                  aria-busy={checkoutAuth.status === "checking" || isStartingCheckout}
                 >
-                  Add this page only
+                  {checkoutAuth.status === "checking"
+                    ? "Checking account…"
+                    : isStartingCheckout
+                      ? "Redirecting…"
+                      : "Unlock site crawling"}
                 </Button>
-              ) : null}
-            </div>
+                {pendingUrl && onAddPageOnly ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-muted-foreground"
+                    disabled={isSubmitting || isStartingCheckout}
+                    onClick={handleAddPageOnly}
+                  >
+                    Add this page only
+                  </Button>
+                ) : null}
+              </div>
+            )}
 
             <p className="text-muted-foreground text-[11px] leading-relaxed">
               RagBase Pro · {proPrice}

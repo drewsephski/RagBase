@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { RagBaseLogo } from "@/components/brand/ragbase-logo";
 import { ChatInput } from "@/app/ui/chat/chat-input";
 import { UrlInput } from "@/app/ui/home/url-input";
+import { UrlIngestLoader } from "@/app/ui/home/url-ingest-loader";
 import { FileInputRow } from "@/app/ui/home/file-input-row";
 import { PromptChips } from "@/app/ui/home/prompt-chips";
 import { TrustMicrocopy } from "@/app/ui/home/trust-microcopy";
@@ -26,6 +27,7 @@ import {
   type WorkspaceSwitcherProps,
 } from "@/app/ui/workspace/workspace-switcher";
 import { cn } from "@/lib/utils";
+import { AnimatePresence } from "framer-motion";
 
 interface LandingHomeProps {
   onUrlSubmit: (url: string) => Promise<UrlIngestResult | void>;
@@ -36,6 +38,7 @@ interface LandingHomeProps {
   subscription?: SubscriptionStatusResponse | null;
   workspaceHeaders?: WorkspaceHeaders | null;
   pendingPromptHint?: string | null;
+  ingestingUrl?: string | null;
   disabled?: boolean;
   template?: WorkspaceTemplate | null;
   workspaceSwitcherProps: WorkspaceSwitcherProps;
@@ -50,6 +53,7 @@ export function LandingHome({
   subscription = null,
   workspaceHeaders = null,
   pendingPromptHint,
+  ingestingUrl = null,
   disabled = false,
   template = null,
   workspaceSwitcherProps,
@@ -107,7 +111,12 @@ export function LandingHome({
             className="space-y-2.5 sm:space-y-3"
             aria-label="Add a document or link"
           >
-            <UrlInput onSubmit={onUrlSubmit} disabled={disabled} variant="minimal" />
+            <UrlInput onSubmit={onUrlSubmit} disabled={disabled || Boolean(ingestingUrl)} variant="minimal" />
+            <AnimatePresence>
+              {ingestingUrl ? (
+                <UrlIngestLoader url={ingestingUrl} variant="default" />
+              ) : null}
+            </AnimatePresence>
             <PlanPromoCard
               workspaceHeaders={workspaceHeaders}
               subscription={subscription}

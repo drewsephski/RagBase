@@ -37,6 +37,7 @@ export function useIngestion({
     string | undefined
   >();
   const [paywallSurface, setPaywallSurface] = useState("paywall_dialog");
+  const [ingestingUrl, setIngestingUrl] = useState<string | null>(null);
 
   const notifySuccess = useCallback(async () => {
     await onIngestionSuccess();
@@ -150,13 +151,26 @@ export function useIngestion({
 
   const submitSinglePage = useCallback(
     async (url: string) => {
+      setIngestingUrl(url);
+      setUrlChoiceOpen(false);
+      setPendingRootUrl(null);
+      setPaywallOpen(false);
+      setPaywallPendingUrl(undefined);
+
       try {
         return await submitUrl(url);
       } catch (error) {
+        if (isRootUrl(url)) {
+          setPendingRootUrl(url);
+          setUrlChoiceOpen(true);
+        }
+
         if (error instanceof ApiError) {
           trackLimitBoundary(error);
         }
         throw error;
+      } finally {
+        setIngestingUrl(null);
       }
     },
     [submitUrl],
@@ -193,7 +207,7 @@ export function useIngestion({
       return;
     }
 
-    void submitSinglePage(paywallPendingUrl);
+    void submitSinglePage(paywallPendingUrl).catch(() => undefined);
   }, [paywallPendingUrl, submitSinglePage]);
 
   return {
@@ -212,5 +226,6 @@ export function useIngestion({
     openFullSitePaywall,
     handlePaywallAddPageOnly,
     handleRootUrlCrawlSite,
+    ingestingUrl,
   };
 }

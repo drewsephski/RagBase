@@ -103,6 +103,7 @@ function AppContent({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showRecoverySetup, setShowRecoverySetup] = useState(false);
   const [freeRecoveryEligible, setFreeRecoveryEligible] = useState(false);
+  const [recoveryPromptDismissed, setRecoveryPromptDismissed] = useState(false);
   const [pendingPromptHint, setPendingPromptHint] = useState<string | null>(null);
 
   const ingestion = useIngestion({
@@ -119,10 +120,8 @@ function AppContent({
     Boolean(activeWorkspaceId) &&
     !showRecoverySetup &&
     !recoverySaved &&
-    (subscription?.isProActive ||
-      (freeRecoveryEligible &&
-        activeWorkspaceId &&
-        !isRecoveryPromptDismissedLocally(activeWorkspaceId)));
+    !recoveryPromptDismissed &&
+    (subscription?.isProActive || freeRecoveryEligible);
 
   const showRecoverySection = Boolean(activeWorkspaceId) && !recoverySaved;
 
@@ -145,6 +144,7 @@ function AppContent({
   const handleDismissRecoveryBanner = useCallback(() => {
     if (activeWorkspaceId) {
       setRecoveryPromptDismissedLocally(activeWorkspaceId);
+      setRecoveryPromptDismissed(true);
     }
     trackEvent("recovery_link_deferred", { surface: "banner" });
   }, [activeWorkspaceId]);
@@ -163,6 +163,9 @@ function AppContent({
 
   useEffect(() => {
     setFreeRecoveryEligible(false);
+    setRecoveryPromptDismissed(
+      activeWorkspaceId ? isRecoveryPromptDismissedLocally(activeWorkspaceId) : false,
+    );
   }, [activeWorkspaceId]);
 
   const [templateRoutingDismissed, setTemplateRoutingDismissed] = useState(false);
@@ -409,6 +412,7 @@ function AppContent({
             ? `Queued: "${pendingPromptHint}" — we'll ask this when your first document is ready.`
             : undefined
         }
+        ingestingUrl={ingestion.ingestingUrl}
         disabled={!headers}
         template={template}
         workspaceSwitcherProps={workspaceSwitcherProps}

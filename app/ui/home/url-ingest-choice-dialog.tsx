@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Globe, Link2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { UrlIngestLoader } from "@/app/ui/home/url-ingest-loader";
 import type { UrlIngestResult } from "@/hooks/use-ingestion";
 
 interface UrlIngestChoiceDialogProps {
@@ -30,6 +29,13 @@ export function UrlIngestChoiceDialog({
 }: UrlIngestChoiceDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setError(null);
+      setIsSubmitting(false);
+    }
+  }, [open, url]);
 
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
@@ -52,7 +58,6 @@ export function UrlIngestChoiceDialog({
 
     try {
       await onSinglePage(url);
-      onOpenChange(false);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -62,7 +67,7 @@ export function UrlIngestChoiceDialog({
     } finally {
       setIsSubmitting(false);
     }
-  }, [onOpenChange, onSinglePage, url]);
+  }, [onSinglePage, url]);
 
   const handleCrawlSite = useCallback(() => {
     if (isSubmitting) {
@@ -91,23 +96,28 @@ export function UrlIngestChoiceDialog({
           {url}
         </p>
 
-        {isSubmitting ? (
-          <UrlIngestLoader url={url} variant="compact" />
-        ) : (
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => void handleSinglePage()}
-            >
-              Add this page only
-            </Button>
-            <Button type="button" onClick={handleCrawlSite}>
-              <Globe className="size-4" aria-hidden />
-              Crawl entire site
-            </Button>
-          </div>
-        )}
+        <div className="flex flex-col gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={isSubmitting}
+            aria-busy={isSubmitting}
+            onClick={() => void handleSinglePage()}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Adding page…
+              </>
+            ) : (
+              "Add this page only"
+            )}
+          </Button>
+          <Button type="button" disabled={isSubmitting} onClick={handleCrawlSite}>
+            <Globe className="size-4" aria-hidden />
+            Crawl entire site
+          </Button>
+        </div>
 
         {error ? (
           <p className="text-destructive text-sm" role="alert">
@@ -115,16 +125,9 @@ export function UrlIngestChoiceDialog({
           </p>
         ) : null}
 
-        {isSubmitting ? (
-          <p className="text-muted-foreground flex items-center gap-2 text-xs">
-            <Loader2 className="size-3.5 animate-spin" aria-hidden />
-            Firecrawl is fetching and extracting readable text…
-          </p>
-        ) : (
-          <p className="text-muted-foreground text-xs leading-relaxed">
-            Single-page links are always free. Full-site crawling requires Pro.
-          </p>
-        )}
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          Single-page links are always free. Full-site crawling requires Pro.
+        </p>
       </DialogContent>
     </Dialog>
   );
