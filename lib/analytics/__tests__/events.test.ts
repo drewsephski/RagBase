@@ -44,6 +44,7 @@ describe("analytics event taxonomy", () => {
         "crawl_canceled",
         "crawl_partial_success",
         "post_crawl_first_question_suggested",
+        "source_starter_questions_suggested",
       ]),
     );
   });

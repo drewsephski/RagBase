@@ -42,6 +42,7 @@ export const ANALYTICS_EVENTS = [
   "crawl_canceled",
   "crawl_partial_success",
   "post_crawl_first_question_suggested",
+  "source_starter_questions_suggested",
 ] as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];

@@ -37,7 +37,7 @@ import { BetaFeedbackCta } from "@/app/ui/feedback/beta-feedback-cta";
 import { QualityDebugPanel } from "@/app/ui/chat/quality-debug-panel";
 import { isDebugPanelEnabled } from "@/lib/env/public";
 import { useChatHistory } from "@/hooks/use-chat-history";
-import { usePostCrawlStarters } from "@/hooks/use-post-crawl-starters";
+import { useSourceStarters } from "@/hooks/use-source-starters";
 
 interface ChatPanelProps {
   workspaceHeaders: WorkspaceHeaders | null;
@@ -119,16 +119,19 @@ export function ChatPanel({
     },
   });
 
-  const postCrawlPrompts = usePostCrawlStarters(
+  const {
+    prompts: sourcePrompts,
+    label: starterLabel,
+    isLoading: isLoadingStarters,
+  } = useSourceStarters(
     sources,
     workspaceHeaders,
     messages.length,
+    scopedSourceId,
+    template?.id ?? null,
   );
 
-  const starterPrompts = postCrawlPrompts ?? [...DOCUMENT_STARTER_PROMPTS];
-  const starterLabel = postCrawlPrompts
-    ? "Ask across your crawled site:"
-    : "Try asking:";
+  const starterPrompts = sourcePrompts ?? [...DOCUMENT_STARTER_PROMPTS];
 
   const { isHistoryReady } = useChatHistory({
     workspaceHeaders,
@@ -377,6 +380,14 @@ export function ChatPanel({
                     columns={2}
                     label="Example questions:"
                   />
+                </div>
+              ) : isLoadingStarters && !sourcePrompts ? (
+                <div
+                  className="text-muted-foreground flex items-center justify-center gap-2 text-sm"
+                  aria-live="polite"
+                >
+                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                  Generating questions for your document…
                 </div>
               ) : (
                 <PromptChips

@@ -15,7 +15,7 @@ import {
   createOpenRouterWithKey,
 } from "@/lib/openrouter/client";
 
-export const STARTER_QUESTIONS_PER_SOURCE = 2;
+export const STARTER_QUESTIONS_PER_SOURCE = 4;
 
 function staticStarterQuestions(): StarterQuestion[] {
   const questions = [
