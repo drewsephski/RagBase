@@ -22,6 +22,19 @@ describe("analytics event taxonomy", () => {
     );
   });
 
+  test("includes billing and recovery events", () => {
+    expect(ANALYTICS_EVENTS).toEqual(
+      expect.arrayContaining([
+        "recovery_link_generated",
+        "recovery_link_used",
+        "checkout_success_pending",
+        "checkout_success_resolved",
+        "paywall_subscribe_clicked",
+        "billing_portal_opened",
+      ]),
+    );
+  });
+
   test("includes answer-quality observability events", () => {
     expect(ANALYTICS_EVENTS).toEqual(
       expect.arrayContaining([

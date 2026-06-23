@@ -1,3 +1,4 @@
+import { ProRequiredError } from "@/lib/billing/errors";
 import { LimitError } from "@/lib/limits";
 import { ValidationError } from "@/lib/ingestion/validate";
 import { RateLimitError } from "@/lib/rate-limit/enforce";
@@ -27,6 +28,9 @@ export function handleRouteError(error: unknown): Response {
         },
       },
     );
+  }
+  if (error instanceof ProRequiredError) {
+    return Response.json({ error: error.message, code: "pro_required" }, { status: error.status });
   }
   console.error("Route error:", error);
   return Response.json({ error: "Internal server error" }, { status: 500 });

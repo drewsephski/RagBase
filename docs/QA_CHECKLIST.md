@@ -83,6 +83,22 @@ Run through this checklist before each beta release or after significant changes
 | Root URL → crawl | Paste root URL → Crawl entire site | Paywall opens; no ingest |
 | Non-root URL | Paste article URL | No choice dialog; direct single-page ingest |
 
+## Billing and recovery (phase 6c)
+
+Flags must stay off until webhook QA passes: `STRIPE_WEBHOOKS_ENABLED=false`, `NEXT_PUBLIC_BILLING_ENABLED=false`.
+
+| Scenario | Steps | Expected |
+| --- | --- | --- |
+| Webhook test checkout | Stripe CLI → `checkout.session.completed` with `client_reference_id` | Workspace `plan=pro`; subscription fields populated |
+| Checkout return pending | Complete test checkout; return before webhook | “Activating your Pro workspace…” then resolves within 60s |
+| Checkout return timeout | Return with webhook disabled | Timeout copy + support mailto after 60s |
+| Recovery link | Settings or post-checkout → copy link → open in fresh profile | Workspace restored; old secret rotated |
+| Recovery expired | Use expired/revoked token | Generic error; support mailto |
+| Customer Portal | Settings → Manage billing | Stripe portal opens; cancel downgrades workspace on webhook |
+| Past due grace | Trigger `invoice.payment_failed` in test mode | `past_due` status; Pro access for 3 days |
+| Flags off | Default env | Paywall shows waitlist, not checkout |
+| Flags on (after QA) | Enable billing + webhooks | Paywall opens Stripe Payment Link with workspace id |
+
 ## Analytics (production smoke)
 
 | Scenario | Steps | Expected |

@@ -8,7 +8,12 @@ import { useWorkspaces } from "@/hooks/use-workspace";
 import { useWorkspaceTemplate } from "@/hooks/use-workspace-template";
 import { useSources } from "@/hooks/use-sources";
 import { useIngestion } from "@/hooks/use-ingestion";
+import { useSubscription } from "@/hooks/use-subscription";
 import { trackEvent } from "@/lib/analytics/track";
+import {
+  isRecoveryConfirmedLocally,
+  setRecoveryConfirmedLocally,
+} from "@/lib/billing/recovery-state";
 import {
   peekPendingPrompt,
   setPendingPrompt,
@@ -22,6 +27,9 @@ import { LandingHome } from "@/app/ui/home/landing-home";
 import { UrlIngestChoiceDialog } from "@/app/ui/home/url-ingest-choice-dialog";
 import { AppShell } from "@/app/ui/layout/app-shell";
 import { FullSitePaywallDialog } from "@/app/ui/upsell/full-site-paywall-dialog";
+import { CheckoutPending } from "@/app/ui/billing/checkout-pending";
+import { RecoveryBanner } from "@/app/ui/billing/recovery-banner";
+import { RecoverySetup } from "@/app/ui/billing/recovery-setup";
 import { Loader2 } from "lucide-react";
 import { SettingsPanel } from "@/app/ui/settings/settings-panel";
 
@@ -71,7 +79,81 @@ function AppContent() {
   });
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showRecoverySetup, setShowRecoverySetup] = useState(false);
+  const [checkoutHandled, setCheckoutHandled] = useState(false);
+  const checkoutCancelTrackedRef = useRef(false);
   const [pendingPromptHint, setPendingPromptHint] = useState<string | null>(null);
+  const checkoutParam = searchParams.get("checkout");
+  const isCheckoutSuccess = checkoutParam === "success";
+
+  const { subscription, isPendingActivation, refresh: refreshSubscription } =
+    useSubscription({
+      headers,
+      enabled: isReady && Boolean(headers),
+      pollWhilePending: isCheckoutSuccess && !checkoutHandled,
+    });
+
+  useEffect(() => {
+    if (checkoutParam !== "cancel" || checkoutCancelTrackedRef.current) {
+      return;
+    }
+
+    checkoutCancelTrackedRef.current = true;
+    router.replace(APP_PATH);
+  }, [checkoutParam, router]);
+
+  useEffect(() => {
+    if (!isCheckoutSuccess || checkoutHandled || !subscription?.isProActive) {
+      return;
+    }
+
+    setCheckoutHandled(true);
+    router.replace(APP_PATH);
+
+    if (!activeWorkspaceId) {
+      return;
+    }
+
+    const confirmed =
+      subscription.recoveryLinkConfirmed ||
+      isRecoveryConfirmedLocally(activeWorkspaceId);
+
+    if (!confirmed) {
+      setShowRecoverySetup(true);
+    }
+  }, [
+    activeWorkspaceId,
+    checkoutHandled,
+    isCheckoutSuccess,
+    router,
+    subscription,
+  ]);
+
+  const showRecoveryBanner =
+    Boolean(subscription?.isProActive) &&
+    Boolean(activeWorkspaceId) &&
+    !showRecoverySetup &&
+    !(
+      subscription?.recoveryLinkConfirmed ||
+      (activeWorkspaceId ? isRecoveryConfirmedLocally(activeWorkspaceId) : false)
+    );
+
+  const handleOpenRecoverySetup = useCallback(() => {
+    setShowRecoverySetup(true);
+  }, []);
+
+  const handleRecoveryComplete = useCallback(() => {
+    if (activeWorkspaceId) {
+      setRecoveryConfirmedLocally(activeWorkspaceId);
+    }
+    setShowRecoverySetup(false);
+    void refreshSubscription();
+  }, [activeWorkspaceId, refreshSubscription]);
+
+  const handleRecoveryDefer = useCallback(() => {
+    setShowRecoverySetup(false);
+  }, []);
+
   const [templateRoutingDismissed, setTemplateRoutingDismissed] = useState(false);
   const promptDeeplinkAppliedRef = useRef(false);
 
@@ -181,6 +263,7 @@ function AppContent() {
         onOpenChange={ingestion.setPaywallOpen}
         pendingUrl={ingestion.paywallPendingUrl}
         workspaceHeaders={headers}
+        workspaceId={activeWorkspaceId}
         onAddPageOnly={
           ingestion.paywallPendingUrl
             ? ingestion.handlePaywallAddPageOnly
@@ -188,6 +271,22 @@ function AppContent() {
         }
         surface={ingestion.paywallSurface}
       />
+
+      {isCheckoutSuccess && (isPendingActivation || !checkoutHandled) ? (
+        <CheckoutPending
+          timedOut={!isPendingActivation && !subscription?.isProActive}
+          onRefresh={() => void refreshSubscription()}
+        />
+      ) : null}
+
+      {showRecoverySetup && headers && activeWorkspaceId ? (
+        <RecoverySetup
+          workspaceId={activeWorkspaceId}
+          workspaceHeaders={headers}
+          onComplete={handleRecoveryComplete}
+          onDefer={handleRecoveryDefer}
+        />
+      ) : null}
     </>
   );
 
@@ -244,6 +343,12 @@ function AppContent() {
           }
           onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
           template={template}
+          recoveryBanner={
+            showRecoveryBanner ? (
+              <RecoveryBanner onSaveRecoveryLink={handleOpenRecoverySetup} />
+            ) : null
+          }
+          onOpenRecoverySetup={handleOpenRecoverySetup}
         />
 
         {paywallDialogs}
@@ -282,6 +387,7 @@ function AppContent() {
             : undefined
         }
         onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
+        onOpenRecoverySetup={handleOpenRecoverySetup}
       />
 
       {paywallDialogs}

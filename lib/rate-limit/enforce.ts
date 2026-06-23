@@ -127,3 +127,25 @@ export async function enforceWaitlistRateLimit(
     "Too many waitlist signups from this connection.",
   );
 }
+
+export async function enforceRecoveryCreateRateLimit(
+  _request: NextRequest,
+  workspaceId: string,
+): Promise<void> {
+  await enforce(
+    `recovery:create:${workspaceId}`,
+    RATE_LIMIT_CONFIG.recoveryCreatePerWorkspace,
+    "Too many recovery links were created for this workspace.",
+  );
+}
+
+export async function enforceRecoveryExchangeRateLimit(
+  request: NextRequest,
+): Promise<void> {
+  const ip = getClientIp(request);
+  await enforce(
+    `recovery:exchange:${ip}`,
+    RATE_LIMIT_CONFIG.recoveryExchangePerIp,
+    "Too many recovery attempts from this connection.",
+  );
+}

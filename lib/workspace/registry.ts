@@ -235,3 +235,29 @@ export function createStoredWorkspace(
     ...(templateId ? { templateId } : {}),
   };
 }
+
+export function restoreWorkspaceFromRecovery(
+  id: string,
+  secret: string,
+  storage: Storage = localStorage,
+): StoredWorkspace {
+  const workspaces = loadRegistry(storage);
+  const existing = workspaces.find((workspace) => workspace.id === id);
+
+  if (existing) {
+    const next = workspaces.map((workspace) =>
+      workspace.id === id ? { ...workspace, secret } : workspace,
+    );
+    writeRegistryToStorage(storage, next);
+    writeActiveIdToStorage(storage, id);
+    const restored = next.find((workspace) => workspace.id === id);
+    if (!restored) {
+      throw new WorkspaceRegistryError("Workspace not found in registry.");
+    }
+    return restored;
+  }
+
+  const workspace = createStoredWorkspace(id, secret);
+  addWorkspace(workspace, storage);
+  return workspace;
+}

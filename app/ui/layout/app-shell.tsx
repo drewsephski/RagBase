@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Menu,
   PanelLeftClose,
@@ -44,6 +44,8 @@ interface AppShellProps {
   onFullSitePaywallOpen?: () => void;
   onWorkspaceDeleted: () => void;
   template?: WorkspaceTemplate | null;
+  recoveryBanner?: ReactNode;
+  onOpenRecoverySetup?: () => void;
 }
 
 const SIDEBAR_WIDTH = "min(280px, 85vw)";
@@ -114,6 +116,8 @@ export function AppShell({
   onFullSitePaywallOpen,
   onWorkspaceDeleted,
   template = null,
+  recoveryBanner,
+  onOpenRecoverySetup,
 }: AppShellProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -275,6 +279,9 @@ export function AppShell({
         </aside>
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {recoveryBanner ? (
+            <div className="border-border border-b px-3 py-2 sm:px-4">{recoveryBanner}</div>
+          ) : null}
           <ChatPanel
             key={activeWorkspaceId ?? "no-workspace"}
             workspaceHeaders={workspaceHeaders}
@@ -300,6 +307,7 @@ export function AppShell({
             : undefined
         }
         onWorkspaceDeleted={onWorkspaceDeleted}
+        onOpenRecoverySetup={onOpenRecoverySetup}
       />
     </div>
   );

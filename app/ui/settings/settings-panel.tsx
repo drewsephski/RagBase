@@ -17,6 +17,7 @@ import { trackEvent } from "@/lib/analytics/track";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BillingSection } from "@/app/ui/settings/billing-section";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,7 @@ interface SettingsPanelProps {
   activeWorkspaceName?: string;
   onRenameWorkspace?: (name: string) => Promise<void>;
   onWorkspaceDeleted?: () => void;
+  onOpenRecoverySetup?: () => void;
 }
 
 export function SettingsPanel({
@@ -48,6 +50,7 @@ export function SettingsPanel({
   activeWorkspaceName,
   onRenameWorkspace,
   onWorkspaceDeleted,
+  onOpenRecoverySetup,
 }: SettingsPanelProps) {
   const [openRouterKeyInput, setOpenRouterKeyInput] = useState("");
   const [selectedModel, setSelectedModelState] = useState(DEFAULT_MODEL);
@@ -176,7 +179,6 @@ export function SettingsPanel({
           <div className="space-y-6">
             {onRenameWorkspace ? (
               <section aria-label="Current workspace" className="space-y-3">
-                {/* TODO(workspace-recovery): "Save this workspace" recovery link — see docs/workspace-recovery.md */}
                 <h3 className="text-sm font-semibold">Current workspace</h3>
                 <div className="space-y-2">
                   <Label htmlFor="workspace-name">Name</Label>
@@ -203,6 +205,12 @@ export function SettingsPanel({
                 </div>
               </section>
             ) : null}
+
+            <BillingSection
+              workspaceHeaders={workspaceHeaders}
+              open={open}
+              onOpenRecoverySetup={onOpenRecoverySetup}
+            />
 
             <section aria-label="OpenRouter API key" className="space-y-3">
               <div className="flex items-center gap-2">

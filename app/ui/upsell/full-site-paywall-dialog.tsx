@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Globe, Sparkles } from "lucide-react";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { apiJson } from "@/lib/api/client";
+import { buildCheckoutUrl, isCheckoutAvailable } from "@/lib/billing/checkout-url";
 import { trackEvent } from "@/lib/analytics/track";
 import { getProPriceDisplay } from "@/lib/site";
 import { WAITLIST_HONEYPOT_FIELD } from "@/lib/waitlist";
@@ -23,6 +24,7 @@ interface FullSitePaywallDialogProps {
   onOpenChange: (open: boolean) => void;
   pendingUrl?: string;
   workspaceHeaders?: WorkspaceHeaders | null;
+  workspaceId?: string | null;
   onAddPageOnly?: () => void;
   surface?: string;
 }
@@ -32,6 +34,7 @@ export function FullSitePaywallDialog({
   onOpenChange,
   pendingUrl,
   workspaceHeaders,
+  workspaceId,
   onAddPageOnly,
   surface = "paywall_dialog",
 }: FullSitePaywallDialogProps) {
@@ -42,6 +45,7 @@ export function FullSitePaywallDialog({
   const [success, setSuccess] = useState(false);
   const formOpenedAtRef = useRef<number | null>(null);
   const proPrice = getProPriceDisplay();
+  const checkoutAvailable = isCheckoutAvailable();
 
   useEffect(() => {
     if (!open) {
@@ -57,9 +61,30 @@ export function FullSitePaywallDialog({
     trackEvent("paywall_viewed", {
       surface,
       has_pending_url: Boolean(pendingUrl),
-      checkout_available: false,
+      checkout_available: checkoutAvailable,
     });
-  }, [open, pendingUrl, surface]);
+  }, [checkoutAvailable, open, pendingUrl, surface]);
+
+  const handleSubscribe = useCallback(() => {
+    if (!workspaceId) {
+      setError("Create a workspace before subscribing.");
+      return;
+    }
+
+    const checkoutUrl = buildCheckoutUrl(workspaceId);
+    if (!checkoutUrl) {
+      setError("Checkout is temporarily unavailable.");
+      return;
+    }
+
+    trackEvent("paywall_subscribe_clicked", {
+      surface,
+      has_pending_url: Boolean(pendingUrl),
+      checkout_available: true,
+    });
+
+    window.location.href = checkoutUrl;
+  }, [pendingUrl, surface, workspaceId]);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -74,7 +99,7 @@ export function FullSitePaywallDialog({
       trackEvent("paywall_primary_clicked", {
         surface,
         has_pending_url: Boolean(pendingUrl),
-        checkout_available: false,
+        checkout_available: checkoutAvailable,
       });
 
       setError(null);
@@ -110,7 +135,7 @@ export function FullSitePaywallDialog({
         setIsSubmitting(false);
       }
     },
-    [email, honeypot, pendingUrl, surface, workspaceHeaders],
+    [checkoutAvailable, email, honeypot, pendingUrl, surface, workspaceHeaders],
   );
 
   const handleAddPageOnly = useCallback(() => {
@@ -161,7 +186,41 @@ export function FullSitePaywallDialog({
           access it later.
         </p>
 
-        {success ? (
+        {checkoutAvailable ? (
+          <div className="space-y-3">
+            {error ? (
+              <p className="text-destructive text-sm" role="alert">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button
+                type="button"
+                disabled={isSubmitting || !workspaceId}
+                className="sm:flex-1"
+                onClick={handleSubscribe}
+              >
+                Unlock site crawling
+              </Button>
+              {pendingUrl && onAddPageOnly ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-muted-foreground"
+                  disabled={isSubmitting}
+                  onClick={handleAddPageOnly}
+                >
+                  Add this page only
+                </Button>
+              ) : null}
+            </div>
+
+            <p className="text-muted-foreground text-[11px] leading-relaxed">
+              RagBase Pro · {proPrice}
+            </p>
+          </div>
+        ) : success ? (
           <p className="text-sm text-emerald-600 dark:text-emerald-400" role="status">
             You&apos;re on the list — we&apos;ll email you when site crawling
             launches.

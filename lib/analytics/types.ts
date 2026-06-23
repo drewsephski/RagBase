@@ -24,6 +24,15 @@ export const ANALYTICS_EVENTS = [
   "ocr_attempted",
   "ocr_completed",
   "ocr_failed",
+  "recovery_link_generated",
+  "recovery_link_used",
+  "checkout_success_pending",
+  "checkout_success_resolved",
+  "recovery_link_confirmed",
+  "recovery_link_deferred",
+  "billing_portal_opened",
+  "billing_portal_failed",
+  "paywall_subscribe_clicked",
 ] as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
