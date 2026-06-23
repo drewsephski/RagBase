@@ -7,6 +7,7 @@ import { APP_PATH } from "@/lib/domain/site";
 import {
   buildCheckoutReturnLocation,
   isSameAppOrigin,
+  replaceBrowserUrl,
 } from "@/lib/site";
 import { useWorkspaces } from "@/hooks/use-workspace";
 import { useWorkspaceTemplate } from "@/hooks/use-workspace-template";
@@ -37,10 +38,27 @@ import { FullSitePaywallDialog } from "@/app/ui/upsell/full-site-paywall-dialog"
 import { CheckoutPending } from "@/app/ui/billing/checkout-pending";
 import { RecoveryBanner } from "@/app/ui/billing/recovery-banner";
 import { RecoverySetup } from "@/app/ui/billing/recovery-setup";
+import type { RecoverySetupContext } from "@/app/ui/billing/recovery-setup";
 import { Loader2 } from "lucide-react";
 import { SettingsPanel } from "@/app/ui/settings/settings-panel";
 
-function AppContent() {
+interface AppContentProps {
+  checkoutHandled: boolean;
+  setCheckoutHandled: (handled: boolean) => void;
+  showRecoverySetup: boolean;
+  setShowRecoverySetup: (show: boolean) => void;
+  recoverySetupContext: RecoverySetupContext;
+  setRecoverySetupContext: (context: RecoverySetupContext) => void;
+}
+
+function AppContent({
+  checkoutHandled,
+  setCheckoutHandled,
+  showRecoverySetup,
+  setShowRecoverySetup,
+  recoverySetupContext,
+  setRecoverySetupContext,
+}: AppContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const {
@@ -84,11 +102,6 @@ function AppContent() {
   }, [bumpRefresh, refresh]);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [showRecoverySetup, setShowRecoverySetup] = useState(false);
-  const [recoverySetupContext, setRecoverySetupContext] = useState<
-    "pro_checkout" | "workspace"
-  >("workspace");
-  const [checkoutHandled, setCheckoutHandled] = useState(false);
   const [freeRecoveryEligible, setFreeRecoveryEligible] = useState(false);
   const checkoutCancelTrackedRef = useRef(false);
   const [pendingPromptHint, setPendingPromptHint] = useState<string | null>(null);
@@ -135,8 +148,8 @@ function AppContent() {
     }
 
     checkoutCancelTrackedRef.current = true;
-    router.replace(APP_PATH);
-  }, [checkoutParam, router]);
+    replaceBrowserUrl(APP_PATH);
+  }, [checkoutParam]);
 
   useEffect(() => {
     if (!isCheckoutSuccess || checkoutHandled || !subscription?.isProActive) {
@@ -144,7 +157,7 @@ function AppContent() {
     }
 
     setCheckoutHandled(true);
-    router.replace(APP_PATH);
+    replaceBrowserUrl(APP_PATH);
 
     if (!activeWorkspaceId) {
       return;
@@ -162,7 +175,6 @@ function AppContent() {
     activeWorkspaceId,
     checkoutHandled,
     isCheckoutSuccess,
-    router,
     subscription,
   ]);
 
@@ -495,6 +507,11 @@ function AppContent() {
 }
 
 export function App() {
+  const [checkoutHandled, setCheckoutHandled] = useState(false);
+  const [showRecoverySetup, setShowRecoverySetup] = useState(false);
+  const [recoverySetupContext, setRecoverySetupContext] =
+    useState<RecoverySetupContext>("workspace");
+
   return (
     <Suspense
       fallback={
@@ -506,7 +523,14 @@ export function App() {
         </div>
       }
     >
-      <AppContent />
+      <AppContent
+        checkoutHandled={checkoutHandled}
+        setCheckoutHandled={setCheckoutHandled}
+        showRecoverySetup={showRecoverySetup}
+        setShowRecoverySetup={setShowRecoverySetup}
+        recoverySetupContext={recoverySetupContext}
+        setRecoverySetupContext={setRecoverySetupContext}
+      />
     </Suspense>
   );
 }

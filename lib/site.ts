@@ -27,6 +27,14 @@ export function buildCheckoutReturnLocation(pathname: string, search: string): s
   return `${getAppUrl()}${pathname}${search}`;
 }
 
+export function replaceBrowserUrl(path: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.history.replaceState(window.history.state, "", path);
+}
+
 export function getProPriceDisplay(): string {
   const fromEnv = process.env.NEXT_PUBLIC_PRO_PRICE_DISPLAY?.trim();
   if (fromEnv && /\d/.test(fromEnv)) {

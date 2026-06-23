@@ -5,6 +5,7 @@ import {
   getProPriceDisplay,
   getRecoveryUrl,
   isSameAppOrigin,
+  replaceBrowserUrl,
 } from "@/lib/site";
 
 describe("getAppUrl", () => {
@@ -74,6 +75,22 @@ describe("checkout return helpers", () => {
         "?checkout=success&session_id=cs_test_123",
       ),
     ).toBe("https://www.ragbase.dev/app?checkout=success&session_id=cs_test_123");
+  });
+
+  test("replaceBrowserUrl updates the address bar without navigation", () => {
+    const replaceState = jest.fn();
+    Object.defineProperty(window, "history", {
+      configurable: true,
+      value: {
+        ...window.history,
+        replaceState: replaceState,
+        state: { idx: 0 },
+      },
+    });
+
+    replaceBrowserUrl("/app");
+
+    expect(replaceState).toHaveBeenCalledWith({ idx: 0 }, "", "/app");
   });
 });
 
