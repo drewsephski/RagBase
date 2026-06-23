@@ -17,7 +17,11 @@ function applyWorkspaceHeaders(
   }
 
   headers.set("X-Workspace-Id", workspaceHeaders["X-Workspace-Id"]);
-  headers.set("X-Workspace-Secret", workspaceHeaders["X-Workspace-Secret"]);
+
+  const secret = workspaceHeaders["X-Workspace-Secret"];
+  if (secret) {
+    headers.set("X-Workspace-Secret", secret);
+  }
 }
 
 export async function apiFetch(

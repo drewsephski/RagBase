@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { getAuthenticatedUser } from "@/lib/supabase/auth-server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { verifySecret } from "@/lib/workspace/crypto";
 
@@ -35,14 +36,16 @@ export async function requireWorkspace(
 ): Promise<WorkspaceContext> {
   const { workspaceId, workspaceSecret } = getWorkspaceHeaders(request);
 
-  if (!workspaceId || !workspaceSecret) {
-    throw new WorkspaceAuthError("Missing workspace credentials");
+  if (!workspaceId) {
+    throw new WorkspaceAuthError("Missing workspace id");
   }
 
   const supabase = createServiceClient();
   const { data: workspace, error } = await supabase
     .from("workspaces")
-    .select("id, secret_hash, plan, name, message_count, message_count_date")
+    .select(
+      "id, secret_hash, plan, name, message_count, message_count_date, owner_user_id",
+    )
     .eq("id", workspaceId)
     .maybeSingle();
 
@@ -50,9 +53,16 @@ export async function requireWorkspace(
     throw new WorkspaceAuthError("Workspace not found");
   }
 
-  const valid = await verifySecret(workspaceSecret, workspace.secret_hash);
-  if (!valid) {
-    throw new WorkspaceAuthError("Invalid workspace secret");
+  if (workspaceSecret) {
+    const valid = await verifySecret(workspaceSecret, workspace.secret_hash);
+    if (!valid) {
+      throw new WorkspaceAuthError("Invalid workspace secret");
+    }
+  } else {
+    const user = await getAuthenticatedUser();
+    if (!user || workspace.owner_user_id !== user.id) {
+      throw new WorkspaceAuthError("Missing workspace credentials");
+    }
   }
 
   await supabase

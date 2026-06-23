@@ -11,6 +11,7 @@ import { writeTemplateWorkspaceId } from "@/lib/templates/keys";
 import { apiFetch, apiJson } from "@/lib/api/client";
 import type { WorkspaceHeaders } from "@/lib/api/types";
 import { trackEvent } from "@/lib/analytics/track";
+import { syncAccountWorkspacesToRegistry } from "@/lib/workspace/account-sync";
 import {
   addWorkspace,
   createStoredWorkspace,
@@ -40,6 +41,7 @@ export interface UseWorkspacesState {
   renameWorkspace: (id: string, name: string) => Promise<void>;
   deleteWorkspace: (id: string) => Promise<void>;
   refreshRegistry: () => void;
+  syncAccountWorkspaces: () => Promise<void>;
 }
 
 async function createWorkspaceOnServer(name?: string): Promise<CreateWorkspaceResponse> {
@@ -63,10 +65,15 @@ function headersFromWorkspace(
     return null;
   }
 
-  return {
+  const headers: WorkspaceHeaders = {
     "X-Workspace-Id": workspace.id,
-    "X-Workspace-Secret": workspace.secret,
   };
+
+  if (workspace.secret) {
+    headers["X-Workspace-Secret"] = workspace.secret;
+  }
+
+  return headers;
 }
 
 export function useWorkspaces(): UseWorkspacesState {
@@ -87,6 +94,13 @@ export function useWorkspaces(): UseWorkspacesState {
 
   const refreshRegistry = useCallback(() => {
     syncFromStorage();
+  }, [syncFromStorage]);
+
+  const syncAccountWorkspaces = useCallback(async () => {
+    await syncAccountWorkspacesToRegistry();
+    const { registry, active } = syncFromStorage();
+    setWorkspaces(registry);
+    setActiveWorkspaceState(active);
   }, [syncFromStorage]);
 
   useEffect(() => {
@@ -286,5 +300,6 @@ export function useWorkspaces(): UseWorkspacesState {
     renameWorkspace,
     deleteWorkspace,
     refreshRegistry,
+    syncAccountWorkspaces,
   };
 }

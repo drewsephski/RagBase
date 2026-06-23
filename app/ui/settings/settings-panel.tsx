@@ -17,8 +17,10 @@ import { trackEvent } from "@/lib/analytics/track";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BillingSection } from "@/app/ui/settings/billing-section";
 import { WorkspaceRecoverySection } from "@/app/ui/settings/workspace-recovery-section";
+import { BillingSection } from "@/app/ui/settings/billing-section";
+import { AccountSection } from "@/app/ui/settings/account-section";
+import type { UseAuthState } from "@/hooks/use-auth";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +45,8 @@ interface SettingsPanelProps {
   onWorkspaceDeleted?: () => void;
   onOpenRecoverySetup?: () => void;
   showRecoverySection?: boolean;
+  auth?: UseAuthState;
+  onAccountSynced?: () => void;
 }
 
 export function SettingsPanel({
@@ -54,6 +58,8 @@ export function SettingsPanel({
   onWorkspaceDeleted,
   onOpenRecoverySetup,
   showRecoverySection = false,
+  auth,
+  onAccountSynced,
 }: SettingsPanelProps) {
   const [openRouterKeyInput, setOpenRouterKeyInput] = useState("");
   const [selectedModel, setSelectedModelState] = useState(DEFAULT_MODEL);
@@ -174,12 +180,20 @@ export function SettingsPanel({
           <DialogHeader>
             <DialogTitle>Settings</DialogTitle>
             <DialogDescription>
-              Workspaces are private to this browser. Nothing here is shared or
-              used for model training.
+              Workspaces are private by default. Sign in optionally to sync chats
+              across devices.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
+            {auth ? (
+              <AccountSection
+                auth={auth}
+                workspaceHeaders={workspaceHeaders}
+                onAccountSynced={onAccountSynced}
+              />
+            ) : null}
+
             {onRenameWorkspace ? (
               <section aria-label="Current workspace" className="space-y-3">
                 <h3 className="text-sm font-semibold">Current workspace</h3>

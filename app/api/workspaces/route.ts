@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/supabase/auth-server";
 import {
   authErrorResponse,
   requireWorkspace,
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const secret = generateWorkspaceSecret();
     const secretHash = await hashSecret(secret);
     const supabase = createServiceClient();
+    const user = await getAuthenticatedUser();
 
     const { data: workspace, error } = await supabase
       .from("workspaces")
@@ -47,6 +49,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         secret_hash: secretHash,
         plan: "anonymous",
         name: name ?? null,
+        ...(user ? { owner_user_id: user.id } : {}),
       })
       .select("id")
       .single();

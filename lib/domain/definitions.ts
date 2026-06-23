@@ -17,13 +17,18 @@ const sourceStatusSchema = z.enum([
 ]);
 export type SourceStatus = z.infer<typeof sourceStatusSchema>;
 
-export const storedWorkspaceSchema = z.object({
-  id: z.string().uuid(),
-  secret: z.string().min(32),
-  name: z.string().min(1).max(64),
-  createdAt: z.string(),
-  templateId: templateIdSchema.optional(),
-});
+export const storedWorkspaceSchema = z
+  .object({
+    id: z.string().uuid(),
+    secret: z.string().min(32).optional(),
+    accountLinked: z.boolean().optional(),
+    name: z.string().min(1).max(64),
+    createdAt: z.string(),
+    templateId: templateIdSchema.optional(),
+  })
+  .refine((workspace) => Boolean(workspace.secret) || workspace.accountLinked, {
+    message: "Workspace must have a secret or be linked to an account",
+  });
 export type StoredWorkspace = z.infer<typeof storedWorkspaceSchema>;
 
 export const DEFAULT_WORKSPACE_NAME = "My workspace";

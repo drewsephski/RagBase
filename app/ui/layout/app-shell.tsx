@@ -13,6 +13,7 @@ import type { Source } from "@/lib/domain/definitions";
 import type { SubscriptionStatusResponse } from "@/lib/billing/types";
 import type { WorkspaceTemplate } from "@/lib/domain/templates";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
+import type { UseAuthState } from "@/hooks/use-auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { RagBaseLogo } from "@/components/brand/ragbase-logo";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,8 @@ interface AppShellProps {
   onOpenRecoverySetup?: () => void;
   showRecoverySection?: boolean;
   onFirstAnswerComplete?: () => void;
+  auth?: UseAuthState;
+  onAccountSynced?: () => void;
 }
 
 const SIDEBAR_WIDTH = "min(280px, 85vw)";
@@ -149,6 +152,8 @@ export function AppShell({
   onOpenRecoverySetup,
   showRecoverySection = false,
   onFirstAnswerComplete,
+  auth,
+  onAccountSynced,
 }: AppShellProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -348,6 +353,8 @@ export function AppShell({
         onWorkspaceDeleted={onWorkspaceDeleted}
         onOpenRecoverySetup={onOpenRecoverySetup}
         showRecoverySection={showRecoverySection}
+        auth={auth}
+        onAccountSynced={onAccountSynced}
       />
     </div>
   );

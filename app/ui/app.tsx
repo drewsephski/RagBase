@@ -37,17 +37,20 @@ import { RecoveryBanner } from "@/app/ui/billing/recovery-banner";
 import { RecoverySetup } from "@/app/ui/billing/recovery-setup";
 import { Loader2 } from "lucide-react";
 import { SettingsPanel } from "@/app/ui/settings/settings-panel";
+import { useAuth } from "@/hooks/use-auth";
 
 interface AppContentProps {
   workspace: UseWorkspacesState;
   subscription: SubscriptionStatusResponse | null;
   refreshSubscription: () => Promise<void>;
+  auth: ReturnType<typeof useAuth>;
 }
 
 function AppContent({
   workspace,
   subscription,
   refreshSubscription,
+  auth,
 }: AppContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -359,6 +362,8 @@ function AppContent({
           onOpenRecoverySetup={handleOpenRecoverySetup}
           showRecoverySection={showRecoverySection}
           onFirstAnswerComplete={handleFirstAnswerComplete}
+          auth={auth}
+          onAccountSynced={() => void workspace.syncAccountWorkspaces()}
         />
 
         {paywallDialogs}
@@ -401,6 +406,8 @@ function AppContent({
         onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
         onOpenRecoverySetup={handleOpenRecoverySetup}
         showRecoverySection={showRecoverySection}
+        auth={auth}
+        onAccountSynced={() => void workspace.syncAccountWorkspaces()}
       />
 
       {paywallDialogs}
@@ -413,8 +420,17 @@ interface AppProps {
 }
 
 export function App({ checkoutReturn: initialReturn }: AppProps) {
+  const auth = useAuth();
   const workspace = useWorkspaces();
   const activeWorkspaceId = workspace.activeWorkspace?.id ?? null;
+
+  useEffect(() => {
+    if (!auth.user || auth.isLoading) {
+      return;
+    }
+
+    void workspace.syncAccountWorkspaces();
+  }, [auth.isLoading, auth.user, workspace.syncAccountWorkspaces]);
 
   const checkoutFlow = useCheckoutFlow({
     initialReturn,
@@ -442,6 +458,7 @@ export function App({ checkoutReturn: initialReturn }: AppProps) {
           workspace={workspace}
           subscription={checkoutFlow.subscription}
           refreshSubscription={checkoutFlow.refreshSubscription}
+          auth={auth}
         />
       </Suspense>
     </>

@@ -77,10 +77,15 @@ export function ChatPanel({
       return undefined;
     }
 
-    return {
+    const headers: Record<string, string> = {
       "X-Workspace-Id": workspaceHeaders["X-Workspace-Id"],
-      "X-Workspace-Secret": workspaceHeaders["X-Workspace-Secret"],
     };
+
+    if (workspaceHeaders["X-Workspace-Secret"]) {
+      headers["X-Workspace-Secret"] = workspaceHeaders["X-Workspace-Secret"];
+    }
+
+    return headers;
   }, [workspaceHeaders]);
 
   const workspaceId = workspaceHeaders?.["X-Workspace-Id"] ?? null;
