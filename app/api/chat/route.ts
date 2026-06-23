@@ -22,6 +22,7 @@ import {
   getServerApiKey,
 } from "@/lib/openrouter/client";
 import { createServiceClient } from "@/lib/supabase/server";
+import { getSourceInWorkspace } from "@/lib/supabase/workspace-scope";
 import { handleRouteError, jsonError } from "@/lib/api/errors";
 import { enforceFreeChatRateLimit } from "@/lib/rate-limit/enforce";
 
@@ -48,10 +49,25 @@ export async function POST(request: NextRequest): Promise<Response> {
     const apiKey = openRouterKey?.trim() || getServerApiKey();
 
     if (!hasUserKey) {
-      enforceFreeChatRateLimit(request, workspace.id);
+      await enforceFreeChatRateLimit(request, workspace.id);
     }
 
     await checkMessageLimit(workspace.id, hasUserKey);
+
+    const supabase = createServiceClient();
+
+    if (sourceId) {
+      const { data: scopedSource, error: sourceScopeError } =
+        await getSourceInWorkspace(supabase, workspace.id, sourceId, "id");
+
+      if (sourceScopeError) {
+        return jsonError("Failed to verify source", 500);
+      }
+
+      if (!scopedSource) {
+        return jsonError("Source not found", 404);
+      }
+    }
 
     const chunks = await retrieveForChat({
       query: message,
@@ -63,7 +79,6 @@ export async function POST(request: NextRequest): Promise<Response> {
     const contextBlocks = buildContextBlocks(chunks);
     const context = buildContextWindow(chunks);
     const systemPrompt = buildSystemPrompt(context);
-    const supabase = createServiceClient();
 
     await supabase.from("messages").insert({
       workspace_id: workspace.id,

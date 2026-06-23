@@ -247,6 +247,7 @@ export async function deleteExistingDocuments(sourceId: string): Promise<void> {
 }
 
 async function fetchSource(sourceId: string): Promise<SourceRow> {
+  // Caller must verify workspace ownership before invoking the pipeline.
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("sources")

@@ -143,7 +143,8 @@ export async function GET(
       .update({
         metadata: buildStarterMetadataUpdate(metadata, starters, templateId),
       })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("workspace_id", workspace.id);
 
     return Response.json({ starters });
   } catch (error) {

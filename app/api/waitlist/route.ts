@@ -28,7 +28,7 @@ async function getOptionalWorkspaceId(request: NextRequest): Promise<string | nu
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
-    enforceWaitlistRateLimit(request);
+    await enforceWaitlistRateLimit(request);
 
     const body: unknown = await request.json();
     const parsed = waitlistBodySchema.safeParse(body);

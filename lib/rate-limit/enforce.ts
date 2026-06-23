@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { RATE_LIMIT_CONFIG } from "@/lib/rate-limit/config";
-import { checkMemoryRateLimit } from "@/lib/rate-limit/memory-store";
+import { getRateLimitStore } from "@/lib/rate-limit/store";
 
 export class RateLimitError extends Error {
   status: number;
@@ -35,12 +35,16 @@ function windowMs(): number {
   return RATE_LIMIT_CONFIG.windowSeconds * 1000;
 }
 
-function enforce(key: string, limit: number, friendlyMessage: string): void {
+async function enforce(
+  key: string,
+  limit: number,
+  friendlyMessage: string,
+): Promise<void> {
   if (!RATE_LIMIT_CONFIG.enabled || limit <= 0) {
     return;
   }
 
-  const result = checkMemoryRateLimit(key, limit, windowMs());
+  const result = await getRateLimitStore().check(key, limit, windowMs());
 
   if (!result.allowed) {
     const minutes = Math.max(1, Math.ceil(result.retryAfterSeconds / 60));
@@ -51,69 +55,73 @@ function enforce(key: string, limit: number, friendlyMessage: string): void {
   }
 }
 
-export function enforceWorkspaceCreateRateLimit(request: NextRequest): void {
+export async function enforceWorkspaceCreateRateLimit(
+  request: NextRequest,
+): Promise<void> {
   const ip = getClientIp(request);
-  enforce(
+  await enforce(
     `workspace:create:${ip}`,
     RATE_LIMIT_CONFIG.workspaceCreatePerIp,
     "Too many workspaces were created from this connection.",
   );
 }
 
-export function enforceUploadRateLimit(
+export async function enforceUploadRateLimit(
   request: NextRequest,
   workspaceId: string,
-): void {
+): Promise<void> {
   const ip = getClientIp(request);
-  enforce(
+  await enforce(
     `upload:workspace:${workspaceId}`,
     RATE_LIMIT_CONFIG.uploadPerWorkspace,
     "This workspace is uploading files too quickly.",
   );
-  enforce(
+  await enforce(
     `upload:ip:${ip}`,
     RATE_LIMIT_CONFIG.uploadPerIp,
     "Too many uploads from this connection.",
   );
 }
 
-export function enforceUrlIngestRateLimit(
+export async function enforceUrlIngestRateLimit(
   request: NextRequest,
   workspaceId: string,
-): void {
+): Promise<void> {
   const ip = getClientIp(request);
-  enforce(
+  await enforce(
     `url:workspace:${workspaceId}`,
     RATE_LIMIT_CONFIG.urlPerWorkspace,
     "This workspace is adding links too quickly.",
   );
-  enforce(
+  await enforce(
     `url:ip:${ip}`,
     RATE_LIMIT_CONFIG.urlPerIp,
     "Too many links were added from this connection.",
   );
 }
 
-export function enforceFreeChatRateLimit(
+export async function enforceFreeChatRateLimit(
   request: NextRequest,
   workspaceId: string,
-): void {
+): Promise<void> {
   const ip = getClientIp(request);
-  enforce(
+  await enforce(
     `chat:free:ip:${ip}`,
     RATE_LIMIT_CONFIG.chatFreePerIp,
     "Too many messages from this connection.",
   );
-  enforce(
+  await enforce(
     `chat:free:workspace:${workspaceId}`,
     RATE_LIMIT_CONFIG.chatFreePerWorkspace,
     "This workspace is sending messages too quickly.",
   );
 }
 
-export function enforceWaitlistRateLimit(request: NextRequest): void {
+export async function enforceWaitlistRateLimit(
+  request: NextRequest,
+): Promise<void> {
   const ip = getClientIp(request);
-  enforce(
+  await enforce(
     `waitlist:ip:${ip}`,
     RATE_LIMIT_CONFIG.waitlistPerIp,
     "Too many waitlist signups from this connection.",

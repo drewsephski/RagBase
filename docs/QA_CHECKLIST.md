@@ -14,6 +14,17 @@ Run through this checklist before each beta release or after significant changes
 | Scanned PDF | Upload a image-only / scanned PDF | Graceful failure or OCR upsell; clear error in documents panel |
 | Blocked URL | Paste a URL that blocks scraping (e.g. login wall) | User-friendly error; no stuck “processing” state |
 
+## Dirty documents (low-quality / messy inputs)
+
+| Scenario | Steps | Expected |
+| --- | --- | --- |
+| Password-protected PDF | Upload a locked PDF | Clear error; no crash; source shows error state |
+| Corrupt / empty file | Upload a zero-byte or corrupt PDF | Validation or ingestion error with actionable message |
+| Huge file | Upload a file above size limit | 413 or friendly limit message before upload completes |
+| Noisy scan | Upload a PDF with heavy OCR artifacts or mixed columns | Chat may be weaker but app stays usable; citations still render |
+| Duplicate upload | Upload the same file twice | Both sources listed or second rejected per limits; no duplicate crash |
+| Very long URL page | Paste a long Wikipedia or docs page | Ingest completes or fails gracefully; no infinite processing spinner |
+
 ## Chat and citations
 
 | Scenario | Steps | Expected |
@@ -22,30 +33,41 @@ Run through this checklist before each beta release or after significant changes
 | Citation click | Click a citation badge | Drawer opens with snippet and source reference |
 | Feedback Yes/No | On last answer, click thumbs up or down | UI accepts feedback; optional reason on negative |
 | Copy answer | Click Copy on an assistant message | Text copied; button shows “Copied” briefly |
+| Scoped source chat | Select a single document, ask a question | Answer cites only that source when scoped |
 
-## Limits and workspace
+## Limits, rate limits, and workspace
 
 | Scenario | Steps | Expected |
 | --- | --- | --- |
-| Rate-limit error | Send many messages quickly (or lower limits in dev) | Clear rate-limit message; app remains usable |
-| Workspace delete | Settings → delete workspace → confirm | Workspace removed; returns to landing or empty state |
+| Daily message limit | Exhaust free daily messages (or lower limits in dev) | Clear limit message with retry guidance |
+| Rate-limit error (chat) | Send many messages quickly with server key | 429 with friendly message; `Retry-After` header; app remains usable |
+| Rate-limit error (upload) | Upload many files quickly | Upload blocked with clear message; other actions still work |
+| Rate-limit error (URL) | Paste many URLs quickly | URL ingest blocked; uploads/chat unaffected |
+| Rate-limit error (waitlist) | Submit waitlist many times from same IP | Friendly throttle message |
+| Workspace create throttle | Create many workspaces from same connection | Creation blocked after IP limit |
+| Workspace delete | Settings → delete workspace → confirm | Workspace removed from server and local registry; returns to landing or switches workspace |
+| Multi-workspace delete | Delete non-active workspace from switcher | Only that workspace removed; active workspace unchanged |
 
-## Layout and polish
+## Layout and mobile
 
 | Scenario | Steps | Expected |
 | --- | --- | --- |
 | Mobile layout | Repeat PDF upload + chat on phone viewport (~390px) | Sidebar toggles; chat input usable; citations tappable |
+| Mobile paywall | Open crawl paywall on ~390px width | Dialog readable; email field and CTA usable without horizontal scroll |
+| Mobile settings | Open settings on mobile | Delete workspace and export buttons reachable |
 | Beta feedback CTA | With `NEXT_PUBLIC_FEEDBACK_URL` set | Subtle feedback link visible; opens external URL |
 | Beta feedback hidden | Without `NEXT_PUBLIC_FEEDBACK_URL` | No feedback CTA shown |
 | Debug panel (dev) | In development or `NEXT_PUBLIC_DEBUG_PANEL=true` | Debug toggle shows counts/model/latency; no secrets or raw text |
 
-## Full-site crawl paywall (phase 6a)
+## Full-site crawl paywall and waitlist (phase 6a)
 
 | Scenario | Steps | Expected |
 | --- | --- | --- |
 | Crawl hint click | Click “Crawl an entire site” under URL field | Paywall opens; `paywall_viewed` in PostHog |
 | Waitlist submit | Enter email on paywall → Unlock site crawling | Email in `waitlist_emails`; success message; no email in PostHog properties |
 | Duplicate waitlist | Submit same email twice | Both return success; one DB row |
+| Invalid waitlist email | Submit malformed email | Validation error; no DB row |
+| Waitlist honeypot | Fill hidden honeypot field (automated test) | Silent success; no DB row |
 | Root URL → single page | Paste `https://example.com/` → Add this page only | Single-page ingest; Pro notice |
 | Root URL → crawl | Paste root URL → Crawl entire site | Paywall opens; no ingest |
 | Non-root URL | Paste article URL | No choice dialog; direct single-page ingest |
@@ -56,3 +78,10 @@ Run through this checklist before each beta release or after significant changes
 | --- | --- | --- |
 | PostHog events | With `POSTHOG_PROJECT_API_KEY` (phc_*) set, upload + chat | Events appear in PostHog project **ragbase** (`file_uploaded`, `answer_completed`, etc.) |
 | Sanitized metadata | Inspect event properties in PostHog | No message text, answers, snippets, API keys, or workspace secrets |
+
+## Production infrastructure (smoke)
+
+| Scenario | Steps | Expected |
+| --- | --- | --- |
+| Redis rate limits | With `UPSTASH_REDIS_REST_*` set in production | Rate limits persist across server instances (not per-instance memory) |
+| CI pipeline | Push to `main` or open PR | GitHub Actions passes install, lint, typecheck, test, build |

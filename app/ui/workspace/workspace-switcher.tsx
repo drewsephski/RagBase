@@ -66,6 +66,8 @@ export function WorkspaceSwitcher({
   const canCreateMore = workspaces.length < LIMITS.MAX_WORKSPACES;
   const activeName = activeWorkspace?.name ?? "Workspace";
 
+  // TODO(workspace-recovery): optional "Save recovery link" per workspace — docs/workspace-recovery.md
+
   const handleOpenCreate = useCallback(() => {
     setNameInput("");
     setSelectedTemplateId("");

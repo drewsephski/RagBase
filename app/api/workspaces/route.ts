@@ -23,7 +23,7 @@ const renameWorkspaceBodySchema = z.object({
 
 export async function POST(request: NextRequest): Promise<Response> {
   try {
-    enforceWorkspaceCreateRateLimit(request);
+    await enforceWorkspaceCreateRateLimit(request);
 
     let name: string | undefined;
 

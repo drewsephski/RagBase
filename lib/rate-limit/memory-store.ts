@@ -1,15 +1,11 @@
+import type { RateLimitResult, RateLimitStore } from "@/lib/rate-limit/types";
+
 interface BucketState {
   count: number;
   resetAt: number;
 }
 
 const buckets = new Map<string, BucketState>();
-
-export interface RateLimitResult {
-  allowed: boolean;
-  remaining: number;
-  retryAfterSeconds: number;
-}
 
 export function checkMemoryRateLimit(
   key: string,
@@ -49,3 +45,9 @@ export function checkMemoryRateLimit(
 export function resetMemoryRateLimitStore(): void {
   buckets.clear();
 }
+
+export const memoryRateLimitStore: RateLimitStore = {
+  async check(key, limit, windowMs) {
+    return checkMemoryRateLimit(key, limit, windowMs);
+  },
+};

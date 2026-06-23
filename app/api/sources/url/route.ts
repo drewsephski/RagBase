@@ -26,7 +26,7 @@ const UPLOADS_BUCKET = "uploads";
 export async function POST(request: NextRequest): Promise<Response> {
   try {
     const workspace = await requireWorkspace(request);
-    enforceUrlIngestRateLimit(request, workspace.id);
+    await enforceUrlIngestRateLimit(request, workspace.id);
     await checkSourceLimit(workspace.id);
 
     const body: unknown = await request.json();

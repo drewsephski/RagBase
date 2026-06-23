@@ -176,6 +176,7 @@ export function SettingsPanel({
           <div className="space-y-6">
             {onRenameWorkspace ? (
               <section aria-label="Current workspace" className="space-y-3">
+                {/* TODO(workspace-recovery): "Save this workspace" recovery link — see docs/workspace-recovery.md */}
                 <h3 className="text-sm font-semibold">Current workspace</h3>
                 <div className="space-y-2">
                   <Label htmlFor="workspace-name">Name</Label>
