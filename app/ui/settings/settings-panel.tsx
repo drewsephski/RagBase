@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Download, KeyRound, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Download, KeyRound, Trash2, type LucideIcon } from "lucide-react";
 import { DEFAULT_MODEL, LIMITS } from "@/lib/domain/definitions";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import {
@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { WorkspaceRecoverySection } from "@/app/ui/settings/workspace-recovery-section";
 import { AccountSection } from "@/app/ui/settings/account-section";
 import type { UseAuthState } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,33 @@ interface SettingsPanelProps {
   showRecoverySection?: boolean;
   auth?: UseAuthState;
   onAccountSynced?: () => void;
+}
+
+interface SettingsSectionProps {
+  icon?: LucideIcon;
+  title: string;
+  description?: string;
+  children?: ReactNode;
+  className?: string;
+}
+
+function SettingsSection({
+  icon: Icon,
+  title,
+  description,
+  children,
+  className,
+}: SettingsSectionProps) {
+  return (
+    <section aria-label={title} className={cn("settings-section space-y-2", className)}>
+      <div className="settings-section-header">
+        {Icon ? <Icon className="text-muted-foreground size-3.5 shrink-0" aria-hidden /> : null}
+        <h3>{title}</h3>
+      </div>
+      {description ? <p className="settings-section-desc">{description}</p> : null}
+      {children}
+    </section>
+  );
 }
 
 export function SettingsPanel({
@@ -175,28 +203,31 @@ export function SettingsPanel({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Settings</DialogTitle>
-            <DialogDescription>
-              Workspaces are private by default. Sign in optionally to sync chats
+        <DialogContent className="max-h-[min(90vh,52rem)] gap-3 overflow-y-auto sm:max-w-3xl">
+          <DialogHeader className="gap-1 pb-0.5">
+            <DialogTitle className="text-base tracking-tight">Settings</DialogTitle>
+            <DialogDescription className="text-xs leading-snug">
+              Workspaces stay private by default. Sign in optionally to sync chats
               across devices.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="grid gap-2.5 lg:grid-cols-2">
             {auth ? (
               <AccountSection
                 auth={auth}
                 workspaceHeaders={workspaceHeaders}
                 onAccountSynced={onAccountSynced}
+                compact
               />
             ) : null}
 
             {onRenameWorkspace ? (
-              <section aria-label="Current workspace" className="space-y-3">
-                <h3 className="text-sm font-semibold">Current workspace</h3>
-                <div className="space-y-2">
+              <SettingsSection
+                title="Current workspace"
+                description="Rename this workspace or save a recovery link."
+              >
+                <div className="settings-form-row">
                   <Label htmlFor="workspace-name">Name</Label>
                   <Input
                     id="workspace-name"
@@ -204,76 +235,77 @@ export function SettingsPanel({
                     onChange={(event) => setWorkspaceNameInput(event.target.value)}
                     maxLength={64}
                     aria-label="Workspace name"
+                    className="min-w-0 flex-1"
                   />
                   <Button
                     type="button"
                     size="sm"
+                    className="shrink-0 sm:ml-auto"
                     onClick={() => void handleRenameWorkspace()}
                     disabled={isRenaming}
                   >
-                    {isRenaming ? "Saving…" : "Save name"}
+                    {isRenaming ? "Saving…" : "Save"}
                   </Button>
-                  {renameError ? (
-                    <p className="text-destructive text-xs" role="alert">
-                      {renameError}
-                    </p>
-                  ) : null}
                 </div>
-                {showRecoverySection ? (
-                  <WorkspaceRecoverySection onOpenRecoverySetup={onOpenRecoverySetup} />
+                {renameError ? (
+                  <p className="text-destructive text-[11px]" role="alert">
+                    {renameError}
+                  </p>
                 ) : null}
-              </section>
+                {showRecoverySection ? (
+                  <WorkspaceRecoverySection
+                    onOpenRecoverySetup={onOpenRecoverySetup}
+                    compact
+                  />
+                ) : null}
+              </SettingsSection>
             ) : null}
 
             {!onRenameWorkspace && showRecoverySection ? (
-              <WorkspaceRecoverySection onOpenRecoverySetup={onOpenRecoverySetup} />
+              <SettingsSection title="Recovery link">
+                <WorkspaceRecoverySection
+                  onOpenRecoverySetup={onOpenRecoverySetup}
+                  compact
+                />
+              </SettingsSection>
             ) : null}
 
-            <section aria-label="OpenRouter API key" className="space-y-3">
-              <div className="flex items-center gap-2">
-                <KeyRound className="size-4" aria-hidden />
-                <h3 className="text-sm font-semibold">OpenRouter key</h3>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                Optional. Stored only in this browser and shared across
-                workspaces. Unlock higher daily limits, choose your model, and
-                OCR for larger scans (up to 50 pages) using your key.
-              </p>
-              <div className="space-y-2">
-                <Label htmlFor="openrouter-key">API key</Label>
-                <Input
-                  id="openrouter-key"
-                  type="password"
-                  autoComplete="off"
-                  value={openRouterKeyInput}
-                  onChange={(event) => setOpenRouterKeyInput(event.target.value)}
-                  placeholder="sk-or-…"
-                  aria-label="OpenRouter API key"
-                />
-                <Button type="button" size="sm" onClick={handleSaveKey}>
-                  Save key
-                </Button>
-                {savedMessage ? (
-                  <p className="text-muted-foreground text-xs" role="status">
-                    {savedMessage}
-                  </p>
-                ) : null}
-                {hasKey ? (
-                  <p className="text-muted-foreground text-xs leading-relaxed">
-                    OCR for larger scans will use your OpenRouter key.
-                  </p>
-                ) : null}
+            <SettingsSection
+              icon={KeyRound}
+              title="OpenRouter key"
+              description="Optional. Stored in this browser only — unlock higher limits, model choice, and OCR for larger scans."
+              className={auth && onRenameWorkspace ? undefined : "lg:col-span-2"}
+            >
+              <div className="ingest-composer rounded-xl border p-1">
+                <div className="settings-form-row gap-1.5 sm:gap-1.5">
+                  <Label htmlFor="openrouter-key" className="sr-only sm:not-sr-only">
+                    API key
+                  </Label>
+                  <Input
+                    id="openrouter-key"
+                    type="password"
+                    autoComplete="off"
+                    value={openRouterKeyInput}
+                    onChange={(event) => setOpenRouterKeyInput(event.target.value)}
+                    placeholder="sk-or-…"
+                    aria-label="OpenRouter API key"
+                    className="min-w-0 flex-1 border-0 shadow-none focus-visible:ring-1"
+                  />
+                  <Button type="button" size="sm" className="shrink-0" onClick={handleSaveKey}>
+                    Save key
+                  </Button>
+                </div>
               </div>
 
               {hasKey ? (
-                <div className="space-y-2">
+                <div className="settings-form-row">
                   <Label htmlFor="model-select">Model</Label>
                   <select
                     id="model-select"
                     value={selectedModel}
                     onChange={handleModelChange}
                     aria-label="Choose AI model"
-                    className="border-input bg-background focus-visible:ring-ring h-9 w-full rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none"
+                    className="surface-premium-inset border-input/80 focus-visible:ring-ring h-9 min-w-0 flex-1 rounded-xl border px-3 text-xs focus-visible:ring-1 focus-visible:outline-none sm:text-sm"
                   >
                     {MODEL_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -283,17 +315,25 @@ export function SettingsPanel({
                   </select>
                 </div>
               ) : null}
-            </section>
 
-            <section aria-label="Export chat" className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Download className="size-4" aria-hidden />
-                <h3 className="text-sm font-semibold">Export chat</h3>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                Downloads chat history for the current workspace only.
-              </p>
-              <div className="flex flex-wrap gap-2">
+              {savedMessage ? (
+                <p className="text-muted-foreground text-[11px]" role="status">
+                  {savedMessage}
+                </p>
+              ) : null}
+              {hasKey ? (
+                <p className="text-muted-foreground text-[11px] leading-snug">
+                  OCR for larger scans uses your OpenRouter key.
+                </p>
+              ) : null}
+            </SettingsSection>
+
+            <SettingsSection
+              icon={Download}
+              title="Export chat"
+              description="Download chat history for the current workspace."
+            >
+              <div className="settings-inline-actions">
                 <Button
                   type="button"
                   variant="outline"
@@ -301,7 +341,7 @@ export function SettingsPanel({
                   onClick={() => void handleExport("markdown")}
                   disabled={!workspaceHeaders}
                 >
-                  Download Markdown
+                  Markdown
                 </Button>
                 <Button
                   type="button"
@@ -310,38 +350,35 @@ export function SettingsPanel({
                   onClick={() => void handleExport("json")}
                   disabled={!workspaceHeaders}
                 >
-                  Download JSON
+                  JSON
                 </Button>
               </div>
-            </section>
+            </SettingsSection>
 
-            <section aria-label="Privacy" className="space-y-2">
-              <h3 className="text-sm font-semibold">Privacy</h3>
-              <p className="text-muted-foreground text-xs leading-relaxed">
-                Documents and chat history are kept for {LIMITS.RETENTION_DAYS} days
-                after your last visit, then automatically removed — unless you save a
-                recovery link or upgrade to Pro. You can delete the current workspace
-                below at any time.
-              </p>
-            </section>
+            <SettingsSection
+              title="Privacy"
+              description={`Documents and chat history are kept for ${LIMITS.RETENTION_DAYS} days after your last visit, then removed — unless you save a recovery link or upgrade to Pro.`}
+              className="lg:col-span-2"
+            />
 
-            <section aria-label="Delete workspace" className="space-y-3">
+            <SettingsSection title="Danger zone" className="lg:col-span-2">
               <Button
                 type="button"
                 variant="destructive"
-                className="w-full"
+                size="sm"
+                className="w-full sm:w-auto"
                 onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 aria-hidden />
                 Delete current workspace
               </Button>
-            </section>
+            </SettingsSection>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete {activeWorkspaceName ?? "this workspace"}?</DialogTitle>
             <DialogDescription>
@@ -351,7 +388,7 @@ export function SettingsPanel({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"

@@ -177,7 +177,10 @@ export function WorkspaceSwitcher({
             type="button"
             variant="outline"
             size="sm"
-            className={cn("max-w-[10rem] justify-between gap-1 px-2 sm:max-w-[14rem]", className)}
+            className={cn(
+              "surface-panel max-w-[10rem] justify-between gap-1 rounded-xl px-2 sm:max-w-[14rem]",
+              className,
+            )}
             aria-label={`Current workspace: ${activeName}. Switch workspace.`}
           >
             <span className="truncate">{activeName}</span>

@@ -112,68 +112,80 @@ export function UrlInput({
 
       <div
         className={cn(
-          "flex flex-col gap-1.5 sm:flex-row sm:items-start",
-          isSubmitting && "sm:items-stretch",
+          "ingest-composer rounded-2xl border p-1.5 sm:p-2",
+          isSubmitting && "opacity-95",
         )}
       >
-        <div className="relative min-w-0 flex-1">
-          <Link2
-            className={cn(
-              "text-muted-foreground pointer-events-none absolute top-1/2 -translate-y-1/2 transition-opacity",
-              compact ? "left-2.5 size-3.5" : "left-3 size-4",
-              isSubmitting && "opacity-40",
-            )}
-            aria-hidden
-          />
-          <Input
-            id="url-input"
-            type="text"
-            inputMode="url"
-            autoComplete="url"
-            spellCheck={false}
-            placeholder={
-              variant === "minimal"
-                ? "example.com/article or https://…"
-                : "example.com/article"
-            }
-            value={url}
-            disabled={disabled || isSubmitting}
-            onChange={(event) => {
-              setUrl(event.target.value);
-              if (error) {
-                setError(null);
-              }
-            }}
-            className={cn(
-              "transition-opacity",
-              compact ? "h-8 pl-8 text-xs md:text-xs placeholder:text-xs" : "pl-9",
-              isSubmitting && "opacity-60",
-            )}
-            aria-label="Public page URL"
-            aria-busy={isSubmitting}
-            aria-invalid={error ? true : undefined}
-          />
-        </div>
-
-        <Button
-          type="submit"
-          disabled={disabled || isSubmitting || !url.trim()}
-          className="w-full shrink-0 sm:w-auto"
-          size={compact ? "sm" : "default"}
-          aria-label="Add link"
-          variant={variant === "minimal" ? "secondary" : "default"}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-              Reading…
-            </>
-          ) : variant === "minimal" ? (
-            "Add"
-          ) : (
-            "Add link"
+        <div
+          className={cn(
+            "flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2",
+            isSubmitting && "sm:items-stretch",
           )}
-        </Button>
+        >
+          <div className="relative min-w-0 flex-1">
+            <Link2
+              className={cn(
+                "text-muted-foreground pointer-events-none absolute top-1/2 -translate-y-1/2 transition-opacity",
+                compact ? "left-2.5 size-3.5" : "left-3 size-4",
+                isSubmitting && "opacity-40",
+              )}
+              aria-hidden
+            />
+            <Input
+              id="url-input"
+              type="text"
+              inputMode="url"
+              autoComplete="url"
+              spellCheck={false}
+              placeholder={
+                variant === "minimal"
+                  ? "example.com/article or https://…"
+                  : "example.com/article"
+              }
+              value={url}
+              disabled={disabled || isSubmitting}
+              onChange={(event) => {
+                setUrl(event.target.value);
+                if (error) {
+                  setError(null);
+                }
+              }}
+              className={cn(
+                "border-0 shadow-none transition-opacity focus-visible:ring-1",
+                compact
+                  ? "h-8 pl-8 text-xs md:text-xs placeholder:text-xs"
+                  : "min-h-[2.5rem] pl-9 sm:min-h-[2.75rem]",
+                isSubmitting && "opacity-60",
+              )}
+              aria-label="Public page URL"
+              aria-busy={isSubmitting}
+              aria-invalid={error ? true : undefined}
+            />
+          </div>
+
+          <Button
+            type="submit"
+            disabled={disabled || isSubmitting || !url.trim()}
+            className={cn(
+              "w-full shrink-0 sm:w-auto",
+              variant === "minimal" ? "rounded-xl" : "rounded-xl shadow-sm",
+            )}
+            size={compact ? "sm" : "default"}
+            aria-label="Add link"
+            variant={variant === "minimal" ? "secondary" : "default"}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Reading…
+              </>
+            ) : variant === "minimal" ? (
+              "Add"
+            ) : (
+              "Add link"
+            )}
+          </Button>
+        </div>
       </div>
 
       <AnimatePresence>

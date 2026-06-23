@@ -53,7 +53,7 @@ export function PlanPromoCard({
 
     return (
       <div
-        className="border-border/80 bg-card/60 space-y-2 rounded-lg border px-3 py-2.5"
+        className="surface-panel space-y-2 rounded-xl border px-3 py-2.5"
         aria-label="RagBase Pro plan"
       >
         <div className="flex items-start justify-between gap-2">
@@ -109,7 +109,7 @@ export function PlanPromoCard({
   if (checkoutAvailable && workspaceId) {
     return (
       <div
-        className="border-border/80 bg-card/40 space-y-2 rounded-lg border px-3 py-2.5"
+        className="surface-panel space-y-2 rounded-xl border px-3 py-2.5"
         aria-label="Upgrade to RagBase Pro"
       >
         <p className="text-muted-foreground text-[11px] leading-relaxed sm:text-xs">

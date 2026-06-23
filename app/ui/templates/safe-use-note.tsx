@@ -27,7 +27,7 @@ export function SafeUseNote({ safeUse }: SafeUseNoteProps) {
     : { type: "spring" as const, stiffness: 420, damping: 32 };
 
   return (
-    <div className="bg-muted/30 w-full overflow-hidden rounded-lg border text-left">
+    <div className="surface-panel w-full overflow-hidden rounded-2xl border text-left">
       <button
         type="button"
         className="hover:bg-muted/40 flex w-full cursor-pointer items-start gap-2.5 p-3 text-left transition-colors sm:gap-3 sm:p-4"

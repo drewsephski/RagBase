@@ -56,7 +56,7 @@ export function LandingHome({
 }: LandingHomeProps) {
   return (
     <div className="chat-surface flex min-h-dvh flex-col overflow-hidden">
-      <header className="border-border/60 bg-background/80 flex shrink-0 items-center justify-between gap-2 px-safe py-3 backdrop-blur-md pt-safe sm:px-6 sm:py-4">
+      <header className="border-border/50 bg-background/72 flex shrink-0 items-center justify-between gap-2 px-safe py-3 backdrop-blur-xl pt-safe sm:px-6 sm:py-4">
         <WorkspaceSwitcher {...workspaceSwitcherProps} />
         <div className="flex items-center gap-1.5 sm:gap-2">
           <ProNavBadge workspaceHeaders={workspaceHeaders} subscription={subscription} />

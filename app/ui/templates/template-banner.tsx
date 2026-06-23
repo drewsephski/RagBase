@@ -29,7 +29,7 @@ export function TemplateBanner({ template, compact = false }: TemplateBannerProp
   return (
     <section
       aria-label="Workspace template"
-      className="bg-muted/20 w-full space-y-3 rounded-lg border p-4 text-left sm:p-5"
+      className="surface-panel w-full space-y-3 rounded-2xl border p-4 text-left sm:p-5"
     >
       <div className="flex items-start gap-3">
         <span

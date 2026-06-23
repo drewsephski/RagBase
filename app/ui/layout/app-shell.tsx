@@ -239,7 +239,7 @@ export function AppShell({
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden overscroll-none">
-      <header className="border-border/60 bg-background/80 flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5 backdrop-blur-md pt-safe sm:gap-3 sm:px-4 sm:py-3">
+      <header className="border-border/50 bg-background/72 flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5 backdrop-blur-xl pt-safe sm:gap-3 sm:px-4 sm:py-3">
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
           <Link
             href="/"
@@ -286,7 +286,7 @@ export function AppShell({
         <aside
           id="documents-sidebar"
           className={cn(
-            "bg-surface-elevated/50 z-30 flex min-h-0 flex-col overflow-hidden border-r shadow-lg backdrop-blur-sm transition-[transform,width] duration-300 ease-in-out motion-reduce:transition-none",
+            "surface-panel z-30 flex min-h-0 flex-col overflow-hidden border-r shadow-lg transition-[transform,width] duration-300 ease-in-out motion-reduce:transition-none",
             "absolute inset-y-0 left-0 md:relative md:inset-auto md:shadow-none",
             "max-md:w-[var(--sidebar-width)] max-md:pb-safe",
             mobileSidebarOpen

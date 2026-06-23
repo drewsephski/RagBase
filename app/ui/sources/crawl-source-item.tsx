@@ -103,7 +103,7 @@ export function CrawlSourceItem({
   return (
     <article
       className={cn(
-        "w-full max-w-full overflow-hidden rounded-md border px-1.5 py-1.5 transition-colors",
+        "surface-panel w-full max-w-full overflow-hidden rounded-xl border px-2 py-2 transition-[border-color,box-shadow]",
         (isScoped || scopedDocumentId) && "border-primary/50 bg-primary/5",
       )}
       aria-label={`Site crawl: ${source.name}`}

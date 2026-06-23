@@ -130,8 +130,8 @@ export function PromptChips({
                 aria-pressed={isSelected}
                 aria-label={`Example question: ${prompt}`}
                 className={cn(
-                  "h-auto whitespace-normal text-left transition-[border-color,background-color,box-shadow,transform]",
-                  "hover:border-border hover:bg-card/60 hover:shadow-sm",
+                  "surface-panel h-auto whitespace-normal rounded-xl text-left transition-[border-color,background-color,box-shadow,transform]",
+                  "hover:border-muted-foreground/30",
                   enableShareLinks && "pr-9",
                   useGrid
                     ? "w-full justify-start px-3.5 py-3 text-xs sm:text-sm"

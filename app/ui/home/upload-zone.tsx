@@ -100,11 +100,11 @@ export function UploadZone({
           }
         }}
         className={cn(
-          "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          compact ? "gap-1.5 px-3 py-4 sm:gap-2 sm:px-4 sm:py-6" : "gap-2 px-4 py-8 sm:gap-3 sm:px-6 sm:py-10",
+          "surface-panel flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed transition-[border-color,box-shadow,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          compact ? "gap-1.5 px-3 py-4 sm:gap-2 sm:px-4 sm:py-5" : "gap-2 px-4 py-8 sm:gap-3 sm:px-6 sm:py-10",
           isDragging
-            ? "border-primary bg-primary/5"
-            : "border-border hover:border-muted-foreground/50 hover:bg-muted/30",
+            ? "border-primary/60 bg-primary/5 shadow-[0_0_0_1px_color-mix(in_oklch,var(--primary)_20%,transparent)]"
+            : "border-border/80 hover:border-muted-foreground/40",
           (disabled || isUploading) && "pointer-events-none opacity-60",
         )}
       >

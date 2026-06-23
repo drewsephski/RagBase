@@ -8,17 +8,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { UseAuthState } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
 
 interface AccountSectionProps {
   auth: UseAuthState;
   workspaceHeaders: WorkspaceHeaders | null;
   onAccountSynced?: () => void;
+  compact?: boolean;
 }
 
 export function AccountSection({
   auth,
   workspaceHeaders,
   onAccountSynced,
+  compact = false,
 }: AccountSectionProps) {
   const { user, isLoading, isConfigured, signInWithEmail, signOut } = auth;
   const [email, setEmail] = useState("");
@@ -91,25 +94,35 @@ export function AccountSection({
   }
 
   return (
-    <section aria-label="Account" className="space-y-3">
-      <div className="flex items-center gap-2">
-        <UserRound className="size-4" aria-hidden />
-        <h3 className="text-sm font-semibold">Account</h3>
+    <section
+      aria-label="Account"
+      className={cn(
+        compact ? "settings-section space-y-2" : "space-y-3",
+      )}
+    >
+      <div className={cn(compact ? "settings-section-header" : "flex items-center gap-2")}>
+        <UserRound
+          className={cn("shrink-0", compact ? "text-muted-foreground size-3.5" : "size-4")}
+          aria-hidden
+        />
+        <h3 className={compact ? undefined : "text-sm font-semibold"}>Account</h3>
       </div>
 
-      <p className="text-muted-foreground text-xs leading-relaxed">
+      <p className={compact ? "settings-section-desc" : "text-muted-foreground text-xs leading-relaxed"}>
         Optional. Sign in to sync workspaces across devices and keep chat history
         tied to your account — not just this browser.
       </p>
 
       {isLoading ? (
-        <p className="text-muted-foreground text-xs" role="status">Loading account…</p>
+        <p className="text-muted-foreground text-[11px]" role="status">
+          Loading account…
+        </p>
       ) : user ? (
-        <div className="space-y-3">
-          <p className="text-sm">
+        <div className="space-y-2">
+          <p className="truncate text-xs sm:text-sm">
             Signed in as <span className="font-medium">{user.email}</span>
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="settings-inline-actions">
             {workspaceHeaders ? (
               <Button
                 type="button"
@@ -118,7 +131,7 @@ export function AccountSection({
                 onClick={() => void handleLinkWorkspace()}
                 disabled={isLinking || isSubmitting}
               >
-                {isLinking ? "Linking…" : "Link this workspace"}
+                {isLinking ? "Linking…" : "Link workspace"}
               </Button>
             ) : null}
             <Button
@@ -134,34 +147,44 @@ export function AccountSection({
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
-          <Label htmlFor="account-email">Email</Label>
-          <Input
-            id="account-email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@example.com"
-            aria-label="Email for sign in"
-          />
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => void handleSignIn()}
-            disabled={isSubmitting}
-          >
-            <LogIn aria-hidden />
-            {isSubmitting ? "Sending…" : "Email me a sign-in link"}
-          </Button>
+        <div className="ingest-composer space-y-1.5 rounded-xl border p-1">
+          <div className="settings-form-row gap-1.5">
+            <Label htmlFor="account-email" className="sr-only sm:not-sr-only">
+              Email
+            </Label>
+            <Input
+              id="account-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.com"
+              aria-label="Email for sign in"
+              className="min-w-0 flex-1 border-0 shadow-none focus-visible:ring-1"
+            />
+            <Button
+              type="button"
+              size="sm"
+              className="shrink-0"
+              onClick={() => void handleSignIn()}
+              disabled={isSubmitting}
+            >
+              <LogIn aria-hidden />
+              {isSubmitting ? "Sending…" : "Sign in"}
+            </Button>
+          </div>
         </div>
       )}
 
       {statusMessage ? (
-        <p className="text-muted-foreground text-xs" role="status">{statusMessage}</p>
+        <p className="text-muted-foreground text-[11px]" role="status">
+          {statusMessage}
+        </p>
       ) : null}
       {errorMessage ? (
-        <p className="text-destructive text-xs" role="alert">{errorMessage}</p>
+        <p className="text-destructive text-[11px]" role="alert">
+          {errorMessage}
+        </p>
       ) : null}
     </section>
   );

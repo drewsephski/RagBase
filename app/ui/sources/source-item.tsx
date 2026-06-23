@@ -85,8 +85,8 @@ export function SourceItem({
   return (
     <article
       className={cn(
-        "w-full max-w-full overflow-hidden rounded-md border px-1.5 py-1.5 transition-colors",
-        isScoped && "border-primary/50 bg-primary/5",
+        "surface-panel w-full max-w-full overflow-hidden rounded-xl border px-2 py-2 transition-[border-color,box-shadow]",
+        isScoped && "border-primary/50 bg-primary/5 shadow-[0_0_0_1px_color-mix(in_oklch,var(--primary)_12%,transparent)]",
       )}
       aria-label={`Document: ${source.name}`}
     >
