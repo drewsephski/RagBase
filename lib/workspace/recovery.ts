@@ -130,13 +130,19 @@ export async function exchangeRecoveryToken(
     throw new Error(`Failed to rotate workspace secret: ${workspaceError.message}`);
   }
 
-  const { error: usedError } = await supabase
+  const { data: revokedRows, error: usedError } = await supabase
     .from("workspace_recovery_tokens")
-    .update({ last_used_at: now })
-    .eq("id", tokenRow.id);
+    .update({ last_used_at: now, revoked_at: now })
+    .eq("id", tokenRow.id)
+    .is("revoked_at", null)
+    .select("id");
 
   if (usedError) {
-    throw new Error(`Failed to update recovery token usage: ${usedError.message}`);
+    throw new Error(`Failed to revoke recovery token: ${usedError.message}`);
+  }
+
+  if (!revokedRows?.length) {
+    throw new RecoveryTokenError();
   }
 
   return {

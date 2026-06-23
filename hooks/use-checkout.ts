@@ -12,6 +12,7 @@ interface UseCheckoutOptions {
   workspaceId?: string | null;
   surface?: string;
   isAuthenticated?: boolean;
+  isAuthLoading?: boolean;
   onAuthenticationRequired?: () => void;
 }
 
@@ -26,6 +27,7 @@ export function useCheckout({
   workspaceId = null,
   surface = "checkout",
   isAuthenticated = true,
+  isAuthLoading = false,
   onAuthenticationRequired,
 }: UseCheckoutOptions): UseCheckoutState {
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
@@ -34,6 +36,10 @@ export function useCheckout({
   const startCheckout = useCallback(async () => {
     if (!workspaceHeaders) {
       setCheckoutError("Create a workspace before subscribing.");
+      return;
+    }
+
+    if (isAuthLoading) {
       return;
     }
 
@@ -78,6 +84,7 @@ export function useCheckout({
       setIsStartingCheckout(false);
     }
   }, [
+    isAuthLoading,
     isAuthenticated,
     onAuthenticationRequired,
     surface,

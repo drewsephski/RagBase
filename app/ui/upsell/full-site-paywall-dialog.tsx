@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { UseAuthState } from "@/hooks/use-auth";
 import { isSupabaseAuthConfigured } from "@/lib/supabase/env";
+import { getCheckoutAuthState } from "@/lib/billing/checkout-auth-state";
 
 interface FullSitePaywallDialogProps {
   open: boolean;
@@ -55,14 +56,18 @@ export function FullSitePaywallDialog({
   const formOpenedAtRef = useRef<number | null>(null);
   const proPrice = getProPriceDisplay();
   const checkoutAvailable = isCheckoutAvailable();
-  const authRequired =
-    isSupabaseAuthConfigured() && !auth?.isLoading && !auth?.user;
+  const checkoutAuth = getCheckoutAuthState({
+    isAuthConfigured: isSupabaseAuthConfigured(),
+    isLoading: auth?.isLoading,
+    hasUser: Boolean(auth?.user),
+  });
   const { startCheckout, isStartingCheckout, checkoutError: checkoutStartError } =
     useCheckout({
       workspaceHeaders: workspaceHeaders ?? null,
       workspaceId,
       surface,
-      isAuthenticated: !authRequired,
+      isAuthenticated: checkoutAuth.canCheckout,
+      isAuthLoading: checkoutAuth.status === "checking",
     });
 
   useEffect(() => {
@@ -257,11 +262,23 @@ export function FullSitePaywallDialog({
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Button
                 type="button"
-                disabled={isSubmitting || isStartingCheckout || !workspaceId}
+                disabled={
+                  isSubmitting ||
+                  isStartingCheckout ||
+                  !workspaceId ||
+                  !checkoutAuth.canCheckout
+                }
                 className="sm:flex-1"
                 onClick={handleSubscribe}
+                aria-busy={checkoutAuth.status === "checking" || isStartingCheckout}
               >
-                {isStartingCheckout ? "Redirecting…" : "Unlock site crawling"}
+                {checkoutAuth.status === "checking"
+                  ? "Checking account…"
+                  : isStartingCheckout
+                    ? "Redirecting…"
+                    : checkoutAuth.status === "sign_in_required"
+                      ? "Sign in to subscribe"
+                      : "Unlock site crawling"}
               </Button>
               {pendingUrl && onAddPageOnly ? (
                 <Button
@@ -278,7 +295,7 @@ export function FullSitePaywallDialog({
 
             <p className="text-muted-foreground text-[11px] leading-relaxed">
               RagBase Pro · {proPrice}
-              {authRequired ? " · sign in required" : ""}
+              {checkoutAuth.statusMessage ? ` · ${checkoutAuth.statusMessage}` : ""}
             </p>
           </div>
         ) : success ? (

@@ -2,6 +2,10 @@ import { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { isWebhooksEnabled } from "@/lib/billing/flags";
 import { dispatchStripeWebhookEvent } from "@/lib/billing/webhook-handlers";
+import {
+  claimStripeWebhookEvent,
+  markStripeWebhookEventProcessed,
+} from "@/lib/billing/webhook-idempotency";
 import { getStripeWebhookSecret } from "@/lib/env/server";
 import { getStripeClient } from "@/lib/stripe/client";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -31,22 +35,22 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   const supabase = createServiceClient();
 
-  const { error: insertError } = await supabase.from("stripe_webhook_events").insert({
-    id: event.id,
-    type: event.type,
-  });
-
-  if (insertError) {
-    if (insertError.code === "23505") {
-      return Response.json({ received: true, duplicate: true });
-    }
-    console.error("Failed to record Stripe webhook event:", insertError);
+  let claimResult: Awaited<ReturnType<typeof claimStripeWebhookEvent>>;
+  try {
+    claimResult = await claimStripeWebhookEvent(supabase, event);
+  } catch (error) {
+    console.error("Failed to claim Stripe webhook event:", error);
     return Response.json({ error: "Failed to record webhook event" }, { status: 500 });
+  }
+
+  if (claimResult === "already_processed") {
+    return Response.json({ received: true, duplicate: true });
   }
 
   try {
     const stripe = getStripeClient();
     await dispatchStripeWebhookEvent(supabase, stripe, event);
+    await markStripeWebhookEventProcessed(supabase, event.id);
   } catch (error) {
     console.error("Stripe webhook handler failed:", event.type, error);
     return Response.json({ error: "Webhook handler failed" }, { status: 500 });
