@@ -1,9 +1,13 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { useSubscription } from "@/hooks/use-subscription";
-import { apiJson } from "@/lib/api/client";
+import { useBillingPortal } from "@/hooks/use-billing-portal";
+import { useCheckout } from "@/hooks/use-checkout";
+import { isCheckoutAvailable } from "@/lib/billing/checkout-url";
+import { formatBillingPeriodEnd } from "@/lib/billing/display";
+import { trackEvent } from "@/lib/analytics/track";
 import { getProPriceDisplay } from "@/lib/site";
 import { supportMailto } from "@/lib/support";
 import { Button } from "@/components/ui/button";
@@ -11,59 +15,35 @@ import { Button } from "@/components/ui/button";
 interface BillingSectionProps {
   workspaceHeaders: WorkspaceHeaders | null;
   open: boolean;
-  onOpenRecoverySetup?: () => void;
-}
-
-function formatPeriodEnd(value: string | null): string | null {
-  if (!value) {
-    return null;
-  }
-
-  return new Date(value).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 export function BillingSection({
   workspaceHeaders,
   open,
-  onOpenRecoverySetup,
 }: BillingSectionProps) {
   const { subscription, isLoading, refresh } = useSubscription({
     headers: workspaceHeaders,
     enabled: open && Boolean(workspaceHeaders),
   });
-  const [portalError, setPortalError] = useState<string | null>(null);
-  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const { openPortal, isOpeningPortal, portalError } = useBillingPortal({
+    workspaceHeaders,
+    surface: "settings_billing",
+  });
   const proPrice = getProPriceDisplay();
+  const checkoutAvailable = isCheckoutAvailable();
+  const workspaceId = workspaceHeaders?.["X-Workspace-Id"] ?? null;
+  const { startCheckout, isStartingCheckout } = useCheckout({
+    workspaceHeaders,
+    surface: "settings_billing",
+  });
 
-  const handleManageBilling = useCallback(async () => {
-    if (!workspaceHeaders) {
+  const handleUpgrade = useCallback(() => {
+    if (!workspaceId) {
       return;
     }
 
-    setPortalError(null);
-    setIsOpeningPortal(true);
-
-    try {
-      const result = await apiJson<{ url: string }>("/api/billing/portal", {
-        method: "POST",
-        workspaceHeaders,
-      });
-
-      window.location.href = result.url;
-    } catch (error) {
-      setPortalError(
-        error instanceof Error
-          ? error.message
-          : "Could not open billing portal.",
-      );
-    } finally {
-      setIsOpeningPortal(false);
-    }
-  }, [workspaceHeaders]);
+    void startCheckout();
+  }, [startCheckout, workspaceId]);
 
   if (!workspaceHeaders) {
     return null;
@@ -79,7 +59,7 @@ export function BillingSection({
   }
 
   const isPro = subscription?.isProActive ?? false;
-  const periodEnd = formatPeriodEnd(subscription?.currentPeriodEnd ?? null);
+  const periodEnd = formatBillingPeriodEnd(subscription?.currentPeriodEnd ?? null);
 
   return (
     <section aria-label="Billing" className="space-y-3">
@@ -116,7 +96,7 @@ export function BillingSection({
           size="sm"
           variant="outline"
           disabled={isOpeningPortal}
-          onClick={() => void handleManageBilling()}
+          onClick={() => void openPortal()}
         >
           {isOpeningPortal ? "Opening…" : "Manage billing"}
         </Button>
@@ -131,15 +111,15 @@ export function BillingSection({
         </p>
       ) : null}
 
-      {isPro && !subscription?.recoveryLinkConfirmed ? (
-        <div className="space-y-2">
-          <p className="text-muted-foreground text-xs leading-relaxed">
-            Save a recovery link to open this Pro workspace on another device.
-          </p>
-          <Button type="button" size="sm" variant="secondary" onClick={onOpenRecoverySetup}>
-            Save recovery link
-          </Button>
-        </div>
+      {!isPro && checkoutAvailable ? (
+        <Button
+          type="button"
+          size="sm"
+          disabled={isStartingCheckout}
+          onClick={handleUpgrade}
+        >
+          {isStartingCheckout ? "Redirecting…" : `Upgrade to Pro · ${proPrice}`}
+        </Button>
       ) : null}
 
       {!isPro && subscription?.hasStripeCustomer && !subscription.isProActive ? (

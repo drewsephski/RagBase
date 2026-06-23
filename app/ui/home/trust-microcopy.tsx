@@ -19,7 +19,8 @@ export function TrustMicrocopy({ className, compact = false }: TrustMicrocopyPro
       {!compact ? (
         <>
           {" "}
-          · Auto-deletes after {LIMITS.RETENTION_DAYS} days of inactivity
+          · Removed after {LIMITS.RETENTION_DAYS} days of inactivity unless you save
+          a recovery link
         </>
       ) : null}
     </p>

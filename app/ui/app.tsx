@@ -12,7 +12,10 @@ import { useSubscription } from "@/hooks/use-subscription";
 import { trackEvent } from "@/lib/analytics/track";
 import {
   isRecoveryConfirmedLocally,
+  isRecoveryPromptDismissedLocally,
+  isRecoverySaved,
   setRecoveryConfirmedLocally,
+  setRecoveryPromptDismissedLocally,
 } from "@/lib/billing/recovery-state";
 import {
   peekPendingPrompt,
@@ -78,10 +81,15 @@ function AppContent() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showRecoverySetup, setShowRecoverySetup] = useState(false);
+  const [recoverySetupContext, setRecoverySetupContext] = useState<
+    "pro_checkout" | "workspace"
+  >("workspace");
   const [checkoutHandled, setCheckoutHandled] = useState(false);
+  const [freeRecoveryEligible, setFreeRecoveryEligible] = useState(false);
   const checkoutCancelTrackedRef = useRef(false);
   const [pendingPromptHint, setPendingPromptHint] = useState<string | null>(null);
   const checkoutParam = searchParams.get("checkout");
+  const checkoutSessionId = searchParams.get("session_id");
   const isCheckoutSuccess = checkoutParam === "success";
 
   const { subscription, isPendingActivation, refresh: refreshSubscription } =
@@ -89,6 +97,7 @@ function AppContent() {
       headers,
       enabled: isReady && Boolean(headers),
       pollWhilePending: isCheckoutSuccess && !checkoutHandled,
+      checkoutSessionId,
     });
 
   const ingestion = useIngestion({
@@ -123,6 +132,7 @@ function AppContent() {
       isRecoveryConfirmedLocally(activeWorkspaceId);
 
     if (!confirmed) {
+      setRecoverySetupContext("pro_checkout");
       setShowRecoverySetup(true);
     }
   }, [
@@ -133,16 +143,23 @@ function AppContent() {
     subscription,
   ]);
 
+  const recoverySaved =
+    Boolean(subscription?.recoveryLinkConfirmed) ||
+    (activeWorkspaceId ? isRecoveryConfirmedLocally(activeWorkspaceId) : false);
+
   const showRecoveryBanner =
-    Boolean(subscription?.isProActive) &&
     Boolean(activeWorkspaceId) &&
     !showRecoverySetup &&
-    !(
-      subscription?.recoveryLinkConfirmed ||
-      (activeWorkspaceId ? isRecoveryConfirmedLocally(activeWorkspaceId) : false)
-    );
+    !recoverySaved &&
+    (subscription?.isProActive ||
+      (freeRecoveryEligible &&
+        activeWorkspaceId &&
+        !isRecoveryPromptDismissedLocally(activeWorkspaceId)));
+
+  const showRecoverySection = Boolean(activeWorkspaceId) && !recoverySaved;
 
   const handleOpenRecoverySetup = useCallback(() => {
+    setRecoverySetupContext("workspace");
     setShowRecoverySetup(true);
   }, []);
 
@@ -157,6 +174,29 @@ function AppContent() {
   const handleRecoveryDefer = useCallback(() => {
     setShowRecoverySetup(false);
   }, []);
+
+  const handleDismissRecoveryBanner = useCallback(() => {
+    if (activeWorkspaceId) {
+      setRecoveryPromptDismissedLocally(activeWorkspaceId);
+    }
+    trackEvent("recovery_link_deferred", { surface: "banner" });
+  }, [activeWorkspaceId]);
+
+  const handleFirstAnswerComplete = useCallback(() => {
+    if (!activeWorkspaceId) {
+      return;
+    }
+
+    if (isRecoverySaved(activeWorkspaceId, subscription?.recoveryLinkConfirmed ?? false)) {
+      return;
+    }
+
+    setFreeRecoveryEligible(true);
+  }, [activeWorkspaceId, subscription?.recoveryLinkConfirmed]);
+
+  useEffect(() => {
+    setFreeRecoveryEligible(false);
+  }, [activeWorkspaceId]);
 
   const [templateRoutingDismissed, setTemplateRoutingDismissed] = useState(false);
   const promptDeeplinkAppliedRef = useRef(false);
@@ -291,6 +331,7 @@ function AppContent() {
         <RecoverySetup
           workspaceId={activeWorkspaceId}
           workspaceHeaders={headers}
+          context={recoverySetupContext}
           onComplete={handleRecoveryComplete}
           onDefer={handleRecoveryDefer}
         />
@@ -352,14 +393,21 @@ function AppContent() {
           onFullSitePaywallOpen={() =>
             ingestion.openFullSitePaywall(undefined, "crawl_hint")
           }
+          subscription={subscription}
           onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
           template={template}
           recoveryBanner={
             showRecoveryBanner ? (
-              <RecoveryBanner onSaveRecoveryLink={handleOpenRecoverySetup} />
+              <RecoveryBanner
+                onSaveRecoveryLink={handleOpenRecoverySetup}
+                dismissible={!subscription?.isProActive}
+                onDismiss={handleDismissRecoveryBanner}
+              />
             ) : null
           }
           onOpenRecoverySetup={handleOpenRecoverySetup}
+          showRecoverySection={showRecoverySection}
+          onFirstAnswerComplete={handleFirstAnswerComplete}
         />
 
         {paywallDialogs}
@@ -377,6 +425,8 @@ function AppContent() {
         onFullSitePaywallOpen={() =>
           ingestion.openFullSitePaywall(undefined, "crawl_hint")
         }
+        subscription={subscription}
+        workspaceHeaders={headers}
         pendingPromptHint={
           pendingPromptHint
             ? `Queued: "${pendingPromptHint}" — we'll ask this when your first document is ready.`
@@ -399,6 +449,7 @@ function AppContent() {
         }
         onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
         onOpenRecoverySetup={handleOpenRecoverySetup}
+        showRecoverySection={showRecoverySection}
       />
 
       {paywallDialogs}

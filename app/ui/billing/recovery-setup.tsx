@@ -7,16 +7,38 @@ import { trackEvent } from "@/lib/analytics/track";
 import { setRecoveryConfirmedLocally } from "@/lib/billing/recovery-state";
 import { Button } from "@/components/ui/button";
 
+export type RecoverySetupContext = "pro_checkout" | "workspace";
+
 interface RecoverySetupProps {
   workspaceId: string;
   workspaceHeaders: WorkspaceHeaders;
+  context?: RecoverySetupContext;
   onComplete: () => void;
   onDefer: () => void;
 }
 
+const COPY: Record<
+  RecoverySetupContext,
+  { title: string; description: string; deferLabel: string }
+> = {
+  pro_checkout: {
+    title: "Your Pro workspace is ready",
+    description:
+      "Save this private recovery link before crawling your first site. It restores your documents and chat history on another device.",
+    deferLabel: "Do this later",
+  },
+  workspace: {
+    title: "Save your workspace",
+    description:
+      "Copy this private link to open your documents and chat history on another device or browser.",
+    deferLabel: "Not now",
+  },
+};
+
 export function RecoverySetup({
   workspaceId,
   workspaceHeaders,
+  context = "workspace",
   onComplete,
   onDefer,
 }: RecoverySetupProps) {
@@ -24,6 +46,7 @@ export function RecoverySetup({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const copy = COPY[context];
 
   useEffect(() => {
     let cancelled = false;
@@ -110,11 +133,9 @@ export function RecoverySetup({
     >
       <div className="border-border bg-card w-full max-w-md rounded-xl border p-6 shadow-lg">
         <h2 id="recovery-setup-title" className="text-lg font-semibold">
-          Your Pro workspace is ready
+          {copy.title}
         </h2>
-        <p className="text-muted-foreground mt-2 text-sm">
-          Save this private recovery link before crawling your first site.
-        </p>
+        <p className="text-muted-foreground mt-2 text-sm">{copy.description}</p>
 
         {isLoading ? (
           <p className="text-muted-foreground mt-4 text-sm">Creating recovery link…</p>
@@ -152,7 +173,7 @@ export function RecoverySetup({
           className="text-muted-foreground mt-3 w-full"
           onClick={handleDefer}
         >
-          Do this later
+          {copy.deferLabel}
         </Button>
       </div>
     </div>

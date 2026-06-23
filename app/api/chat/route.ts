@@ -11,6 +11,10 @@ import {
 } from "@/lib/limits";
 import { parseCitationsFromResponse } from "@/lib/chat/citations";
 import { buildSystemPrompt } from "@/lib/chat/prompts";
+import {
+  buildConversationMessages,
+  fetchRecentConversationMessages,
+} from "@/lib/chat/messages";
 import { RETRIEVAL } from "@/lib/retrieval/config";
 import {
   buildContextBlocks,
@@ -56,6 +60,8 @@ export async function POST(request: NextRequest): Promise<Response> {
     await checkMessageLimit(workspace.id, hasUserKey);
 
     const supabase = createServiceClient();
+    const priorMessages = await fetchRecentConversationMessages(workspace.id);
+    const conversationHistory = buildConversationMessages(priorMessages);
 
     if (sourceId) {
       const { data: scopedSource, error: sourceScopeError } =
@@ -128,7 +134,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     const result = streamText({
       model: createChatModel(apiKey, model),
       system: systemPrompt,
-      prompt: message,
+      messages: [
+        ...conversationHistory,
+        { role: "user", content: message },
+      ],
       maxTokens: RETRIEVAL.MAX_OUTPUT_TOKENS,
       onFinish: async ({ text }) => {
         const parsedResponse = parseCitationsFromResponse(text, contextBlocks);

@@ -45,6 +45,22 @@ Run through this checklist before each beta release or after significant changes
 | Feedback Yes/No | On last answer, click thumbs up or down | UI accepts feedback; optional reason on negative |
 | Copy answer | Click Copy on an assistant message | Text copied; button shows “Copied” briefly |
 | Scoped source chat | Select a single document, ask a question | Answer cites only that source when scoped |
+| Chat history reload | Ask 2+ questions, refresh the page | Prior user and assistant messages reappear; input ready |
+| Multi-turn follow-up | Ask a question, then follow up with “what about section 3?” or “summarize that in one sentence” | Second answer reflects the prior turn (not a fresh one-shot reply) |
+| Multi-turn after refresh | Reload mid-thread, send a follow-up | Follow-up still uses earlier messages from restored history |
+
+## Workspace recovery (free + Pro)
+
+| Scenario | Steps | Expected |
+| --- | --- | --- |
+| Free recovery banner | Free workspace → upload doc → ask first question → wait for answer | Dismissible banner: save recovery link; copy mentions documents + chat history |
+| Dismiss recovery banner | Click dismiss (X) on free-user banner | Banner hides for this workspace on this device; chat remains fully usable |
+| Settings recovery (free) | Settings → Recovery link → Save recovery link | Modal opens; copy mentions documents + chat history; not only under Billing |
+| Recovery link save | Copy link → “I saved it” | Banner and Settings recovery section disappear; `recovery_link_confirmed` tracked |
+| Recovery fresh browser | Copy recovery link → open in fresh profile/incognito | Workspace restored with documents and chat history |
+| Pro post-checkout recovery | Complete Pro checkout | Full-screen recovery modal (Pro copy); persistent banner until confirmed if deferred |
+| Pro recovery banner | Pro user, recovery not confirmed, dismiss modal | Non-dismissible banner until link saved or “I saved it” |
+| Retention copy | Landing trust line + Settings → Privacy | Mentions 14-day inactivity cleanup unless recovery link saved (Pro also exempt server-side) |
 
 ## Limits, rate limits, and workspace
 
@@ -85,6 +101,8 @@ Run through this checklist before each beta release or after significant changes
 
 ## Billing and recovery (phase 6c)
 
+**Setup:** Run `npm run stripe:setup` (or `node scripts/stripe-setup.mjs --app-url http://localhost:3000 --write-env`) to create the RagBase Pro product, $9/mo price, and Payment Link in Stripe test mode. Then forward webhooks with `stripe listen --forward-to localhost:3000/api/webhooks/stripe`.
+
 Flags must stay off until webhook QA passes: `STRIPE_WEBHOOKS_ENABLED=false`, `NEXT_PUBLIC_BILLING_ENABLED=false`.
 
 | Scenario | Steps | Expected |
@@ -92,7 +110,8 @@ Flags must stay off until webhook QA passes: `STRIPE_WEBHOOKS_ENABLED=false`, `N
 | Webhook test checkout | Stripe CLI → `checkout.session.completed` with `client_reference_id` | Workspace `plan=pro`; subscription fields populated |
 | Checkout return pending | Complete test checkout; return before webhook | “Activating your Pro workspace…” then resolves within 60s |
 | Checkout return timeout | Return with webhook disabled | Timeout copy + support mailto after 60s |
-| Recovery link | Settings or post-checkout → copy link → open in fresh profile | Workspace restored; old secret rotated |
+| Recovery link | Settings or post-checkout → copy link → open in fresh profile | Workspace restored with documents and chat history; old secret rotated |
+| Recovery from chat thread | Restore workspace that had prior messages | Chat history visible after recovery |
 | Recovery expired | Use expired/revoked token | Generic error; support mailto |
 | Customer Portal | Settings → Manage billing | Stripe portal opens; cancel downgrades workspace on webhook |
 | Past due grace | Trigger `invoice.payment_failed` in test mode | `past_due` status; Pro access for 3 days |

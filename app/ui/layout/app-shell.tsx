@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import type { Source } from "@/lib/domain/definitions";
+import type { SubscriptionStatusResponse } from "@/lib/billing/types";
 import type { WorkspaceTemplate } from "@/lib/domain/templates";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -21,7 +22,8 @@ import { SettingsPanel } from "@/app/ui/settings/settings-panel";
 import { UploadZone } from "@/app/ui/home/upload-zone";
 import { UrlInput } from "@/app/ui/home/url-input";
 import { TrustMicrocopy } from "@/app/ui/home/trust-microcopy";
-import { CrawlTeaserHint } from "@/app/ui/home/crawl-teaser-hint";
+import { PlanPromoCard } from "@/app/ui/billing/plan-promo-card";
+import { ProNavBadge } from "@/app/ui/billing/pro-nav-badge";
 import {
   WorkspaceSwitcher,
   type WorkspaceSwitcherProps,
@@ -45,10 +47,13 @@ interface AppShellProps {
   onUpload: (file: File) => Promise<void>;
   onUrlSubmit: (url: string) => Promise<{ teaser?: boolean; message?: string; url?: string } | void>;
   onFullSitePaywallOpen?: () => void;
+  subscription?: SubscriptionStatusResponse | null;
   onWorkspaceDeleted: () => void;
   template?: WorkspaceTemplate | null;
   recoveryBanner?: ReactNode;
   onOpenRecoverySetup?: () => void;
+  showRecoverySection?: boolean;
+  onFirstAnswerComplete?: () => void;
 }
 
 const SIDEBAR_WIDTH = "min(280px, 85vw)";
@@ -68,6 +73,7 @@ function SidebarContent({
   onUpload,
   onUrlSubmit,
   onFullSitePaywallOpen,
+  subscription = null,
 }: Pick<
   AppShellProps,
   | "workspaceHeaders"
@@ -84,6 +90,7 @@ function SidebarContent({
   | "onUpload"
   | "onUrlSubmit"
   | "onFullSitePaywallOpen"
+  | "subscription"
 >) {
   return (
     <>
@@ -105,10 +112,13 @@ function SidebarContent({
 
       <div className="shrink-0 space-y-2 border-t pt-2.5 sm:pt-3">
         <UploadZone onUpload={onUpload} compact />
-        <UrlInput onSubmit={onUrlSubmit} />
-        {onFullSitePaywallOpen ? (
-          <CrawlTeaserHint onLearnMore={onFullSitePaywallOpen} />
-        ) : null}
+        <UrlInput onSubmit={onUrlSubmit} compact />
+        <PlanPromoCard
+          workspaceHeaders={workspaceHeaders}
+          subscription={subscription}
+          onPaywallOpen={onFullSitePaywallOpen}
+          surface="sidebar"
+        />
         <TrustMicrocopy compact className="text-left" />
       </div>
     </>
@@ -132,10 +142,13 @@ export function AppShell({
   onUpload,
   onUrlSubmit,
   onFullSitePaywallOpen,
+  subscription = null,
   onWorkspaceDeleted,
   template = null,
   recoveryBanner,
   onOpenRecoverySetup,
+  showRecoverySection = false,
+  onFirstAnswerComplete,
 }: AppShellProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -234,6 +247,7 @@ export function AppShell({
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <ProNavBadge workspaceHeaders={workspaceHeaders} subscription={subscription} />
           <ThemeToggle />
 
           <Button
@@ -296,6 +310,7 @@ export function AppShell({
               onUpload={onUpload}
               onUrlSubmit={onUrlSubmit}
               onFullSitePaywallOpen={onFullSitePaywallOpen}
+              subscription={subscription}
             />
           </div>
         </aside>
@@ -311,6 +326,7 @@ export function AppShell({
             scopedSourceId={scopedSourceId}
             scopedDocumentId={scopedDocumentId}
             template={template}
+            onFirstAnswerComplete={onFirstAnswerComplete}
           />
         </main>
       </div>
@@ -331,6 +347,7 @@ export function AppShell({
         }
         onWorkspaceDeleted={onWorkspaceDeleted}
         onOpenRecoverySetup={onOpenRecoverySetup}
+        showRecoverySection={showRecoverySection}
       />
     </div>
   );

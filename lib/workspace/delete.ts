@@ -1,4 +1,9 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import {
+  fetchInactiveWorkspaceRows,
+  isWorkspaceRetentionExempt,
+  loadActiveRecoveryWorkspaceIds,
+} from "@/lib/workspace/retention";
 
 async function collectStoragePaths(
   prefix: string,
@@ -29,7 +34,7 @@ async function collectStoragePaths(
   return paths;
 }
 
-export async function deleteWorkspaceStorage(
+async function deleteWorkspaceStorage(
   workspaceId: string,
 ): Promise<void> {
   const paths = await collectStoragePaths(workspaceId);
@@ -65,27 +70,32 @@ export async function deleteWorkspace(workspaceId: string): Promise<void> {
 
 export async function deleteInactiveWorkspaces(
   retentionDays: number,
-): Promise<{ deletedCount: number; deletedIds: string[] }> {
+): Promise<{ deletedCount: number; deletedIds: string[]; skippedCount: number }> {
   const supabase = createServiceClient();
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - retentionDays);
   const cutoffIso = cutoff.toISOString();
 
-  const { data: workspaces, error } = await supabase
-    .from("workspaces")
-    .select("id")
-    .lt("last_seen_at", cutoffIso);
-
-  if (error) {
-    throw new Error(`Failed to query inactive workspaces: ${error.message}`);
-  }
+  const inactiveRows = await fetchInactiveWorkspaceRows(supabase, cutoffIso);
+  const activeRecoveryIds = await loadActiveRecoveryWorkspaceIds(
+    supabase,
+    inactiveRows.map((row) => row.id),
+  );
 
   const deletedIds: string[] = [];
+  let skippedCount = 0;
 
-  for (const workspace of workspaces ?? []) {
-    await deleteWorkspace(workspace.id);
-    deletedIds.push(workspace.id);
+  for (const row of inactiveRows) {
+    const hasActiveRecoveryToken = activeRecoveryIds.has(row.id);
+
+    if (isWorkspaceRetentionExempt(row, hasActiveRecoveryToken)) {
+      skippedCount += 1;
+      continue;
+    }
+
+    await deleteWorkspace(row.id);
+    deletedIds.push(row.id);
   }
 
-  return { deletedCount: deletedIds.length, deletedIds };
+  return { deletedCount: deletedIds.length, deletedIds, skippedCount };
 }

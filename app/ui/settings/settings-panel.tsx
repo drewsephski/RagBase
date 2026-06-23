@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BillingSection } from "@/app/ui/settings/billing-section";
+import { WorkspaceRecoverySection } from "@/app/ui/settings/workspace-recovery-section";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ interface SettingsPanelProps {
   onRenameWorkspace?: (name: string) => Promise<void>;
   onWorkspaceDeleted?: () => void;
   onOpenRecoverySetup?: () => void;
+  showRecoverySection?: boolean;
 }
 
 export function SettingsPanel({
@@ -51,6 +53,7 @@ export function SettingsPanel({
   onRenameWorkspace,
   onWorkspaceDeleted,
   onOpenRecoverySetup,
+  showRecoverySection = false,
 }: SettingsPanelProps) {
   const [openRouterKeyInput, setOpenRouterKeyInput] = useState("");
   const [selectedModel, setSelectedModelState] = useState(DEFAULT_MODEL);
@@ -203,14 +206,17 @@ export function SettingsPanel({
                     </p>
                   ) : null}
                 </div>
+                {showRecoverySection ? (
+                  <WorkspaceRecoverySection onOpenRecoverySetup={onOpenRecoverySetup} />
+                ) : null}
               </section>
             ) : null}
 
-            <BillingSection
-              workspaceHeaders={workspaceHeaders}
-              open={open}
-              onOpenRecoverySetup={onOpenRecoverySetup}
-            />
+            {!onRenameWorkspace && showRecoverySection ? (
+              <WorkspaceRecoverySection onOpenRecoverySetup={onOpenRecoverySetup} />
+            ) : null}
+
+            <BillingSection workspaceHeaders={workspaceHeaders} open={open} />
 
             <section aria-label="OpenRouter API key" className="space-y-3">
               <div className="flex items-center gap-2">
@@ -301,9 +307,10 @@ export function SettingsPanel({
             <section aria-label="Privacy" className="space-y-2">
               <h3 className="text-sm font-semibold">Privacy</h3>
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Documents are stored for {LIMITS.RETENTION_DAYS} days after your
-                last visit, then automatically removed. You can delete the
-                current workspace below at any time.
+                Documents and chat history are kept for {LIMITS.RETENTION_DAYS} days
+                after your last visit, then automatically removed — unless you save a
+                recovery link or upgrade to Pro. You can delete the current workspace
+                below at any time.
               </p>
             </section>
 

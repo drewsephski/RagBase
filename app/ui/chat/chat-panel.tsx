@@ -35,6 +35,7 @@ import { RagBaseLogo } from "@/components/brand/ragbase-logo";
 import { BetaFeedbackCta } from "@/app/ui/feedback/beta-feedback-cta";
 import { QualityDebugPanel } from "@/app/ui/chat/quality-debug-panel";
 import { isDebugPanelEnabled } from "@/lib/env/public";
+import { useChatHistory } from "@/hooks/use-chat-history";
 
 interface ChatPanelProps {
   workspaceHeaders: WorkspaceHeaders | null;
@@ -42,6 +43,7 @@ interface ChatPanelProps {
   scopedSourceId: string | null;
   scopedDocumentId: string | null;
   template?: WorkspaceTemplate | null;
+  onFirstAnswerComplete?: () => void;
 }
 
 function trackFirstMessage(sourceCount: number) {
@@ -54,9 +56,11 @@ export function ChatPanel({
   scopedSourceId,
   scopedDocumentId,
   template = null,
+  onFirstAnswerComplete,
 }: ChatPanelProps) {
   const pendingPromptSentRef = useRef(false);
   const firstMessageTrackedRef = useRef(false);
+  const firstAnswerCompleteRef = useRef(false);
   const answerStartRef = useRef<number | null>(null);
   const prevIsLoadingRef = useRef(false);
   const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(null);
@@ -79,6 +83,8 @@ export function ChatPanel({
     };
   }, [workspaceHeaders]);
 
+  const workspaceId = workspaceHeaders?.["X-Workspace-Id"] ?? null;
+
   const {
     messages,
     input,
@@ -87,7 +93,9 @@ export function ChatPanel({
     isLoading,
     append,
     error,
+    setMessages,
   } = useChat({
+    id: workspaceId ?? undefined,
     api: "/api/chat",
     headers: chatHeaders,
     experimental_prepareRequestBody: ({ messages: chatMessages }) => {
@@ -103,6 +111,25 @@ export function ChatPanel({
       };
     },
   });
+
+  const { isHistoryReady } = useChatHistory({
+    workspaceHeaders,
+    workspaceId,
+    enabled: Boolean(workspaceHeaders),
+    setMessages,
+  });
+
+  useEffect(() => {
+    if (!isHistoryReady || firstAnswerCompleteRef.current) {
+      return;
+    }
+
+    const hasAssistantAnswer = messages.some((message) => message.role === "assistant");
+    if (hasAssistantAnswer) {
+      firstAnswerCompleteRef.current = true;
+      onFirstAnswerComplete?.();
+    }
+  }, [isHistoryReady, messages, onFirstAnswerComplete]);
 
   const hasAnySource = sources.length > 0;
   const hasReadySource = readySources.length > 0;
@@ -164,6 +191,11 @@ export function ChatPanel({
             has_citations: citations.length > 0,
             answer_length_bucket: getAnswerLengthBucket(displayContent.length),
           });
+
+          if (!firstAnswerCompleteRef.current) {
+            firstAnswerCompleteRef.current = true;
+            onFirstAnswerComplete?.();
+          }
         }
       }
 
@@ -171,7 +203,7 @@ export function ChatPanel({
     }
 
     prevIsLoadingRef.current = isLoading;
-  }, [answerAnalyticsContext, error, isLoading, messages]);
+  }, [answerAnalyticsContext, error, isLoading, messages, onFirstAnswerComplete]);
 
   useEffect(() => {
     if (!error || chatLimitTrackedRef.current) {
@@ -241,7 +273,7 @@ export function ChatPanel({
     });
   }, [handleSubmit, hasReadySource, input, scopedDocumentId, scopedSourceId, sources.length]);
 
-  const chatDisabled = !workspaceHeaders || !hasAnySource;
+  const chatDisabled = !workspaceHeaders || !hasAnySource || !isHistoryReady;
   const selectedModel = hasOpenRouterKey() ? getSelectedModel() : "free";
   const showDebugPanel = isDebugPanelEnabled();
 
@@ -250,7 +282,19 @@ export function ChatPanel({
       aria-label="Chat"
       className="chat-surface flex h-full min-h-0 flex-col"
     >
-      {isChatEmpty ? (
+      {!isHistoryReady ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <ChatEmptyState description="Loading your conversation…">
+            <div
+              className="text-muted-foreground flex items-center justify-center gap-2 text-sm"
+              aria-live="polite"
+            >
+              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              Loading your conversation…
+            </div>
+          </ChatEmptyState>
+        </div>
+      ) : isChatEmpty ? (
         <div className="flex min-h-0 flex-1 flex-col">
           {!hasReadySource ? (
             <ChatEmptyState
@@ -349,7 +393,7 @@ export function ChatPanel({
         onSubmit={handleFormSubmit}
         isLoading={isLoading}
         disabled={chatDisabled}
-        sendDisabled={!hasReadySource}
+        sendDisabled={!hasReadySource || !isHistoryReady}
         placeholder={
           hasReadySource
             ? "Ask anything about your documents…"
