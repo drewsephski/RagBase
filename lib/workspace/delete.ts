@@ -1,5 +1,9 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import {
+  type WorkspaceDeleteOptions,
+  prepareWorkspaceDeletion,
+} from "@/lib/workspace/delete-policy";
+import {
   fetchInactiveWorkspaceRows,
   isWorkspaceRetentionExempt,
   loadActiveRecoveryWorkspaceIds,
@@ -53,9 +57,13 @@ async function deleteWorkspaceStorage(
   }
 }
 
-export async function deleteWorkspace(workspaceId: string): Promise<void> {
+export async function deleteWorkspace(
+  workspaceId: string,
+  options: WorkspaceDeleteOptions = {},
+): Promise<void> {
   const supabase = createServiceClient();
 
+  await prepareWorkspaceDeletion(supabase, workspaceId, options);
   await deleteWorkspaceStorage(workspaceId);
 
   const { error } = await supabase

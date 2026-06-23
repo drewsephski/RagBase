@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
+import { ApiError } from "@/lib/api/api-error";
 import { apiJson } from "@/lib/api/client";
 import { trackEvent } from "@/lib/analytics/track";
 import { persistCheckoutWorkspaceId } from "@/lib/billing/checkout-return-state";
@@ -10,6 +11,8 @@ interface UseCheckoutOptions {
   workspaceHeaders: WorkspaceHeaders | null;
   workspaceId?: string | null;
   surface?: string;
+  isAuthenticated?: boolean;
+  onAuthenticationRequired?: () => void;
 }
 
 interface UseCheckoutState {
@@ -22,6 +25,8 @@ export function useCheckout({
   workspaceHeaders,
   workspaceId = null,
   surface = "checkout",
+  isAuthenticated = true,
+  onAuthenticationRequired,
 }: UseCheckoutOptions): UseCheckoutState {
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -29,6 +34,12 @@ export function useCheckout({
   const startCheckout = useCallback(async () => {
     if (!workspaceHeaders) {
       setCheckoutError("Create a workspace before subscribing.");
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setCheckoutError("Sign in to subscribe — your Pro plan stays linked to your account.");
+      onAuthenticationRequired?.();
       return;
     }
 
@@ -52,13 +63,27 @@ export function useCheckout({
 
       window.location.href = result.url;
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        setCheckoutError(
+          "Sign in to subscribe — your Pro plan stays linked to your account.",
+        );
+        onAuthenticationRequired?.();
+        return;
+      }
+
       setCheckoutError(
         error instanceof Error ? error.message : "Could not start checkout.",
       );
     } finally {
       setIsStartingCheckout(false);
     }
-  }, [surface, workspaceHeaders, workspaceId]);
+  }, [
+    isAuthenticated,
+    onAuthenticationRequired,
+    surface,
+    workspaceHeaders,
+    workspaceId,
+  ]);
 
   return { startCheckout, isStartingCheckout, checkoutError };
 }

@@ -42,6 +42,10 @@ export function isServerCheckoutConfigured(): boolean {
 
 export async function createProCheckoutSession(
   workspaceId: string,
+  options: {
+    customerEmail?: string | null;
+    stripeCustomerId?: string | null;
+  } = {},
 ): Promise<Stripe.Checkout.Session> {
   if (!isServerCheckoutConfigured()) {
     throw new CheckoutSessionError("Checkout is not configured.", 503);
@@ -49,14 +53,21 @@ export async function createProCheckoutSession(
 
   const stripe = getStripeClient();
   const { successUrl, cancelUrl } = getCheckoutReturnUrls();
-
-  return await stripe.checkout.sessions.create({
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: "subscription",
     line_items: [{ price: getStripeProPriceId(), quantity: 1 }],
     client_reference_id: workspaceId,
     success_url: successUrl,
     cancel_url: cancelUrl,
-  });
+  };
+
+  if (options.stripeCustomerId) {
+    sessionParams.customer = options.stripeCustomerId;
+  } else if (options.customerEmail) {
+    sessionParams.customer_email = options.customerEmail;
+  }
+
+  return await stripe.checkout.sessions.create(sessionParams);
 }
 
 function getCheckoutCustomerId(session: Stripe.Checkout.Session): string | null {

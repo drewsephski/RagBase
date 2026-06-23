@@ -38,6 +38,7 @@ import { RecoverySetup } from "@/app/ui/billing/recovery-setup";
 import { Loader2 } from "lucide-react";
 import { SettingsPanel } from "@/app/ui/settings/settings-panel";
 import { useAuth } from "@/hooks/use-auth";
+import { reclaimSubscriptionForWorkspace, linkWorkspaceToAccount } from "@/lib/workspace/account-sync";
 
 interface AppContentProps {
   workspace: UseWorkspacesState;
@@ -243,15 +244,18 @@ function AppContent({
     [clearQueuedPrompt, createWorkspace, dismissTemplateUrlRoute],
   );
 
-  const handleWorkspaceDeleted = useCallback(async () => {
-    if (!activeWorkspace) {
-      return;
-    }
+  const handleWorkspaceDeleted = useCallback(
+    async (options?: { cancelSubscription?: boolean }) => {
+      if (!activeWorkspace) {
+        return;
+      }
 
-    await deleteWorkspace(activeWorkspace.id);
-    resetSources();
-    bumpRefresh();
-  }, [activeWorkspace, bumpRefresh, deleteWorkspace, resetSources]);
+      await deleteWorkspace(activeWorkspace.id, options);
+      resetSources();
+      bumpRefresh();
+    },
+    [activeWorkspace, bumpRefresh, deleteWorkspace, resetSources],
+  );
 
   const paywallDialogs = (
     <>
@@ -279,6 +283,7 @@ function AppContent({
             : undefined
         }
         surface={ingestion.paywallSurface}
+        auth={auth}
       />
 
       {showRecoverySetup && headers && activeWorkspaceId ? (
@@ -348,7 +353,7 @@ function AppContent({
             ingestion.openFullSitePaywall(undefined, "crawl_hint")
           }
           subscription={subscription}
-          onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
+          onWorkspaceDeleted={handleWorkspaceDeleted}
           template={template}
           recoveryBanner={
             showRecoveryBanner ? (
@@ -403,7 +408,8 @@ function AppContent({
             ? (name) => renameWorkspace(activeWorkspace.id, name)
             : undefined
         }
-        onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
+        onWorkspaceDeleted={handleWorkspaceDeleted}
+        isProActive={subscription?.isProActive ?? false}
         onOpenRecoverySetup={handleOpenRecoverySetup}
         showRecoverySection={showRecoverySection}
         auth={auth}
@@ -424,14 +430,6 @@ export function App({ checkoutReturn: initialReturn }: AppProps) {
   const workspace = useWorkspaces();
   const activeWorkspaceId = workspace.activeWorkspace?.id ?? null;
 
-  useEffect(() => {
-    if (!auth.user || auth.isLoading) {
-      return;
-    }
-
-    void workspace.syncAccountWorkspaces();
-  }, [auth.isLoading, auth.user, workspace.syncAccountWorkspaces]);
-
   const checkoutFlow = useCheckoutFlow({
     initialReturn,
     headers: workspace.headers,
@@ -439,6 +437,45 @@ export function App({ checkoutReturn: initialReturn }: AppProps) {
     isReady: workspace.isReady,
     onSwitchWorkspace: workspace.switchWorkspace,
   });
+
+  useEffect(() => {
+    if (!auth.user || auth.isLoading) {
+      return;
+    }
+
+    async function syncAccountAndReclaim() {
+      if (
+        workspace.headers?.["X-Workspace-Secret"] &&
+        workspace.headers["X-Workspace-Id"]
+      ) {
+        try {
+          await linkWorkspaceToAccount(workspace.headers);
+        } catch {
+          // Linking is best-effort; account sync still runs below.
+        }
+      }
+
+      await workspace.syncAccountWorkspaces();
+
+      if (!workspace.headers) {
+        return;
+      }
+
+      const reclaimed = await reclaimSubscriptionForWorkspace(workspace.headers);
+
+      if (reclaimed) {
+        await checkoutFlow.refreshSubscription();
+      }
+    }
+
+    void syncAccountAndReclaim();
+  }, [
+    auth.isLoading,
+    auth.user,
+    checkoutFlow.refreshSubscription,
+    workspace.headers,
+    workspace.syncAccountWorkspaces,
+  ]);
 
   return (
     <>

@@ -18,7 +18,21 @@ export function isWorkspaceRetentionExempt(
   }
 
   const billing = mapBillingRow(row);
-  return isProActive(billing);
+  if (isProActive(billing)) {
+    return true;
+  }
+
+  if (!row.stripe_subscription_id) {
+    return false;
+  }
+
+  const terminalStatuses = new Set([
+    "canceled",
+    "incomplete_expired",
+    "unpaid",
+  ]);
+
+  return !terminalStatuses.has(row.stripe_subscription_status ?? "");
 }
 
 export async function loadActiveRecoveryWorkspaceIds(

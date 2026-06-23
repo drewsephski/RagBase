@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { UseAuthState } from "@/hooks/use-auth";
+import { isSupabaseAuthConfigured } from "@/lib/supabase/env";
 
 interface FullSitePaywallDialogProps {
   open: boolean;
@@ -30,6 +32,7 @@ interface FullSitePaywallDialogProps {
   onStartCrawl?: (url: string) => void;
   onAddPageOnly?: () => void;
   surface?: string;
+  auth?: UseAuthState;
 }
 
 export function FullSitePaywallDialog({
@@ -42,6 +45,7 @@ export function FullSitePaywallDialog({
   onStartCrawl,
   onAddPageOnly,
   surface = "paywall_dialog",
+  auth,
 }: FullSitePaywallDialogProps) {
   const [email, setEmail] = useState("");
   const [honeypot, setHoneypot] = useState("");
@@ -51,11 +55,14 @@ export function FullSitePaywallDialog({
   const formOpenedAtRef = useRef<number | null>(null);
   const proPrice = getProPriceDisplay();
   const checkoutAvailable = isCheckoutAvailable();
+  const authRequired =
+    isSupabaseAuthConfigured() && !auth?.isLoading && !auth?.user;
   const { startCheckout, isStartingCheckout, checkoutError: checkoutStartError } =
     useCheckout({
       workspaceHeaders: workspaceHeaders ?? null,
       workspaceId,
       surface,
+      isAuthenticated: !authRequired,
     });
 
   useEffect(() => {
@@ -202,8 +209,8 @@ export function FullSitePaywallDialog({
         </p>
 
         <p className="text-muted-foreground rounded-md border px-3 py-2 text-xs leading-relaxed">
-          Pro is attached to this private workspace. Save your recovery link to
-          access it later.
+          Pro is linked to your account when you sign in before checkout — so
+          deleting a workspace does not strand your subscription.
         </p>
 
         {isProActive ? (
@@ -271,6 +278,7 @@ export function FullSitePaywallDialog({
 
             <p className="text-muted-foreground text-[11px] leading-relaxed">
               RagBase Pro · {proPrice}
+              {authRequired ? " · sign in required" : ""}
             </p>
           </div>
         ) : success ? (

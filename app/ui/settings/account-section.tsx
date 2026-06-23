@@ -109,8 +109,8 @@ export function AccountSection({
       </div>
 
       <p className={compact ? "settings-section-desc" : "text-muted-foreground text-xs leading-relaxed"}>
-        Optional. Sign in to sync workspaces across devices and keep chat history
-        tied to your account — not just this browser.
+        Sign in to sync workspaces across devices and to subscribe — Pro stays
+        linked to your account, not just this browser.
       </p>
 
       {isLoading ? (

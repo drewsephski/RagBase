@@ -28,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { ApiError } from "@/lib/api/api-error";
 import {
   TemplateSelector,
   type TemplateSelectorValue,
@@ -39,7 +40,10 @@ export interface WorkspaceSwitcherProps {
   onSwitch: (id: string) => void;
   onCreate: (options?: CreateWorkspaceOptions) => Promise<void>;
   onRename: (id: string, name: string) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+  onDelete: (
+    id: string,
+    options?: { cancelSubscription?: boolean },
+  ) => Promise<void>;
   className?: string;
 }
 
@@ -62,6 +66,7 @@ export function WorkspaceSwitcher({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mustCancelSubscription, setMustCancelSubscription] = useState(false);
 
   const canCreateMore = workspaces.length < LIMITS.MAX_WORKSPACES;
   const activeName = activeWorkspace?.name ?? "Workspace";
@@ -96,6 +101,7 @@ export function WorkspaceSwitcher({
   const handleOpenDelete = useCallback((workspace: StoredWorkspace) => {
     setTargetWorkspace(workspace);
     setError(null);
+    setMustCancelSubscription(false);
     setDeleteOpen(true);
   }, []);
 
@@ -155,10 +161,17 @@ export function WorkspaceSwitcher({
     setError(null);
 
     try {
-      await onDelete(targetWorkspace.id);
+      await onDelete(targetWorkspace.id, {
+        cancelSubscription: mustCancelSubscription,
+      });
       setDeleteOpen(false);
       setTargetWorkspace(null);
+      setMustCancelSubscription(false);
     } catch (deleteError) {
+      if (deleteError instanceof ApiError && deleteError.status === 409) {
+        setMustCancelSubscription(true);
+      }
+
       setError(
         deleteError instanceof Error
           ? deleteError.message
@@ -167,7 +180,7 @@ export function WorkspaceSwitcher({
     } finally {
       setIsSubmitting(false);
     }
-  }, [onDelete, targetWorkspace]);
+  }, [mustCancelSubscription, onDelete, targetWorkspace]);
 
   return (
     <>
@@ -359,11 +372,18 @@ export function WorkspaceSwitcher({
           <DialogHeader>
             <DialogTitle>Delete {targetWorkspace?.name}?</DialogTitle>
             <DialogDescription>
-              All documents and messages in this workspace will be permanently
-              removed from our servers. Other workspaces on this device are
-              not affected.
+              {mustCancelSubscription
+                ? "This workspace has a Pro subscription. Deleting it will cancel billing immediately and permanently remove all documents and messages."
+                : "All documents and messages in this workspace will be permanently removed from our servers. Other workspaces on this device are not affected."}
             </DialogDescription>
           </DialogHeader>
+
+          {mustCancelSubscription ? (
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              To keep Pro access on another workspace, switch to it first or use
+              Manage billing before deleting.
+            </p>
+          ) : null}
 
           {error ? (
             <p className="text-destructive text-sm" role="alert">
@@ -386,7 +406,11 @@ export function WorkspaceSwitcher({
               onClick={() => void handleDelete()}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Deleting…" : "Delete workspace"}
+              {isSubmitting
+                ? "Deleting…"
+                : mustCancelSubscription
+                  ? "Cancel Pro and delete"
+                  : "Delete workspace"}
             </Button>
           </DialogFooter>
         </DialogContent>

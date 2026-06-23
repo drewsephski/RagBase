@@ -50,7 +50,7 @@ interface AppShellProps {
   onUrlSubmit: (url: string) => Promise<UrlIngestResult | void>;
   onFullSitePaywallOpen?: () => void;
   subscription?: SubscriptionStatusResponse | null;
-  onWorkspaceDeleted: () => void;
+  onWorkspaceDeleted: (options?: { cancelSubscription?: boolean }) => Promise<void>;
   template?: WorkspaceTemplate | null;
   recoveryBanner?: ReactNode;
   onOpenRecoverySetup?: () => void;
@@ -342,6 +342,7 @@ export function AppShell({
         onOpenChange={setSettingsOpen}
         workspaceHeaders={workspaceHeaders}
         activeWorkspaceName={workspaceSwitcherProps.activeWorkspace?.name}
+        isProActive={subscription?.isProActive ?? false}
         onRenameWorkspace={
           workspaceSwitcherProps.activeWorkspace
             ? (name) =>

@@ -21,6 +21,7 @@ import { WorkspaceRecoverySection } from "@/app/ui/settings/workspace-recovery-s
 import { AccountSection } from "@/app/ui/settings/account-section";
 import type { UseAuthState } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { ApiError } from "@/lib/api/api-error";
 import {
   Dialog,
   DialogContent,
@@ -41,8 +42,9 @@ interface SettingsPanelProps {
   onOpenChange: (open: boolean) => void;
   workspaceHeaders: WorkspaceHeaders | null;
   activeWorkspaceName?: string;
+  isProActive?: boolean;
   onRenameWorkspace?: (name: string) => Promise<void>;
-  onWorkspaceDeleted?: () => void;
+  onWorkspaceDeleted?: (options?: { cancelSubscription?: boolean }) => Promise<void>;
   onOpenRecoverySetup?: () => void;
   showRecoverySection?: boolean;
   auth?: UseAuthState;
@@ -81,6 +83,7 @@ export function SettingsPanel({
   onOpenChange,
   workspaceHeaders,
   activeWorkspaceName,
+  isProActive = false,
   onRenameWorkspace,
   onWorkspaceDeleted,
   onOpenRecoverySetup,
@@ -94,6 +97,8 @@ export function SettingsPanel({
   const [workspaceNameInput, setWorkspaceNameInput] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [mustCancelSubscription, setMustCancelSubscription] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -189,16 +194,32 @@ export function SettingsPanel({
   );
 
   const handleDeleteWorkspace = useCallback(async () => {
+    if (!onWorkspaceDeleted) {
+      return;
+    }
+
     setIsDeleting(true);
+    setDeleteError(null);
 
     try {
+      await onWorkspaceDeleted({
+        cancelSubscription: mustCancelSubscription || isProActive,
+      });
       setShowDeleteDialog(false);
+      setMustCancelSubscription(false);
       onOpenChange(false);
-      onWorkspaceDeleted?.();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        setMustCancelSubscription(true);
+      }
+
+      setDeleteError(
+        error instanceof Error ? error.message : "Could not delete workspace.",
+      );
     } finally {
       setIsDeleting(false);
     }
-  }, [onOpenChange, onWorkspaceDeleted]);
+  }, [isProActive, mustCancelSubscription, onOpenChange, onWorkspaceDeleted]);
 
   return (
     <>
@@ -385,16 +406,37 @@ export function SettingsPanel({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <Dialog
+        open={showDeleteDialog}
+        onOpenChange={(nextOpen) => {
+          setShowDeleteDialog(nextOpen);
+          if (!nextOpen) {
+            setDeleteError(null);
+            setMustCancelSubscription(false);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete {activeWorkspaceName ?? "this workspace"}?</DialogTitle>
             <DialogDescription>
-              All documents and messages in this workspace will be permanently
-              removed from our servers. Your other workspaces on this device are
-              not affected.
+              {mustCancelSubscription || isProActive
+                ? "This workspace has RagBase Pro. Deleting it cancels your subscription immediately and permanently removes all documents and messages."
+                : "All documents and messages in this workspace will be permanently removed from our servers. Your other workspaces on this device are not affected."}
             </DialogDescription>
           </DialogHeader>
+
+          {mustCancelSubscription || isProActive ? (
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Switch to another workspace first if you want to keep Pro access there.
+            </p>
+          ) : null}
+
+          {deleteError ? (
+            <p className="text-destructive text-sm" role="alert">
+              {deleteError}
+            </p>
+          ) : null}
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
@@ -411,7 +453,11 @@ export function SettingsPanel({
               onClick={() => void handleDeleteWorkspace()}
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting…" : "Delete workspace"}
+              {isDeleting
+                ? "Deleting…"
+                : mustCancelSubscription || isProActive
+                  ? "Cancel Pro and delete"
+                  : "Delete workspace"}
             </Button>
           </div>
         </DialogContent>

@@ -5,6 +5,7 @@ import { LIMITS } from "@/lib/domain/definitions";
 import type { AccountWorkspaceSummary } from "@/lib/workspace/account";
 import { loadRegistry, notifyWorkspaceRegistryUpdated } from "@/lib/workspace/registry";
 import { WORKSPACE_REGISTRY_KEY } from "@/lib/workspace/keys";
+import { apiJson } from "@/lib/api/client";
 
 export function createAccountLinkedWorkspace(
   summary: AccountWorkspaceSummary,
@@ -76,6 +77,20 @@ export async function syncAccountWorkspacesToRegistry(): Promise<StoredWorkspace
   localStorage.setItem(WORKSPACE_REGISTRY_KEY, JSON.stringify(merged));
   notifyWorkspaceRegistryUpdated();
   return merged;
+}
+
+export async function reclaimSubscriptionForWorkspace(
+  workspaceHeaders: { "X-Workspace-Id": string; "X-Workspace-Secret"?: string },
+): Promise<boolean> {
+  try {
+    const result = await apiJson<{ reclaimed: boolean }>("/api/billing/reclaim", {
+      method: "POST",
+      workspaceHeaders,
+    });
+    return result.reclaimed;
+  } catch {
+    return false;
+  }
 }
 
 export async function linkWorkspaceToAccount(

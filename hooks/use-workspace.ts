@@ -8,7 +8,7 @@ import {
 } from "@/lib/domain/definitions";
 import { getWorkspaceTemplate } from "@/lib/domain/templates";
 import { writeTemplateWorkspaceId } from "@/lib/templates/keys";
-import { apiFetch, apiJson } from "@/lib/api/client";
+import { apiFetch, ApiError, apiJson, readApiErrorMessage } from "@/lib/api/client";
 import type { WorkspaceHeaders } from "@/lib/api/types";
 import { trackEvent } from "@/lib/analytics/track";
 import { syncAccountWorkspacesToRegistry } from "@/lib/workspace/account-sync";
@@ -40,7 +40,10 @@ export interface UseWorkspacesState {
   switchWorkspace: (id: string) => void;
   createWorkspace: (options?: CreateWorkspaceOptions) => Promise<void>;
   renameWorkspace: (id: string, name: string) => Promise<void>;
-  deleteWorkspace: (id: string) => Promise<void>;
+  deleteWorkspace: (
+    id: string,
+    options?: { cancelSubscription?: boolean },
+  ) => Promise<void>;
   refreshRegistry: () => void;
   syncAccountWorkspaces: () => Promise<void>;
 }
@@ -255,7 +258,7 @@ export function useWorkspaces(): UseWorkspacesState {
   );
 
   const deleteWorkspace = useCallback(
-    async (id: string) => {
+    async (id: string, options?: { cancelSubscription?: boolean }) => {
       const workspace = workspaces.find((entry) => entry.id === id);
       if (!workspace) {
         throw new Error("Workspace not found.");
@@ -265,15 +268,25 @@ export function useWorkspaces(): UseWorkspacesState {
       if (headers) {
         const response = await apiFetch("/api/workspaces/delete", {
           method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cancelSubscription: options?.cancelSubscription ?? false,
+          }),
           workspaceHeaders: headers,
         });
 
-        if (!response.ok && response.status !== 401) {
-          throw new Error("Could not delete workspace.");
+        if (!response.ok) {
+          const message = await readApiErrorMessage(
+            response,
+            "Could not delete workspace.",
+          );
+          throw new ApiError(message, response.status);
         }
       }
 
-      trackEvent("workspace_deleted");
+      trackEvent("workspace_deleted", {
+        cancelled_subscription: options?.cancelSubscription ?? false,
+      });
 
       const { workspaces: next, nextActiveId } = removeWorkspace(id);
       setWorkspaces(next);
