@@ -121,17 +121,24 @@ export async function syncLatestCompletedCheckoutForWorkspace(
   stripe: Stripe,
   workspaceId: string,
 ): Promise<{ activated: boolean }> {
-  const result = await stripe.checkout.sessions.search({
-    query: `client_reference_id:'${workspaceId}' AND status:'complete'`,
-    limit: 1,
+  const createdAfter = Math.floor(Date.now() / 1000) - 60 * 60;
+  const sessions = await stripe.checkout.sessions.list({
+    limit: 100,
+    created: { gte: createdAfter },
   });
 
-  const session = result.data[0];
-  if (!session?.id) {
+  const match = sessions.data
+    .filter(
+      (session) =>
+        session.client_reference_id === workspaceId && session.status === "complete",
+    )
+    .sort((left, right) => right.created - left.created)[0];
+
+  if (!match?.id) {
     return { activated: false };
   }
 
-  return syncWorkspaceFromCheckoutSession(supabase, stripe, session.id, workspaceId);
+  return syncWorkspaceFromCheckoutSession(supabase, stripe, match.id, workspaceId);
 }
 
 export async function syncWorkspaceFromCheckoutSession(
