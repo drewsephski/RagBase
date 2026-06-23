@@ -259,7 +259,7 @@ function AppContent({
         open={ingestion.urlChoiceOpen}
         onOpenChange={ingestion.setUrlChoiceOpen}
         url={ingestion.pendingRootUrl ?? ""}
-        onSinglePage={(url) => void ingestion.submitSinglePage(url)}
+        onSinglePage={(url) => ingestion.submitSinglePage(url)}
         onCrawlSite={ingestion.handleRootUrlCrawlSite}
       />
 

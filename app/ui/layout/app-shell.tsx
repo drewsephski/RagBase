@@ -14,6 +14,7 @@ import type { SubscriptionStatusResponse } from "@/lib/billing/types";
 import type { WorkspaceTemplate } from "@/lib/domain/templates";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import type { UseAuthState } from "@/hooks/use-auth";
+import type { UrlIngestResult } from "@/hooks/use-ingestion";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { RagBaseLogo } from "@/components/brand/ragbase-logo";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ interface AppShellProps {
   onDeleteSource: (sourceId: string) => Promise<void>;
   onReprocessSource: (sourceId: string) => Promise<void>;
   onUpload: (file: File) => Promise<void>;
-  onUrlSubmit: (url: string) => Promise<{ teaser?: boolean; message?: string; url?: string } | void>;
+  onUrlSubmit: (url: string) => Promise<UrlIngestResult | void>;
   onFullSitePaywallOpen?: () => void;
   subscription?: SubscriptionStatusResponse | null;
   onWorkspaceDeleted: () => void;

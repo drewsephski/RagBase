@@ -54,19 +54,43 @@ function buildScrapeAttempts(): ScrapeOptions[] {
   ];
 }
 
+function extractScrapeErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return "Could not fetch content from that URL.";
+}
+
 export async function scrapePageWithFirecrawl(
   url: string,
 ): Promise<FirecrawlScrapeResult> {
   const firecrawl = getFirecrawlClient();
   const attempts = buildScrapeAttempts();
   let lastResult: FirecrawlScrapeResult = {};
+  let lastError: Error | null = null;
 
   for (const options of attempts) {
-    lastResult = await firecrawl.scrape(url, options);
+    try {
+      lastResult = await firecrawl.scrape(url, options);
 
-    if (lastResult.markdown?.trim()) {
-      return lastResult;
+      if (lastResult.markdown?.trim()) {
+        return lastResult;
+      }
+    } catch (error) {
+      lastError =
+        error instanceof Error
+          ? error
+          : new Error(extractScrapeErrorMessage(error));
     }
+  }
+
+  if (lastResult.markdown?.trim()) {
+    return lastResult;
+  }
+
+  if (lastError) {
+    throw lastError;
   }
 
   return lastResult;

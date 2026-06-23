@@ -4,6 +4,7 @@ import { Settings } from "lucide-react";
 import type { WorkspaceTemplate } from "@/lib/domain/templates";
 import type { SubscriptionStatusResponse } from "@/lib/billing/types";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
+import type { UrlIngestResult } from "@/hooks/use-ingestion";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { RagBaseLogo } from "@/components/brand/ragbase-logo";
@@ -27,9 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 
 interface LandingHomeProps {
-  onUrlSubmit: (
-    url: string,
-  ) => Promise<{ teaser?: boolean; message?: string; source?: { name: string } } | void>;
+  onUrlSubmit: (url: string) => Promise<UrlIngestResult | void>;
   onUpload: (file: File) => Promise<void>;
   onOpenSettings: () => void;
   onPromptChipSelect?: (prompt: string) => void;

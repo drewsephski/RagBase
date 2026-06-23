@@ -5,21 +5,14 @@ import { Link2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AnimatePresence } from "framer-motion";
 import { UrlIngestLoader } from "@/app/ui/home/url-ingest-loader";
+import type { UrlIngestResult } from "@/hooks/use-ingestion";
+import { normalizeUrl, UrlScrapeError, isRootUrl } from "@/lib/ingestion/url-utils";
 import { cn } from "@/lib/utils";
 
 interface UrlInputProps {
-  onSubmit: (
-    url: string,
-  ) => Promise<
-    | {
-        teaser?: boolean;
-        message?: string;
-        notice?: string;
-        source?: { name: string };
-      }
-    | void
-  >;
+  onSubmit: (url: string) => Promise<UrlIngestResult | void>;
   disabled?: boolean;
   variant?: "default" | "minimal";
   compact?: boolean;
@@ -50,13 +43,34 @@ export function UrlInput({
         return;
       }
 
+      let normalizedUrl: string;
+      try {
+        normalizedUrl = normalizeUrl(trimmed);
+      } catch (validationError) {
+        setError(
+          validationError instanceof UrlScrapeError
+            ? validationError.message
+            : "Enter a valid public link.",
+        );
+        return;
+      }
+
       setError(null);
       setSuccessMessage(null);
       setNoticeMessage(null);
-      setSubmittingUrl(trimmed);
+
+      const opensChoiceDialog = isRootUrl(normalizedUrl);
+      if (!opensChoiceDialog) {
+        setSubmittingUrl(normalizedUrl);
+      }
 
       try {
-        const result = await onSubmit(trimmed);
+        const result = await onSubmit(normalizedUrl);
+
+        if (result?.pendingChoice) {
+          return;
+        }
+
         setUrl("");
 
         if (result?.teaser) {
@@ -77,14 +91,16 @@ export function UrlInput({
             : "Could not add that link. Try another URL.",
         );
       } finally {
-        setSubmittingUrl(null);
+        if (!opensChoiceDialog) {
+          setSubmittingUrl(null);
+        }
       }
     },
     [onSubmit, url],
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
+    <form onSubmit={handleSubmit} className="space-y-2" noValidate>
       {variant === "default" ? (
         <Label
           htmlFor="url-input"
@@ -111,16 +127,23 @@ export function UrlInput({
           />
           <Input
             id="url-input"
-            type="url"
+            type="text"
             inputMode="url"
+            autoComplete="url"
+            spellCheck={false}
             placeholder={
               variant === "minimal"
-                ? "Paste a public link"
-                : "https://example.com/article"
+                ? "example.com/article or https://…"
+                : "example.com/article"
             }
             value={url}
             disabled={disabled || isSubmitting}
-            onChange={(event) => setUrl(event.target.value)}
+            onChange={(event) => {
+              setUrl(event.target.value);
+              if (error) {
+                setError(null);
+              }
+            }}
             className={cn(
               "transition-opacity",
               compact ? "h-8 pl-8 text-xs md:text-xs placeholder:text-xs" : "pl-9",
@@ -128,6 +151,7 @@ export function UrlInput({
             )}
             aria-label="Public page URL"
             aria-busy={isSubmitting}
+            aria-invalid={error ? true : undefined}
           />
         </div>
 
@@ -152,9 +176,11 @@ export function UrlInput({
         </Button>
       </div>
 
-      {isSubmitting && submittingUrl ? (
-        <UrlIngestLoader url={submittingUrl} variant={loaderVariant} />
-      ) : null}
+      <AnimatePresence>
+        {isSubmitting && submittingUrl ? (
+          <UrlIngestLoader url={submittingUrl} variant={loaderVariant} />
+        ) : null}
+      </AnimatePresence>
 
       {error ? (
         <p className="text-destructive text-sm" role="alert">

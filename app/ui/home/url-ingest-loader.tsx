@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const INGEST_STAGES = [
@@ -63,7 +64,11 @@ export function UrlIngestLoader({
   const isCompact = variant === "compact";
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -4, scale: 0.99 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
         "url-ingest-loader overflow-hidden rounded-xl border",
         isCompact ? "px-3 py-2.5" : "px-4 py-3.5 sm:px-5 sm:py-4",
@@ -97,14 +102,22 @@ export function UrlIngestLoader({
                 </span>
               ) : null}
             </p>
-            <p
-              className={cn(
-                "text-foreground/90 font-medium",
-                isCompact ? "text-[11px]" : "text-sm",
-              )}
-            >
-              {stage}
-            </p>
+
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={stage}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.25 }}
+                className={cn(
+                  "text-foreground/90 font-medium",
+                  isCompact ? "text-[11px]" : "text-sm",
+                )}
+              >
+                {stage}
+              </motion.p>
+            </AnimatePresence>
           </div>
 
           <div className="space-y-1">
@@ -112,9 +125,11 @@ export function UrlIngestLoader({
               className="bg-muted/80 relative h-1 overflow-hidden rounded-full"
               aria-hidden
             >
-              <div
+              <motion.div
                 className="url-ingest-progress-fill absolute inset-y-0 left-0 rounded-full"
-                style={{ width: `${progress}%` }}
+                initial={{ width: "8%" }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               />
               <div className="url-ingest-progress-shimmer absolute inset-0 rounded-full" />
             </div>
@@ -140,7 +155,7 @@ export function UrlIngestLoader({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -150,7 +165,9 @@ function DocumentPreview({ compact }: { compact: boolean }) {
     : ["w-[88%]", "w-full", "w-[76%]", "w-[92%]", "w-[58%]"];
 
   return (
-    <div
+    <motion.div
+      animate={{ scale: [1, 1.02, 1] }}
+      transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
       className={cn(
         "url-ingest-doc relative shrink-0 overflow-hidden rounded-md border bg-[color-mix(in_oklch,var(--background)_65%,transparent)]",
         compact ? "size-10" : "size-14 sm:size-16",
@@ -177,6 +194,6 @@ function DocumentPreview({ compact }: { compact: boolean }) {
 
       <div className="url-ingest-scan absolute inset-x-0 top-0 h-[2px]" />
       <div className="url-ingest-scan-glow absolute inset-x-0 top-0 h-6" />
-    </div>
+    </motion.div>
   );
 }

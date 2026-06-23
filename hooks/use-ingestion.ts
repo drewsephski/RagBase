@@ -10,12 +10,13 @@ import { trackLimitBoundary } from "@/lib/analytics/limit-boundary";
 import { isRootUrl } from "@/lib/ingestion/url-utils";
 import { getOpenRouterKey } from "@/lib/openrouter/client-key";
 
-interface UrlIngestResult {
+export interface UrlIngestResult {
   source?: Source;
   teaser?: boolean;
   message?: string;
   notice?: string;
   url?: string;
+  pendingChoice?: boolean;
 }
 
 interface UseIngestionOptions {
@@ -133,7 +134,7 @@ export function useIngestion({
         if (isRootUrl(url)) {
           setPendingRootUrl(url);
           setUrlChoiceOpen(true);
-          return;
+          return { pendingChoice: true, url };
         }
 
         return await submitUrl(url);
