@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, test } from "@jest/globals";
-import { getAppUrl, getProPriceDisplay, getRecoveryUrl } from "@/lib/site";
+import {
+  buildCheckoutReturnLocation,
+  getAppUrl,
+  getProPriceDisplay,
+  getRecoveryUrl,
+  isSameAppOrigin,
+} from "@/lib/site";
 
 describe("getAppUrl", () => {
   const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -40,6 +46,34 @@ describe("getAppUrl", () => {
     delete process.env.VERCEL_URL;
 
     expect(getAppUrl()).toBe("https://www.ragbase.dev");
+  });
+
+  test("ignores VERCEL_URL so Stripe return URLs stay on the canonical domain", () => {
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    process.env.VERCEL_URL = "rag-base-preview.vercel.app";
+
+    expect(getAppUrl()).toBe("https://www.ragbase.dev");
+  });
+});
+
+describe("checkout return helpers", () => {
+  test("detects canonical app origin", () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://www.ragbase.dev";
+
+    expect(isSameAppOrigin("https://www.ragbase.dev")).toBe(true);
+    expect(isSameAppOrigin("https://rag-base-preview.vercel.app")).toBe(false);
+  });
+
+  test("builds checkout return location on canonical domain", () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://www.ragbase.dev";
+
+    expect(
+      buildCheckoutReturnLocation(
+        "/app",
+        "?checkout=success&session_id=cs_test_123",
+      ),
+    ).toBe("https://www.ragbase.dev/app?checkout=success&session_id=cs_test_123");
   });
 });
 

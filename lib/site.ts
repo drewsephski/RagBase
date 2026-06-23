@@ -12,11 +12,19 @@ export function getAppUrl(): string {
     return fromSiteUrl.replace(/\/$/, "");
   }
 
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-
   return DEFAULT_APP_URL;
+}
+
+export function isSameAppOrigin(origin: string): boolean {
+  try {
+    return new URL(origin).origin === new URL(getAppUrl()).origin;
+  } catch {
+    return false;
+  }
+}
+
+export function buildCheckoutReturnLocation(pathname: string, search: string): string {
+  return `${getAppUrl()}${pathname}${search}`;
 }
 
 export function getProPriceDisplay(): string {

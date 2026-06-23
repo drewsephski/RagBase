@@ -4,6 +4,10 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CreateWorkspaceOptions } from "@/lib/domain/definitions";
 import { APP_PATH } from "@/lib/domain/site";
+import {
+  buildCheckoutReturnLocation,
+  isSameAppOrigin,
+} from "@/lib/site";
 import { useWorkspaces } from "@/hooks/use-workspace";
 import { useWorkspaceTemplate } from "@/hooks/use-workspace-template";
 import { useSources } from "@/hooks/use-sources";
@@ -91,12 +95,31 @@ function AppContent() {
   const checkoutParam = searchParams.get("checkout");
   const checkoutSessionId = searchParams.get("session_id");
   const isCheckoutSuccess = checkoutParam === "success";
+  const [isRedirectingCheckoutReturn, setIsRedirectingCheckoutReturn] = useState(false);
+
+  useEffect(() => {
+    if (checkoutParam !== "success" || typeof window === "undefined") {
+      return;
+    }
+
+    if (isSameAppOrigin(window.location.origin)) {
+      return;
+    }
+
+    setIsRedirectingCheckoutReturn(true);
+    window.location.replace(
+      buildCheckoutReturnLocation(
+        window.location.pathname,
+        window.location.search,
+      ),
+    );
+  }, [checkoutParam]);
 
   const { subscription, isPendingActivation, refresh: refreshSubscription } =
     useSubscription({
       headers,
       enabled: isReady && Boolean(headers),
-      pollWhilePending: isCheckoutSuccess && !checkoutHandled,
+      pollWhilePending: isCheckoutSuccess && !checkoutHandled && !isRedirectingCheckoutReturn,
       checkoutSessionId,
     });
 
@@ -292,6 +315,18 @@ function AppContent() {
     bumpRefresh();
   }, [activeWorkspace, bumpRefresh, deleteWorkspace, resetSources]);
 
+  const checkoutPendingOverlay =
+    isCheckoutSuccess && !isRedirectingCheckoutReturn && (isPendingActivation || !checkoutHandled) ? (
+      <CheckoutPending
+        timedOut={
+          isReady &&
+          !isPendingActivation &&
+          !subscription?.isProActive
+        }
+        onRefresh={() => void refreshSubscription()}
+      />
+    ) : null;
+
   const paywallDialogs = (
     <>
       <UrlIngestChoiceDialog
@@ -320,12 +355,7 @@ function AppContent() {
         surface={ingestion.paywallSurface}
       />
 
-      {isCheckoutSuccess && (isPendingActivation || !checkoutHandled) ? (
-        <CheckoutPending
-          timedOut={!isPendingActivation && !subscription?.isProActive}
-          onRefresh={() => void refreshSubscription()}
-        />
-      ) : null}
+      {checkoutPendingOverlay}
 
       {showRecoverySetup && headers && activeWorkspaceId ? (
         <RecoverySetup
@@ -341,14 +371,21 @@ function AppContent() {
 
   if (!isReady || isApplyingTemplate) {
     return (
-      <div className="flex min-h-dvh items-center justify-center p-4 pt-safe sm:p-6">
-        <div className="text-muted-foreground flex items-center gap-2 text-center text-sm">
-          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-          {template
-            ? `Setting up ${template.workspaceName}…`
-            : "Setting up your private workspace…"}
+      <>
+        <div className="flex min-h-dvh items-center justify-center p-4 pt-safe sm:p-6">
+          <div className="text-muted-foreground flex items-center gap-2 text-center text-sm">
+            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+            {isRedirectingCheckoutReturn
+              ? "Returning to RagBase…"
+              : template
+                ? `Setting up ${template.workspaceName}…`
+                : isCheckoutSuccess
+                  ? "Confirming your payment…"
+                  : "Setting up your private workspace…"}
+          </div>
         </div>
-      </div>
+        {checkoutPendingOverlay}
+      </>
     );
   }
 
