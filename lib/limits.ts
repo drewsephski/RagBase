@@ -103,10 +103,3 @@ export async function incrementMessageCount(workspaceId: string): Promise<void> 
     })
     .eq("id", workspaceId);
 }
-
-export function limitErrorResponse(error: unknown): Response {
-  if (error instanceof LimitError) {
-    return Response.json({ error: error.message }, { status: error.status });
-  }
-  return Response.json({ error: "Limit check failed" }, { status: 500 });
-}

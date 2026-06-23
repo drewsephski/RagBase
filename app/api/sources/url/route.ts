@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import {
-  authErrorResponse,
   requireWorkspace,
 } from "@/lib/workspace/auth";
 import { checkSourceLimit } from "@/lib/limits";
 import { executeSourceIngestion } from "@/lib/api/source-ingestion";
+import { rollbackPendingSourceInsert } from "@/lib/api/source-insert";
 import {
   isRootUrl,
   normalizeUrl,
@@ -15,7 +15,7 @@ import {
 import { ROOT_URL_INGESTION_NOTICE } from "@/lib/ingestion/user-errors";
 import { enforceUrlIngestRateLimit } from "@/lib/rate-limit/enforce";
 import { createServiceClient } from "@/lib/supabase/server";
-import { handleRouteError, jsonError } from "@/lib/api/errors";
+import { handleWorkspaceRouteError, jsonError } from "@/lib/api/errors";
 
 const urlBodySchema = z.object({
   url: z.string().min(1),
@@ -97,8 +97,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       .single();
 
     if (insertError || !source) {
-      await supabase.storage.from(UPLOADS_BUCKET).remove([storagePath]);
-      return jsonError("Failed to create source record", 500);
+      return rollbackPendingSourceInsert(supabase, storagePath);
     }
 
     const { source: ingestedSource } = await executeSourceIngestion(source.id);
@@ -111,9 +110,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       { status: 201 },
     );
   } catch (error) {
-    if (error instanceof Error && error.name === "WorkspaceAuthError") {
-      return authErrorResponse(error);
-    }
-    return handleRouteError(error);
+    return handleWorkspaceRouteError(error);
   }
 }

@@ -14,7 +14,6 @@ import {
   createOpenRouter,
   createOpenRouterWithKey,
 } from "@/lib/openrouter/client";
-import { createServiceClient } from "@/lib/supabase/server";
 
 export const STARTER_QUESTIONS_PER_SOURCE = 2;
 
@@ -110,60 +109,6 @@ export async function generateStarterQuestions(
     console.error("Starter question generation failed, using defaults:", error);
     return staticStarterQuestions();
   }
-}
-
-export async function generateStarterQuestionsForSource(
-  sourceId: string,
-  options?: { apiKey?: string; templateId?: TemplateId },
-): Promise<StarterQuestion[]> {
-  const supabase = createServiceClient();
-
-  const { data: source, error: sourceError } = await supabase
-    .from("sources")
-    .select("id, name, status")
-    .eq("id", sourceId)
-    .maybeSingle();
-
-  if (sourceError || !source) {
-    throw new Error("Source not found");
-  }
-
-  if (source.status !== "ready") {
-    throw new Error("Source is not ready yet");
-  }
-
-  const { data: documents, error: documentsError } = await supabase
-    .from("documents")
-    .select("id")
-    .eq("source_id", sourceId);
-
-  if (documentsError) {
-    throw new Error("Failed to load source documents");
-  }
-
-  const documentIds = (documents ?? []).map((document) => document.id);
-  let chunkTexts: string[] = [];
-
-  if (documentIds.length > 0) {
-    const { data: chunks, error: chunksError } = await supabase
-      .from("chunks")
-      .select("chunk_text")
-      .in("document_id", documentIds)
-      .limit(8);
-
-    if (chunksError) {
-      throw new Error("Failed to load source chunks");
-    }
-
-    chunkTexts = (chunks ?? []).map((chunk) => chunk.chunk_text);
-  }
-
-  return generateStarterQuestions({
-    sourceName: source.name,
-    chunkTexts,
-    apiKey: options?.apiKey,
-    templateId: options?.templateId,
-  });
 }
 
 export function parseStarterTemplateId(

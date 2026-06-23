@@ -1,14 +1,14 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { completeProCheckout } from "@/lib/billing/checkout-session";
 import { downgradeWorkspace } from "@/lib/billing/downgrade-workspace";
 import {
-  activateWorkspacePro,
   markWorkspacePastDue,
   syncWorkspaceFromSubscription,
 } from "@/lib/billing/subscription-sync";
 import { getInvoiceSubscriptionId } from "@/lib/billing/stripe-subscription";
 
-export async function handleCheckoutSessionCompleted(
+async function handleCheckoutSessionCompleted(
   supabase: SupabaseClient,
   stripe: Stripe,
   session: Stripe.Checkout.Session,
@@ -33,20 +33,25 @@ export async function handleCheckoutSessionCompleted(
     return;
   }
 
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-    expand: ["items"],
-  });
-  await activateWorkspacePro(supabase, workspaceId, customerId, subscription);
+  try {
+    await completeProCheckout(supabase, stripe, workspaceId, customerId, subscriptionId);
+  } catch (error) {
+    console.error("checkout.session.completed activation failed", {
+      workspaceId,
+      error,
+    });
+    throw error;
+  }
 }
 
-export async function handleSubscriptionUpdated(
+async function handleSubscriptionUpdated(
   supabase: SupabaseClient,
   subscription: Stripe.Subscription,
 ): Promise<void> {
   await syncWorkspaceFromSubscription(supabase, subscription);
 }
 
-export async function handleSubscriptionDeleted(
+async function handleSubscriptionDeleted(
   supabase: SupabaseClient,
   subscription: Stripe.Subscription,
 ): Promise<void> {
@@ -68,7 +73,7 @@ export async function handleSubscriptionDeleted(
   await downgradeWorkspace(supabase, workspace.id as string);
 }
 
-export async function handleInvoicePaymentFailed(
+async function handleInvoicePaymentFailed(
   supabase: SupabaseClient,
   invoice: Stripe.Invoice,
 ): Promise<void> {

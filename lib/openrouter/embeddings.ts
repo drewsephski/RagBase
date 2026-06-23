@@ -109,19 +109,6 @@ export async function embedTexts(
   return embeddings;
 }
 
-export async function embedText(
-  text: string,
-  options: EmbedOptions = {},
-): Promise<number[]> {
-  const [embedding] = await embedTexts([text], options);
-
-  if (!embedding) {
-    throw new Error("Embedding provider returned no vector");
-  }
-
-  return embedding;
-}
-
 export async function embedQuery(
   text: string,
   apiKey?: string,
@@ -134,12 +121,4 @@ export async function embedQuery(
   }
 
   return embedding;
-}
-
-/** @deprecated Use embedQuery instead. */
-export async function fetchEmbedding(
-  text: string,
-  apiKey: string,
-): Promise<number[]> {
-  return embedQuery(text, apiKey);
 }

@@ -2,7 +2,7 @@ import { OcrProviderError } from "@/lib/ingestion/ocr/errors";
 import { parseOcrPagesFromText } from "@/lib/ingestion/ocr/parse-pages";
 import type { PdfPage } from "@/lib/ingestion/pdf";
 
-export function getOcrVisionModel(): string {
+function getOcrVisionModel(): string {
   return process.env.OCR_VISION_MODEL?.trim() || "google/gemini-2.5-flash";
 }
 

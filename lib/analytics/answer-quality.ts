@@ -1,6 +1,6 @@
 import type { AnalyticsProperties } from "@/lib/analytics/types";
 
-export const ANSWER_LENGTH_BUCKETS = [
+const ANSWER_LENGTH_BUCKETS = [
   "short",
   "medium",
   "long",
@@ -9,7 +9,7 @@ export const ANSWER_LENGTH_BUCKETS = [
 
 export type AnswerLengthBucket = (typeof ANSWER_LENGTH_BUCKETS)[number];
 
-export const ANSWER_FEEDBACK_REASONS = [
+const ANSWER_FEEDBACK_REASONS = [
   "incorrect",
   "missing_source",
   "too_vague",

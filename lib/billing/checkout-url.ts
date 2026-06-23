@@ -1,10 +1,12 @@
 import { isBillingEnabled } from "@/lib/billing/flags";
 
-export function getStripePaymentLinkUrl(): string | null {
+/** @deprecated Use POST /api/billing/checkout (Checkout Sessions) instead of Payment Links. */
+function getStripePaymentLinkUrl(): string | null {
   const url = process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK_URL?.trim();
   return url && url.length > 0 ? url : null;
 }
 
+/** @deprecated Use POST /api/billing/checkout (Checkout Sessions) instead. */
 export function buildCheckoutUrl(workspaceId: string): string | null {
   if (!isBillingEnabled()) {
     return null;
@@ -21,5 +23,5 @@ export function buildCheckoutUrl(workspaceId: string): string | null {
 }
 
 export function isCheckoutAvailable(): boolean {
-  return isBillingEnabled() && Boolean(getStripePaymentLinkUrl());
+  return isBillingEnabled();
 }

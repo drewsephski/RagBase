@@ -4,7 +4,9 @@ import { useCallback, useRef, useState } from "react";
 import { FileUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useUploadFileState } from "@/hooks/use-upload-file-state";
 import { ALLOWED_FILE_EXTENSIONS } from "@/lib/domain/definitions";
+import { pickInputFile } from "@/lib/ui/upload-file";
 import { cn } from "@/lib/utils";
 
 interface FileInputRowProps {
@@ -15,41 +17,27 @@ interface FileInputRowProps {
 export function FileInputRow({ onUpload, disabled = false }: FileInputRowProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { isUploading, error, runUpload } = useUploadFileState();
 
   const accept = ALLOWED_FILE_EXTENSIONS.join(",");
 
   const handleFile = useCallback(
     async (file: File) => {
-      setError(null);
-      setIsUploading(true);
-      setFileName(file.name);
-
-      try {
+      await runUpload(async () => {
+        setFileName(file.name);
         await onUpload(file);
         setFileName("");
-      } catch (uploadError) {
-        setFileName("");
-        setError(
-          uploadError instanceof Error
-            ? uploadError.message
-            : "Upload failed. Please try again.",
-        );
-      } finally {
-        setIsUploading(false);
-      }
+      });
     },
-    [onUpload],
+    [onUpload, runUpload],
   );
 
   const handleInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
+      const file = pickInputFile(event);
       if (file) {
         void handleFile(file);
       }
-      event.target.value = "";
     },
     [handleFile],
   );

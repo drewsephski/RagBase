@@ -9,6 +9,27 @@ export type { MatchChunkResult, SearchChunksOptions } from "@/lib/retrieval/type
 
 const DEFAULT_MATCH_COUNT = 8;
 
+async function fetchDocumentIdsForSource(
+  supabase: ReturnType<typeof createServiceClient>,
+  sourceId: string,
+  errorMessage: string,
+): Promise<string[]> {
+  const { data: documents, error: documentError } = await supabase
+    .from("documents")
+    .select("id")
+    .eq("source_id", sourceId);
+
+  if (documentError) {
+    throw new Error(`${errorMessage}: ${documentError.message}`);
+  }
+
+  if (!documents || documents.length === 0) {
+    return [];
+  }
+
+  return documents.map((document) => document.id);
+}
+
 export async function searchChunks(
   options: SearchChunksOptions,
 ): Promise<MatchChunkResult[]> {
@@ -41,21 +62,15 @@ export async function searchChunks(
 
 export async function countSourceChunks(sourceId: string): Promise<number> {
   const supabase = createServiceClient();
+  const documentIds = await fetchDocumentIdsForSource(
+    supabase,
+    sourceId,
+    "Failed to count source chunks",
+  );
 
-  const { data: documents, error: documentError } = await supabase
-    .from("documents")
-    .select("id")
-    .eq("source_id", sourceId);
-
-  if (documentError) {
-    throw new Error(`Failed to count source chunks: ${documentError.message}`);
-  }
-
-  if (!documents || documents.length === 0) {
+  if (documentIds.length === 0) {
     return 0;
   }
-
-  const documentIds = documents.map((document) => document.id);
 
   const { count, error } = await supabase
     .from("chunks")
@@ -87,20 +102,15 @@ export async function fetchSourceChunksOrdered(
     return [];
   }
 
-  const { data: documents, error: documentError } = await supabase
-    .from("documents")
-    .select("id")
-    .eq("source_id", sourceId);
+  const documentIds = await fetchDocumentIdsForSource(
+    supabase,
+    sourceId,
+    "Failed to load source chunks",
+  );
 
-  if (documentError) {
-    throw new Error(`Failed to load source chunks: ${documentError.message}`);
-  }
-
-  if (!documents || documents.length === 0) {
+  if (documentIds.length === 0) {
     return [];
   }
-
-  const documentIds = documents.map((document) => document.id);
 
   const { data: chunks, error: chunkError } = await supabase
     .from("chunks")

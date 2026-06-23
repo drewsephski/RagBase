@@ -12,7 +12,7 @@ interface MarkdownContentProps {
   components?: Partial<Components>;
 }
 
-export function createMarkdownComponents(
+function createMarkdownComponents(
   size: "sm" | "base" = "base",
   overrides: Partial<Components> = {},
 ): Components {

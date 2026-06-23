@@ -68,5 +68,3 @@ export function buildContextWindow(results: MatchChunkResult[]): string {
     })
     .join("\n\n---\n\n");
 }
-
-export const buildRetrievalContext = buildContextWindow;

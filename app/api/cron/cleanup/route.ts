@@ -1,20 +1,7 @@
 import { NextRequest } from "next/server";
 import { LIMITS } from "@/lib/domain/definitions";
 import { deleteInactiveWorkspaces } from "@/lib/workspace/delete";
-import { jsonError } from "@/lib/api/errors";
-
-function verifyCronSecret(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    return false;
-  }
-  const header = request.headers.get("authorization");
-  if (!header) {
-    return false;
-  }
-  const token = header.replace(/^Bearer\s+/i, "");
-  return token === secret;
-}
+import { handleCronRoute } from "@/lib/api/cron-route";
 
 async function runCleanup(): Promise<Response> {
   const result = await deleteInactiveWorkspaces(LIMITS.RETENTION_DAYS);
@@ -26,27 +13,9 @@ async function runCleanup(): Promise<Response> {
 }
 
 export async function GET(request: NextRequest): Promise<Response> {
-  if (!verifyCronSecret(request)) {
-    return jsonError("Unauthorized", 401);
-  }
-
-  try {
-    return await runCleanup();
-  } catch (error) {
-    console.error("Cron cleanup failed:", error);
-    return jsonError("Cleanup failed", 500);
-  }
+  return handleCronRoute(request, runCleanup, "Cleanup failed");
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  if (!verifyCronSecret(request)) {
-    return jsonError("Unauthorized", 401);
-  }
-
-  try {
-    return await runCleanup();
-  } catch (error) {
-    console.error("Cron cleanup failed:", error);
-    return jsonError("Cleanup failed", 500);
-  }
+  return handleCronRoute(request, runCleanup, "Cleanup failed");
 }

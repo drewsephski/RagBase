@@ -20,7 +20,12 @@ describe("checkout url helpers", () => {
     expect(isCheckoutAvailable()).toBe(false);
   });
 
-  test("builds payment link with client reference id", () => {
+  test("isCheckoutAvailable follows billing flag", () => {
+    process.env.NEXT_PUBLIC_BILLING_ENABLED = "true";
+    expect(isCheckoutAvailable()).toBe(true);
+  });
+
+  test("legacy payment link builds client reference id", () => {
     process.env.NEXT_PUBLIC_BILLING_ENABLED = "true";
     process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK_URL =
       "https://buy.stripe.com/test_abc";
@@ -28,6 +33,5 @@ describe("checkout url helpers", () => {
     expect(buildCheckoutUrl("ws-123")).toBe(
       "https://buy.stripe.com/test_abc?client_reference_id=ws-123",
     );
-    expect(isCheckoutAvailable()).toBe(true);
   });
 });

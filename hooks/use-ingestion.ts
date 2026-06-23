@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { Source } from "@/lib/domain/definitions";
-import { apiFetch, apiJson, ApiError } from "@/lib/api/client";
+import { apiFetch, apiJson, ApiError, readApiErrorMessage } from "@/lib/api/client";
 import type { WorkspaceHeaders } from "@/lib/api/types";
 import { trackEvent } from "@/lib/analytics/track";
 import { trackPaidIntent } from "@/lib/analytics/paid-intent";
@@ -62,15 +62,10 @@ export function useIngestion({
       });
 
       if (!response.ok) {
-        let message = "Upload failed. Please try again.";
-        try {
-          const body = (await response.json()) as { error?: string };
-          if (body.error) {
-            message = body.error;
-          }
-        } catch {
-          // ignore
-        }
+        const message = await readApiErrorMessage(
+          response,
+          "Upload failed. Please try again.",
+        );
         const apiError = new ApiError(message, response.status);
         trackLimitBoundary(apiError);
         throw apiError;

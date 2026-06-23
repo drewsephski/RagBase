@@ -44,17 +44,26 @@ describe("getAppUrl", () => {
 });
 
 describe("getProPriceDisplay", () => {
-  test("returns env override when set", () => {
-    const original = process.env.NEXT_PUBLIC_PRO_PRICE_DISPLAY;
-    process.env.NEXT_PUBLIC_PRO_PRICE_DISPLAY = "$12/mo";
+  const original = process.env.NEXT_PUBLIC_PRO_PRICE_DISPLAY;
 
-    expect(getProPriceDisplay()).toBe("$12/mo");
-
+  afterEach(() => {
     if (original === undefined) {
       delete process.env.NEXT_PUBLIC_PRO_PRICE_DISPLAY;
     } else {
       process.env.NEXT_PUBLIC_PRO_PRICE_DISPLAY = original;
     }
+  });
+
+  test("returns env override when set", () => {
+    process.env.NEXT_PUBLIC_PRO_PRICE_DISPLAY = "$12/mo";
+
+    expect(getProPriceDisplay()).toBe("$12/mo");
+  });
+
+  test("falls back when env value loses its amount", () => {
+    process.env.NEXT_PUBLIC_PRO_PRICE_DISPLAY = " a month";
+
+    expect(getProPriceDisplay()).toBe("$9 a month");
   });
 });
 

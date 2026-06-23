@@ -1,13 +1,6 @@
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 
-export {
-  OPENROUTER_KEY,
-  SELECTED_MODEL_KEY,
-  WORKSPACE_ID_KEY,
-  WORKSPACE_SECRET_KEY,
-} from "@/lib/workspace/keys";
-
 const SALT_ROUNDS = 10;
 
 export function generateWorkspaceSecret(): string {

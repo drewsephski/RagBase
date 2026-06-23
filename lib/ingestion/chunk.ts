@@ -11,8 +11,8 @@ export interface TextChunk {
   tokenCount: number;
 }
 
-export const CHUNK_TARGET_TOKENS = 500;
-export const CHUNK_OVERLAP_TOKENS = 50;
+const CHUNK_TARGET_TOKENS = 500;
+const CHUNK_OVERLAP_TOKENS = 50;
 
 const CHARS_PER_TOKEN = 4;
 

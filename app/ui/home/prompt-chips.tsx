@@ -10,7 +10,7 @@ import { trackEvent } from "@/lib/analytics/track";
 import { buildAbsolutePromptAppUrl } from "@/lib/templates/prompt-link";
 import { cn } from "@/lib/utils";
 
-export const DEFAULT_PROMPT_CHIPS = LANDING_PROMPT_CHIPS;
+const DEFAULT_PROMPT_CHIPS = LANDING_PROMPT_CHIPS;
 
 interface PromptChipsProps {
   prompts?: readonly string[];

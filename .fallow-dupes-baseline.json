@@ -1,0 +1,11 @@
+{
+  "clone_groups": [
+    "app/api/sources/[id]/crawl/pages/route.ts:10-22|app/api/sources/[id]/starters/route.ts:73-90|app/api/sources/[id]/status/route.ts:10-22",
+    "app/api/sources/[id]/crawl/pages/route.ts:11-22|app/api/sources/[id]/route.ts:11-22|app/api/sources/[id]/starters/route.ts:74-90|app/api/sources/[id]/status/route.ts:11-22",
+    "app/ui/home/file-input-row.tsx:18-27|app/ui/home/upload-zone.tsx:22-31",
+    "lib/export/chat.ts:26-30|lib/export/chat.ts:55-59",
+    "lib/retrieval/search.ts:45-55|lib/retrieval/search.ts:90-100",
+    "scripts/stripe-qa.mjs:35-51|scripts/stripe-setup.mjs:26-41",
+    "scripts/stripe-qa.mjs:503-510|scripts/stripe-qa.mjs:538-545"
+  ]
+}

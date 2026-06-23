@@ -1,16 +1,16 @@
 import { NextRequest } from "next/server";
 import { randomUUID } from "crypto";
 import {
-  authErrorResponse,
   requireWorkspace,
 } from "@/lib/workspace/auth";
 import { checkSourceLimit } from "@/lib/limits";
 import { executeSourceIngestion } from "@/lib/api/source-ingestion";
+import { rollbackPendingSourceInsert } from "@/lib/api/source-insert";
 import { validateUpload } from "@/lib/ingestion/validate";
 import { parseOpenRouterKeyFromForm } from "@/lib/openrouter/parse-request-key";
 import { enforceUploadRateLimit } from "@/lib/rate-limit/enforce";
 import { createServiceClient } from "@/lib/supabase/server";
-import { handleRouteError, jsonError } from "@/lib/api/errors";
+import { handleWorkspaceRouteError, jsonError } from "@/lib/api/errors";
 
 const UPLOADS_BUCKET = "uploads";
 
@@ -70,8 +70,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       .single();
 
     if (insertError || !source) {
-      await supabase.storage.from(UPLOADS_BUCKET).remove([storagePath]);
-      return jsonError("Failed to create source record", 500);
+      return rollbackPendingSourceInsert(supabase, storagePath);
     }
 
     const { source: ingestedSource } = await executeSourceIngestion(sourceId, {
@@ -84,9 +83,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       { status: 201 },
     );
   } catch (error) {
-    if (error instanceof Error && error.name === "WorkspaceAuthError") {
-      return authErrorResponse(error);
-    }
-    return handleRouteError(error);
+    return handleWorkspaceRouteError(error);
   }
 }

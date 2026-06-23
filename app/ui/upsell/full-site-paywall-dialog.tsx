@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Globe, Sparkles } from "lucide-react";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
+import { useCheckout } from "@/hooks/use-checkout";
+import { isCheckoutAvailable } from "@/lib/billing/checkout-url";
 import { apiJson } from "@/lib/api/client";
-import { buildCheckoutUrl, isCheckoutAvailable } from "@/lib/billing/checkout-url";
 import { trackEvent } from "@/lib/analytics/track";
 import { getProPriceDisplay } from "@/lib/site";
 import { WAITLIST_HONEYPOT_FIELD } from "@/lib/waitlist";
@@ -50,6 +51,11 @@ export function FullSitePaywallDialog({
   const formOpenedAtRef = useRef<number | null>(null);
   const proPrice = getProPriceDisplay();
   const checkoutAvailable = isCheckoutAvailable();
+  const { startCheckout, isStartingCheckout, checkoutError: checkoutStartError } =
+    useCheckout({
+      workspaceHeaders: workspaceHeaders ?? null,
+      surface,
+    });
 
   useEffect(() => {
     if (!open) {
@@ -75,20 +81,14 @@ export function FullSitePaywallDialog({
       return;
     }
 
-    const checkoutUrl = buildCheckoutUrl(workspaceId);
-    if (!checkoutUrl) {
-      setError("Checkout is temporarily unavailable.");
-      return;
+    void startCheckout();
+  }, [startCheckout, workspaceId]);
+
+  useEffect(() => {
+    if (checkoutStartError) {
+      setError(checkoutStartError);
     }
-
-    trackEvent("paywall_subscribe_clicked", {
-      surface,
-      has_pending_url: Boolean(pendingUrl),
-      checkout_available: true,
-    });
-
-    window.location.href = checkoutUrl;
-  }, [pendingUrl, surface, workspaceId]);
+  }, [checkoutStartError]);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -249,11 +249,11 @@ export function FullSitePaywallDialog({
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Button
                 type="button"
-                disabled={isSubmitting || !workspaceId}
+                disabled={isSubmitting || isStartingCheckout || !workspaceId}
                 className="sm:flex-1"
                 onClick={handleSubscribe}
               >
-                Unlock site crawling
+                {isStartingCheckout ? "Redirecting…" : "Unlock site crawling"}
               </Button>
               {pendingUrl && onAddPageOnly ? (
                 <Button

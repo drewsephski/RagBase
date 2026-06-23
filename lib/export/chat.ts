@@ -1,6 +1,5 @@
 import type { Citation, Message } from "@/lib/domain/definitions";
 import { formatCitationFootnote } from "@/lib/chat/citations";
-import { createServiceClient } from "@/lib/supabase/server";
 
 export type ChatExportFormat = "markdown" | "json";
 
@@ -24,11 +23,15 @@ function appendCitationsMarkdown(citations: Citation[] | null): string {
   return `\n\n**Citations**\n${footnotes}`;
 }
 
-export function exportChatAsMarkdown(messages: Message[]): string {
-  const sorted = [...messages].sort(
+function sortMessagesByCreatedAt(messages: Message[]): Message[] {
+  return [...messages].sort(
     (a, b) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   );
+}
+
+function exportChatAsMarkdown(messages: Message[]): string {
+  const sorted = sortMessagesByCreatedAt(messages);
 
   const lines = ["# Chat Export", ""];
 
@@ -53,11 +56,8 @@ export function exportChatAsMarkdown(messages: Message[]): string {
   return lines.join("\n").trim();
 }
 
-export function exportChatAsJson(messages: Message[]): string {
-  const sorted = [...messages].sort(
-    (a, b) =>
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-  );
+function exportChatAsJson(messages: Message[]): string {
+  const sorted = sortMessagesByCreatedAt(messages);
 
   return JSON.stringify(
     {
@@ -90,24 +90,3 @@ export function getChatExportFilename(format: ChatExportFormat): string {
 export function getChatExportMimeType(format: ChatExportFormat): string {
   return format === "json" ? "application/json" : "text/markdown";
 }
-
-export async function fetchWorkspaceMessages(
-  workspaceId: string,
-): Promise<Message[]> {
-  const supabase = createServiceClient();
-
-  const { data, error } = await supabase
-    .from("messages")
-    .select("*")
-    .eq("workspace_id", workspaceId)
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    throw new Error(`Failed to fetch messages: ${error.message}`);
-  }
-
-  return (data ?? []) as Message[];
-}
-
-export const messagesToMarkdown = exportChatAsMarkdown;
-export const messagesToJson = exportChatAsJson;

@@ -58,7 +58,7 @@ export function ChatInput({
       className="px-3 pb-3 pb-safe pt-2 sm:px-5 sm:pb-5 sm:pt-3"
     >
       <div className="chat-composer mx-auto w-full max-w-3xl rounded-2xl border p-1.5 sm:p-2">
-        <div className="flex items-end gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <label htmlFor="chat-input" className="sr-only">
             Message
           </label>
@@ -82,7 +82,7 @@ export function ChatInput({
             disabled={!canSend}
             aria-label="Send message"
             className={cn(
-              "mb-0.5 size-8 shrink-0 rounded-xl transition-all sm:size-9",
+              "size-8 shrink-0 rounded-xl transition-all sm:size-9",
               canSend
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-muted text-muted-foreground",

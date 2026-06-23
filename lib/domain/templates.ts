@@ -32,7 +32,7 @@ export interface WorkspaceTemplate {
   };
 }
 
-export const HOSPITAL_QI_TEMPLATE: WorkspaceTemplate = {
+const HOSPITAL_QI_TEMPLATE: WorkspaceTemplate = {
   id: "hospital-qi",
   tabLabel: "Hospital QI",
   workspaceName: "Hospital AI Pilot Research",
@@ -81,7 +81,7 @@ export const HOSPITAL_QI_TEMPLATE: WorkspaceTemplate = {
   },
 };
 
-export const HARDWARE_REVIEW_TEMPLATE: WorkspaceTemplate = {
+const HARDWARE_REVIEW_TEMPLATE: WorkspaceTemplate = {
   id: "hardware-review",
   tabLabel: "Hardware",
   workspaceName: "Hardware Design Review",
@@ -130,7 +130,7 @@ export const HARDWARE_REVIEW_TEMPLATE: WorkspaceTemplate = {
   },
 };
 
-export const CONTRACT_REVIEW_TEMPLATE: WorkspaceTemplate = {
+const CONTRACT_REVIEW_TEMPLATE: WorkspaceTemplate = {
   id: "contract-review",
   tabLabel: "Contracts",
   workspaceName: "Contract Review",
@@ -178,7 +178,7 @@ export const CONTRACT_REVIEW_TEMPLATE: WorkspaceTemplate = {
   },
 };
 
-export const VENDOR_COMPARE_TEMPLATE: WorkspaceTemplate = {
+const VENDOR_COMPARE_TEMPLATE: WorkspaceTemplate = {
   id: "vendor-compare",
   tabLabel: "Vendors",
   workspaceName: "Vendor Comparison",
@@ -226,7 +226,7 @@ export const VENDOR_COMPARE_TEMPLATE: WorkspaceTemplate = {
   },
 };
 
-export const RESEARCH_BRIEF_TEMPLATE: WorkspaceTemplate = {
+const RESEARCH_BRIEF_TEMPLATE: WorkspaceTemplate = {
   id: "research-brief",
   tabLabel: "Research",
   workspaceName: "Research Brief",
@@ -274,7 +274,7 @@ export const RESEARCH_BRIEF_TEMPLATE: WorkspaceTemplate = {
   },
 };
 
-export const POLICY_COMPLIANCE_TEMPLATE: WorkspaceTemplate = {
+const POLICY_COMPLIANCE_TEMPLATE: WorkspaceTemplate = {
   id: "policy-compliance",
   tabLabel: "Compliance",
   workspaceName: "Policy & Compliance Review",
@@ -323,7 +323,7 @@ export const POLICY_COMPLIANCE_TEMPLATE: WorkspaceTemplate = {
   },
 };
 
-export const MEETING_RECAP_TEMPLATE: WorkspaceTemplate = {
+const MEETING_RECAP_TEMPLATE: WorkspaceTemplate = {
   id: "meeting-recap",
   tabLabel: "Meetings",
   workspaceName: "Meeting Recap",
@@ -371,7 +371,7 @@ export const MEETING_RECAP_TEMPLATE: WorkspaceTemplate = {
   },
 };
 
-export const FINANCIAL_REVIEW_TEMPLATE: WorkspaceTemplate = {
+const FINANCIAL_REVIEW_TEMPLATE: WorkspaceTemplate = {
   id: "financial-review",
   tabLabel: "Finance",
   workspaceName: "Financial Report Review",
@@ -420,7 +420,7 @@ export const FINANCIAL_REVIEW_TEMPLATE: WorkspaceTemplate = {
   },
 };
 
-export const WORKSPACE_TEMPLATES: Record<TemplateId, WorkspaceTemplate> = {
+const WORKSPACE_TEMPLATES: Record<TemplateId, WorkspaceTemplate> = {
   "hospital-qi": HOSPITAL_QI_TEMPLATE,
   "hardware-review": HARDWARE_REVIEW_TEMPLATE,
   "contract-review": CONTRACT_REVIEW_TEMPLATE,

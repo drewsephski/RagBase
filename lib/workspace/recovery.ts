@@ -25,7 +25,7 @@ export function hashRecoveryToken(token: string): string {
     .digest("hex");
 }
 
-export function generateRecoveryToken(): string {
+function generateRecoveryToken(): string {
   return randomBytes(32).toString("base64url");
 }
 

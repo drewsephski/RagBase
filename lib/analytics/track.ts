@@ -4,15 +4,6 @@ import type {
   AnalyticsProperties,
 } from "@/lib/analytics/types";
 
-export {
-  ANALYTICS_EVENTS,
-  PAID_INTENT_FEATURES,
-  type AnalyticsEvent,
-  type PaidIntentFeature,
-} from "@/lib/analytics/types";
-
-export { trackPaidIntent } from "@/lib/analytics/paid-intent";
-
 const ANONYMOUS_ID_KEY = "ragbase_analytics_id";
 
 function getAnonymousId(): string | undefined {

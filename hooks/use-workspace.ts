@@ -16,7 +16,6 @@ import {
   createStoredWorkspace,
   getActiveWorkspace,
   loadRegistry,
-  pruneInvalidWorkspace,
   removeWorkspace,
   renameWorkspaceLocal,
   setActiveWorkspace,
@@ -288,27 +287,4 @@ export function useWorkspaces(): UseWorkspacesState {
     deleteWorkspace,
     refreshRegistry,
   };
-}
-
-/** @deprecated Use useWorkspaces instead */
-export function useWorkspace(): Pick<
-  UseWorkspacesState,
-  "headers" | "isReady" | "error"
-> & {
-  workspaceId: string | null;
-  workspaceSecret: string | null;
-} {
-  const { activeWorkspace, headers, isReady, error } = useWorkspaces();
-
-  return {
-    workspaceId: activeWorkspace?.id ?? null,
-    workspaceSecret: activeWorkspace?.secret ?? null,
-    headers,
-    isReady,
-    error,
-  };
-}
-
-export function handleWorkspaceAuthFailure(workspaceId: string): void {
-  pruneInvalidWorkspace(workspaceId);
 }

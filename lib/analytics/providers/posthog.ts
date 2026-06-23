@@ -3,7 +3,7 @@ import type { AnalyticsPayload } from "@/lib/analytics/types";
 
 const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
 
-export function getPostHogHost(): string {
+function getPostHogHost(): string {
   return (
     process.env.POSTHOG_HOST?.trim() ||
     process.env.NEXT_PUBLIC_POSTHOG_HOST?.trim() ||

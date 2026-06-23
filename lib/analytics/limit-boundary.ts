@@ -1,5 +1,5 @@
 import { trackPaidIntent } from "@/lib/analytics/paid-intent";
-import { ApiError } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/api-error";
 
 export function trackLimitBoundary(error: unknown): void {
   if (!(error instanceof ApiError)) {

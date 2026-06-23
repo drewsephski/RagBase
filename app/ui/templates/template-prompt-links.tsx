@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Link2 } from "lucide-react";
-import type { TemplateId, WorkspaceTemplate } from "@/lib/domain/templates";
+import type { WorkspaceTemplate } from "@/lib/domain/templates";
 import { buildPromptAppUrl } from "@/lib/templates/prompt-link";
 
 interface TemplatePromptLinksProps {
@@ -63,11 +63,4 @@ export function TemplatePromptLinks({
       </ul>
     </section>
   );
-}
-
-export function getTemplatePromptSharePath(
-  templateId: TemplateId,
-  prompt: string,
-): string | null {
-  return buildPromptAppUrl(prompt, { templateId });
 }

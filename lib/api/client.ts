@@ -1,15 +1,8 @@
-import type { WorkspaceHeaders } from "@/lib/api/types";
 import { trackLimitBoundary } from "@/lib/analytics/limit-boundary";
+import { ApiError } from "@/lib/api/api-error";
+import type { WorkspaceHeaders } from "@/lib/api/types";
 
-export class ApiError extends Error {
-  status: number;
-
-  constructor(message: string, status: number) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status;
-  }
-}
+export { ApiError } from "@/lib/api/api-error";
 
 export interface ApiFetchOptions extends RequestInit {
   workspaceHeaders?: WorkspaceHeaders | null;
@@ -42,6 +35,22 @@ export async function apiFetch(
   });
 }
 
+export async function readApiErrorMessage(
+  response: Response,
+  fallback: string,
+): Promise<string> {
+  try {
+    const body = (await response.json()) as { error?: string };
+    if (body.error) {
+      return body.error;
+    }
+  } catch {
+    // ignore parse errors
+  }
+
+  return fallback;
+}
+
 export async function apiJson<T>(
   path: string,
   options: ApiFetchOptions = {},
@@ -49,16 +58,10 @@ export async function apiJson<T>(
   const response = await apiFetch(path, options);
 
   if (!response.ok) {
-    let message = "Something went wrong. Please try again.";
-
-    try {
-      const body = (await response.json()) as { error?: string };
-      if (body.error) {
-        message = body.error;
-      }
-    } catch {
-      // ignore parse errors
-    }
+    const message = await readApiErrorMessage(
+      response,
+      "Something went wrong. Please try again.",
+    );
 
     const apiError = new ApiError(message, response.status);
     trackLimitBoundary(apiError);

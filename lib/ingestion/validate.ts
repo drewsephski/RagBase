@@ -4,8 +4,8 @@ import {
   LIMITS,
 } from "@/lib/domain/definitions";
 
-export type AllowedFileExtension = (typeof ALLOWED_FILE_EXTENSIONS)[number];
-export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
+type AllowedFileExtension = (typeof ALLOWED_FILE_EXTENSIONS)[number];
+type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
 export type FileKind = "pdf" | "docx" | "txt" | "md";
 
 export class ValidationError extends Error {
@@ -33,7 +33,7 @@ const EXTENSION_TO_MIME: Record<AllowedFileExtension, AllowedMimeType> = {
   ".md": "text/markdown",
 };
 
-export function getFileExtension(filename: string): string {
+function getFileExtension(filename: string): string {
   const normalized = filename.trim().toLowerCase();
   const lastDot = normalized.lastIndexOf(".");
 
@@ -44,13 +44,13 @@ export function getFileExtension(filename: string): string {
   return normalized.slice(lastDot);
 }
 
-export function isAllowedExtension(
+function isAllowedExtension(
   extension: string,
 ): extension is AllowedFileExtension {
   return (ALLOWED_FILE_EXTENSIONS as readonly string[]).includes(extension);
 }
 
-export function isAllowedMimeType(mimeType: string): mimeType is AllowedMimeType {
+function isAllowedMimeType(mimeType: string): mimeType is AllowedMimeType {
   return (ALLOWED_MIME_TYPES as readonly string[]).includes(mimeType);
 }
 
@@ -66,7 +66,7 @@ export function getFileKind(filename: string): FileKind {
   return EXTENSION_TO_KIND[extension];
 }
 
-export function validateFileExtension(filename: string): AllowedFileExtension {
+function validateFileExtension(filename: string): AllowedFileExtension {
   const extension = getFileExtension(filename);
 
   if (!isAllowedExtension(extension)) {
@@ -78,7 +78,7 @@ export function validateFileExtension(filename: string): AllowedFileExtension {
   return extension;
 }
 
-export function validateMimeType(mimeType: string): AllowedMimeType {
+function validateMimeType(mimeType: string): AllowedMimeType {
   const normalized = mimeType.trim().toLowerCase();
 
   if (!isAllowedMimeType(normalized)) {
@@ -90,7 +90,7 @@ export function validateMimeType(mimeType: string): AllowedMimeType {
   return normalized;
 }
 
-export function validateExtensionMimeMatch(
+function validateExtensionMimeMatch(
   filename: string,
   mimeType: string,
 ): void {
@@ -105,7 +105,7 @@ export function validateExtensionMimeMatch(
   }
 }
 
-export function validateFileSize(bytes: number): void {
+function validateFileSize(bytes: number): void {
   if (bytes <= 0) {
     throw new ValidationError("File is empty.");
   }

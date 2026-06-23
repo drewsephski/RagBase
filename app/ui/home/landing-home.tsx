@@ -2,6 +2,8 @@
 
 import { Settings } from "lucide-react";
 import type { WorkspaceTemplate } from "@/lib/domain/templates";
+import type { SubscriptionStatusResponse } from "@/lib/billing/types";
+import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { RagBaseLogo } from "@/components/brand/ragbase-logo";
@@ -11,7 +13,8 @@ import { FileInputRow } from "@/app/ui/home/file-input-row";
 import { PromptChips } from "@/app/ui/home/prompt-chips";
 import { TrustMicrocopy } from "@/app/ui/home/trust-microcopy";
 import { BetaFeedbackCta } from "@/app/ui/feedback/beta-feedback-cta";
-import { CrawlTeaserHint } from "@/app/ui/home/crawl-teaser-hint";
+import { PlanPromoCard } from "@/app/ui/billing/plan-promo-card";
+import { ProNavBadge } from "@/app/ui/billing/pro-nav-badge";
 import { SafeUseNote } from "@/app/ui/templates/safe-use-note";
 import {
   TEMPLATE_WORKSPACE_WIDTH_CLASS,
@@ -31,6 +34,8 @@ interface LandingHomeProps {
   onOpenSettings: () => void;
   onPromptChipSelect?: (prompt: string) => void;
   onFullSitePaywallOpen?: () => void;
+  subscription?: SubscriptionStatusResponse | null;
+  workspaceHeaders?: WorkspaceHeaders | null;
   pendingPromptHint?: string | null;
   disabled?: boolean;
   template?: WorkspaceTemplate | null;
@@ -43,6 +48,8 @@ export function LandingHome({
   onOpenSettings,
   onPromptChipSelect,
   onFullSitePaywallOpen,
+  subscription = null,
+  workspaceHeaders = null,
   pendingPromptHint,
   disabled = false,
   template = null,
@@ -53,6 +60,7 @@ export function LandingHome({
       <header className="border-border/60 bg-background/80 flex shrink-0 items-center justify-between gap-2 px-safe py-3 backdrop-blur-md pt-safe sm:px-6 sm:py-4">
         <WorkspaceSwitcher {...workspaceSwitcherProps} />
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <ProNavBadge workspaceHeaders={workspaceHeaders} subscription={subscription} />
           <ThemeToggle />
           <Button
             type="button"
@@ -101,9 +109,12 @@ export function LandingHome({
             aria-label="Add a document or link"
           >
             <UrlInput onSubmit={onUrlSubmit} disabled={disabled} variant="minimal" />
-            {onFullSitePaywallOpen ? (
-              <CrawlTeaserHint onLearnMore={onFullSitePaywallOpen} />
-            ) : null}
+            <PlanPromoCard
+              workspaceHeaders={workspaceHeaders}
+              subscription={subscription}
+              onPaywallOpen={onFullSitePaywallOpen}
+              surface="landing"
+            />
             <FileInputRow onUpload={onUpload} disabled={disabled} />
             <TrustMicrocopy />
             <BetaFeedbackCta />

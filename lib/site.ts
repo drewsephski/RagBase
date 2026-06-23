@@ -1,5 +1,5 @@
 const DEFAULT_APP_URL = "https://www.ragbase.dev";
-const DEFAULT_PRO_PRICE_DISPLAY = "$9/mo";
+const DEFAULT_PRO_PRICE_DISPLAY = "$9 a month";
 
 export function getAppUrl(): string {
   const fromAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -20,7 +20,12 @@ export function getAppUrl(): string {
 }
 
 export function getProPriceDisplay(): string {
-  return process.env.NEXT_PUBLIC_PRO_PRICE_DISPLAY?.trim() || DEFAULT_PRO_PRICE_DISPLAY;
+  const fromEnv = process.env.NEXT_PUBLIC_PRO_PRICE_DISPLAY?.trim();
+  if (fromEnv && /\d/.test(fromEnv)) {
+    return fromEnv;
+  }
+
+  return DEFAULT_PRO_PRICE_DISPLAY;
 }
 
 export function getRecoveryUrl(token: string): string {

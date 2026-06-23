@@ -4,7 +4,9 @@ import { useCallback, useRef, useState } from "react";
 import { FileUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useUploadFileState } from "@/hooks/use-upload-file-state";
 import { ALLOWED_FILE_EXTENSIONS } from "@/lib/domain/definitions";
+import { pickInputFile } from "@/lib/ui/upload-file";
 
 interface UploadZoneProps {
   onUpload: (file: File) => Promise<void>;
@@ -19,29 +21,15 @@ export function UploadZone({
 }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { isUploading, error, runUpload } = useUploadFileState();
 
   const accept = ALLOWED_FILE_EXTENSIONS.join(",");
 
   const handleFile = useCallback(
-    async (file: File) => {
-      setError(null);
-      setIsUploading(true);
-
-      try {
-        await onUpload(file);
-      } catch (uploadError) {
-        setError(
-          uploadError instanceof Error
-            ? uploadError.message
-            : "Upload failed. Please try again.",
-        );
-      } finally {
-        setIsUploading(false);
-      }
+    (file: File) => {
+      void runUpload(() => onUpload(file));
     },
-    [onUpload],
+    [onUpload, runUpload],
   );
 
   const handleDrop = useCallback(
@@ -77,11 +65,10 @@ export function UploadZone({
 
   const handleInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
+      const file = pickInputFile(event);
       if (file) {
         void handleFile(file);
       }
-      event.target.value = "";
     },
     [handleFile],
   );

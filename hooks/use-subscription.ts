@@ -13,6 +13,7 @@ interface UseSubscriptionOptions {
   headers: WorkspaceHeaders | null;
   enabled?: boolean;
   pollWhilePending?: boolean;
+  checkoutSessionId?: string | null;
 }
 
 interface UseSubscriptionState {
@@ -22,15 +23,53 @@ interface UseSubscriptionState {
   refresh: () => Promise<void>;
 }
 
+interface ConfirmCheckoutResponse {
+  activated: boolean;
+  subscription: SubscriptionStatusResponse;
+}
+
+async function syncCheckoutActivation(
+  headers: WorkspaceHeaders,
+  checkoutSessionId: string | null,
+): Promise<SubscriptionStatusResponse | null> {
+  if (checkoutSessionId) {
+    try {
+      const result = await apiJson<ConfirmCheckoutResponse>("/api/billing/checkout/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: checkoutSessionId }),
+        workspaceHeaders: headers,
+      });
+
+      return result.subscription;
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const result = await apiJson<ConfirmCheckoutResponse>("/api/billing/checkout/sync", {
+      method: "POST",
+      workspaceHeaders: headers,
+    });
+
+    return result.subscription;
+  } catch {
+    return null;
+  }
+}
+
 export function useSubscription({
   headers,
   enabled = true,
   pollWhilePending = false,
+  checkoutSessionId = null,
 }: UseSubscriptionOptions): UseSubscriptionState {
   const [subscription, setSubscription] = useState<SubscriptionStatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPendingActivation, setIsPendingActivation] = useState(false);
   const pollStartedAtRef = useRef<number | null>(null);
+  const confirmAttemptedRef = useRef<string | null>(null);
 
   const fetchSubscription = useCallback(async (): Promise<SubscriptionStatusResponse | null> => {
     if (!headers) {
@@ -41,6 +80,27 @@ export function useSubscription({
       workspaceHeaders: headers,
     });
   }, [headers]);
+
+  const confirmCheckoutSession = useCallback(async (): Promise<boolean> => {
+    if (!headers) {
+      return false;
+    }
+
+    const syncKey = checkoutSessionId ?? "latest";
+    if (confirmAttemptedRef.current === syncKey) {
+      return subscription?.isProActive ?? false;
+    }
+
+    confirmAttemptedRef.current = syncKey;
+
+    const nextSubscription = await syncCheckoutActivation(headers, checkoutSessionId);
+    if (!nextSubscription) {
+      return false;
+    }
+
+    setSubscription(nextSubscription);
+    return nextSubscription.isProActive;
+  }, [checkoutSessionId, headers, subscription?.isProActive]);
 
   const refresh = useCallback(async () => {
     if (!enabled || !headers) {
@@ -81,12 +141,46 @@ export function useSubscription({
 
     let cancelled = false;
 
+    void (async () => {
+      const confirmed = await confirmCheckoutSession();
+      if (cancelled) {
+        return;
+      }
+
+      if (confirmed) {
+        setIsPendingActivation(false);
+        trackEvent("checkout_success_resolved", {
+          resolved: true,
+          elapsed_ms: 0,
+          source: "confirm",
+        });
+      }
+    })();
+
     const intervalId = window.setInterval(() => {
       void (async () => {
         const startedAt = pollStartedAtRef.current ?? Date.now();
         const elapsedMs = Date.now() - startedAt;
 
         try {
+          if (elapsedMs < POLL_TIMEOUT_MS) {
+            const confirmed = await confirmCheckoutSession();
+            if (cancelled) {
+              return;
+            }
+
+            if (confirmed) {
+              window.clearInterval(intervalId);
+              setIsPendingActivation(false);
+              trackEvent("checkout_success_resolved", {
+                resolved: true,
+                elapsed_ms: elapsedMs,
+                source: "confirm_poll",
+              });
+              return;
+            }
+          }
+
           const next = await fetchSubscription();
           if (cancelled) {
             return;
@@ -100,6 +194,7 @@ export function useSubscription({
             trackEvent("checkout_success_resolved", {
               resolved: true,
               elapsed_ms: elapsedMs,
+              source: "subscription_poll",
             });
             return;
           }
@@ -125,7 +220,7 @@ export function useSubscription({
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [fetchSubscription, headers, pollWhilePending]);
+  }, [checkoutSessionId, confirmCheckoutSession, fetchSubscription, headers, pollWhilePending]);
 
   return {
     subscription,

@@ -21,9 +21,7 @@ import { scrapeUrl } from "@/lib/ingestion/url";
 import { getFileKind, type FileKind } from "@/lib/ingestion/validate";
 import { resolveIngestionFailure } from "@/lib/ingestion/user-errors";
 
-export { IngestionError, type ParsedSourceContent } from "@/lib/ingestion/types";
-export type { SourceRow, SourceStore } from "@/lib/ingestion/source-store";
-export { createSupabaseSourceStore } from "@/lib/ingestion/source-store";
+export type { SourceStore } from "@/lib/ingestion/source-store";
 
 function getMetadataString(
   metadata: Record<string, unknown> | null,
@@ -51,7 +49,7 @@ export interface IngestionPipelineOptions {
   prefetchedPdfParse?: ParsedPdf;
 }
 
-export async function parseTextBuffer(
+async function parseTextBuffer(
   buffer: Buffer,
   kind: FileKind,
   sourceName: string,
@@ -112,7 +110,7 @@ export async function parseTextBuffer(
   }
 }
 
-export async function parseUrlSource(
+async function parseUrlSource(
   url: string,
   cachedMarkdown?: string | null,
   cachedTitle?: string | null,
@@ -148,14 +146,7 @@ export async function parseUrlSource(
   };
 }
 
-export async function loadFileBuffer(
-  storagePath: string,
-  store: SourceStore = createSupabaseSourceStore(),
-): Promise<Buffer> {
-  return store.loadFileBuffer(storagePath);
-}
-
-export async function parseSourceContent(
+async function parseSourceContent(
   source: SourceRow,
   options: IngestionPipelineOptions = {},
   store: SourceStore = createSupabaseSourceStore(),
@@ -196,7 +187,7 @@ export async function parseSourceContent(
   throw new IngestionError(`Unsupported source type: ${source.type}`);
 }
 
-export function buildChunks(segments: TextSegment[]): TextChunk[] {
+function buildChunks(segments: TextSegment[]): TextChunk[] {
   const hasPageNumbers = segments.some((segment) => segment.pageNumber !== null);
 
   if (hasPageNumbers) {
@@ -210,13 +201,6 @@ export function buildChunks(segments: TextSegment[]): TextChunk[] {
   const sourceLocation = segments.find((segment) => segment.sourceLocation)?.sourceLocation ?? null;
 
   return chunkPlainText(combinedText, sourceLocation);
-}
-
-export async function deleteExistingDocuments(
-  sourceId: string,
-  store: SourceStore = createSupabaseSourceStore(),
-): Promise<void> {
-  await store.deleteExistingDocuments(sourceId);
 }
 
 export async function runIngestionPipeline(
@@ -287,12 +271,4 @@ export async function runIngestionPipeline(
     });
     throw error;
   }
-}
-
-export async function reprocessSource(
-  sourceId: string,
-  options: IngestionPipelineOptions = {},
-  store: SourceStore = createSupabaseSourceStore(),
-): Promise<void> {
-  await runIngestionPipeline(sourceId, options, store);
 }

@@ -212,14 +212,6 @@ export function renameWorkspaceLocal(
   return next;
 }
 
-export function pruneInvalidWorkspace(
-  id: string,
-  storage: Storage = localStorage,
-): StoredWorkspace[] {
-  const { workspaces } = removeWorkspace(id, storage);
-  return workspaces;
-}
-
 export function createStoredWorkspace(
   id: string,
   secret: string,

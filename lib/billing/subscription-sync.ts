@@ -35,6 +35,39 @@ function shouldResetCrawlPeriod(
   return existingPeriodStart !== nextPeriodStart;
 }
 
+function applyCrawlPeriodReset(
+  update: Record<string, unknown>,
+  resetCrawl: boolean,
+  periodStart: string | null,
+): void {
+  if (!resetCrawl) {
+    return;
+  }
+
+  update.crawl_count_period = 0;
+  update.crawled_pages_period = 0;
+  update.crawl_period_start = periodStart;
+}
+
+function buildActiveSubscriptionUpdate(
+  status: string,
+  periodStart: string | null,
+  periodEnd: string | null,
+  resetCrawl: boolean,
+  pastDueAt: string | null,
+): Record<string, unknown> {
+  const update: Record<string, unknown> = {
+    plan: "pro",
+    stripe_subscription_status: status,
+    stripe_current_period_start: periodStart,
+    stripe_current_period_end: periodEnd,
+    stripe_past_due_at: pastDueAt,
+  };
+
+  applyCrawlPeriodReset(update, resetCrawl, periodStart);
+  return update;
+}
+
 interface WorkspaceSubscriptionRow {
   id: string;
   crawl_period_start: string | null;
@@ -114,19 +147,13 @@ export async function syncWorkspaceFromSubscription(
   if (!(PRO_ACTIVE_STATUSES as readonly string[]).includes(status)) {
     if (status === "past_due") {
       const pastDueAt = row.stripe_past_due_at ?? new Date().toISOString();
-      const update: Record<string, unknown> = {
-        plan: "pro",
-        stripe_subscription_status: status,
-        stripe_current_period_start: periodStart,
-        stripe_current_period_end: periodEnd,
-        stripe_past_due_at: pastDueAt,
-      };
-
-      if (resetCrawl) {
-        update.crawl_count_period = 0;
-        update.crawled_pages_period = 0;
-        update.crawl_period_start = periodStart;
-      }
+      const update = buildActiveSubscriptionUpdate(
+        status,
+        periodStart,
+        periodEnd,
+        resetCrawl,
+        pastDueAt,
+      );
 
       const { error } = await supabase
         .from("workspaces")
@@ -143,19 +170,13 @@ export async function syncWorkspaceFromSubscription(
     return;
   }
 
-  const update: Record<string, unknown> = {
-    plan: "pro",
-    stripe_subscription_status: status,
-    stripe_current_period_start: periodStart,
-    stripe_current_period_end: periodEnd,
-    stripe_past_due_at: null,
-  };
-
-  if (resetCrawl) {
-    update.crawl_count_period = 0;
-    update.crawled_pages_period = 0;
-    update.crawl_period_start = periodStart;
-  }
+  const update = buildActiveSubscriptionUpdate(
+    status,
+    periodStart,
+    periodEnd,
+    resetCrawl,
+    null,
+  );
 
   const { error } = await supabase.from("workspaces").update(update).eq("id", row.id);
 

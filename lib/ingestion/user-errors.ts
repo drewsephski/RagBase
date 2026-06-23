@@ -187,7 +187,7 @@ export function getSourceIngestionFailure(
   return normalizeIngestionError(source.error_message);
 }
 
-export function isOcrUpsellCategory(category: IngestionErrorCategory): boolean {
+function isOcrUpsellCategory(category: IngestionErrorCategory): boolean {
   return category === "scanned_pdf" || category === "ocr_over_cap";
 }
 

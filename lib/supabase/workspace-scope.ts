@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { jsonError } from "@/lib/api/errors";
 
 /**
  * Helpers for service-role Supabase queries. The service client bypasses RLS,
@@ -20,32 +21,27 @@ export async function getSourceInWorkspace(
     .maybeSingle();
 }
 
-export class SourceNotInWorkspaceError extends Error {
-  status = 404;
-
-  constructor(sourceId: string) {
-    super(`Source not found: ${sourceId}`);
-    this.name = "SourceNotInWorkspaceError";
-  }
-}
-
-export async function assertSourceInWorkspace(
+export async function fetchSourceInWorkspace<T extends Record<string, unknown>>(
   supabase: SupabaseClient,
   workspaceId: string,
   sourceId: string,
-): Promise<void> {
-  const { data, error } = await getSourceInWorkspace(
+  columns: string,
+  fetchErrorMessage: string,
+): Promise<{ source: T } | { response: Response }> {
+  const { data: source, error } = await getSourceInWorkspace(
     supabase,
     workspaceId,
     sourceId,
-    "id",
+    columns,
   );
 
   if (error) {
-    throw new Error(`Failed to verify source ownership: ${error.message}`);
+    return { response: jsonError(fetchErrorMessage, 500) };
   }
 
-  if (!data) {
-    throw new SourceNotInWorkspaceError(sourceId);
+  if (!source) {
+    return { response: jsonError("Source not found", 404) };
   }
+
+  return { source: source as unknown as T };
 }

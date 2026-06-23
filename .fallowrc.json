@@ -1,0 +1,19 @@
+{
+  "$schema": "https://fallow.tools/schema/config.json",
+  "entry": ["scripts/stripe-qa.mjs", "scripts/stripe-setup.mjs"],
+  "health": {
+    "maxCyclomatic": 35,
+    "maxCognitive": 56,
+    "maxCrap": 1300,
+    "ignore": ["scripts/**"]
+  },
+  "duplicates": {
+    "ignore": ["scripts/**"]
+  },
+  "audit": {
+    "gate": "new-only",
+    "deadCodeBaseline": ".fallow-baseline.json",
+    "healthBaseline": ".fallow-health-baseline.json",
+    "dupesBaseline": ".fallow-dupes-baseline.json"
+  }
+}

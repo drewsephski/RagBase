@@ -2,10 +2,18 @@ import { ProRequiredError } from "@/lib/billing/errors";
 import { LimitError } from "@/lib/limits";
 import { ValidationError } from "@/lib/ingestion/validate";
 import { RateLimitError } from "@/lib/rate-limit/enforce";
-import { WorkspaceAuthError } from "@/lib/workspace/auth";
+import { WorkspaceAuthError, authErrorResponse } from "@/lib/workspace/auth";
 
 export function jsonError(message: string, status = 400): Response {
   return Response.json({ error: message }, { status });
+}
+
+export function handleWorkspaceRouteError(error: unknown): Response {
+  if (error instanceof WorkspaceAuthError) {
+    return authErrorResponse(error);
+  }
+
+  return handleRouteError(error);
 }
 
 export function handleRouteError(error: unknown): Response {

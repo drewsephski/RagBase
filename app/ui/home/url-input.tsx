@@ -22,12 +22,14 @@ interface UrlInputProps {
   >;
   disabled?: boolean;
   variant?: "default" | "minimal";
+  compact?: boolean;
 }
 
 export function UrlInput({
   onSubmit,
   disabled = false,
   variant = "default",
+  compact = false,
 }: UrlInputProps) {
   const [url, setUrl] = useState("");
   const [submittingUrl, setSubmittingUrl] = useState<string | null>(null);
@@ -84,21 +86,25 @@ export function UrlInput({
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
       {variant === "default" ? (
-        <Label htmlFor="url-input" className="text-sm font-medium">
+        <Label
+          htmlFor="url-input"
+          className={cn("font-medium", compact ? "text-xs" : "text-sm")}
+        >
           Or paste a public link
         </Label>
       ) : null}
 
       <div
         className={cn(
-          "flex flex-col gap-2 sm:flex-row sm:items-start",
+          "flex flex-col gap-1.5 sm:flex-row sm:items-start",
           isSubmitting && "sm:items-stretch",
         )}
       >
         <div className="relative min-w-0 flex-1">
           <Link2
             className={cn(
-              "text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 transition-opacity",
+              "text-muted-foreground pointer-events-none absolute top-1/2 -translate-y-1/2 transition-opacity",
+              compact ? "left-2.5 size-3.5" : "left-3 size-4",
               isSubmitting && "opacity-40",
             )}
             aria-hidden
@@ -115,7 +121,11 @@ export function UrlInput({
             value={url}
             disabled={disabled || isSubmitting}
             onChange={(event) => setUrl(event.target.value)}
-            className={cn("pl-9 transition-opacity", isSubmitting && "opacity-60")}
+            className={cn(
+              "transition-opacity",
+              compact ? "h-8 pl-8 text-xs md:text-xs placeholder:text-xs" : "pl-9",
+              isSubmitting && "opacity-60",
+            )}
             aria-label="Public page URL"
             aria-busy={isSubmitting}
           />
@@ -125,6 +135,7 @@ export function UrlInput({
           type="submit"
           disabled={disabled || isSubmitting || !url.trim()}
           className="w-full shrink-0 sm:w-auto"
+          size={compact ? "sm" : "default"}
           aria-label="Add link"
           variant={variant === "minimal" ? "secondary" : "default"}
         >

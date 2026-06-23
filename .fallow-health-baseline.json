@@ -1,0 +1,472 @@
+{
+  "finding_counts": {
+    "app/api/billing/portal/route.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/api/chat/route.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "app/api/cron/crawl-sync/route.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "app/api/export/chat/route.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/api/sources/[id]/crawl/cancel/route.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/api/sources/[id]/reprocess/route.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/api/sources/[id]/route.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/api/sources/[id]/starters/route.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "app/api/sources/[id]/status/route.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/api/sources/crawl/route.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/api/sources/route.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/api/sources/upload/route.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "app/api/sources/url/route.ts": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "app/api/waitlist/route.ts": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "app/api/webhooks/stripe/route.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "app/api/workspaces/route.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/app.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "app/ui/billing/recovery-setup.tsx": {
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "app/ui/chat/chat-input.tsx": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/chat/chat-panel.tsx": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "app/ui/chat/message-list.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "app/ui/chat/quality-debug-panel.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/home/file-input-row.tsx": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/home/landing-home.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "app/ui/home/prompt-chips.tsx": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/home/upload-zone.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "app/ui/home/url-ingest-loader.tsx": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/home/url-input.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      }
+    },
+    "app/ui/layout/app-shell.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "app/ui/marketing/template-spotlight.tsx": {
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "app/ui/recovery/recover-workspace.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/settings/billing-section.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "app/ui/settings/settings-panel.tsx": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/sources/crawl-source-item.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/sources/source-actions.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "app/ui/sources/source-item.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/templates/safe-use-note.tsx": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "app/ui/upsell/full-site-paywall-dialog.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/workspace/template-selector.tsx": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "app/ui/workspace/workspace-switcher.tsx": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "components/brand/ragbase-logo.tsx": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "hooks/use-ingestion.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "hooks/use-sources.ts": {
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "hooks/use-subscription.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "hooks/use-workspace-template.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "hooks/use-workspace.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "lib/api/errors.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "lib/billing/subscription-sync.ts": {
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "lib/billing/webhook-handlers.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "lib/chat/starters.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "lib/ingestion/crawl/firecrawl-crawl.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 3
+      }
+    },
+    "lib/ingestion/crawl/page-ingest.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "lib/ingestion/crawl/start.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "lib/ingestion/crawl/sync.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "lib/ingestion/pipeline.ts": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "lib/ingestion/source-store.ts": {
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "lib/rate-limit/enforce.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "lib/sources/crawl-status.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "lib/workspace/auth.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "lib/workspace/delete.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "scripts/stripe-qa.mjs": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "scripts/stripe-setup.mjs": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 3
+      }
+    }
+  },
+  "runtime_coverage_findings": [],
+  "target_keys": [
+    "app/ui/app.tsx:complexity",
+    "lib/sources/ingestion-status.ts:high impact",
+    "app/ui/chat/chat-panel.tsx:complexity",
+    "app/ui/layout/app-shell.tsx:complexity",
+    "lib/ingestion/crawl/sync.ts:complexity",
+    "app/ui/upsell/full-site-paywall-dialog.tsx:complexity",
+    "app/ui/sources/crawl-source-item.tsx:complexity",
+    "scripts/stripe-qa.mjs:complexity"
+  ]
+}

@@ -1,35 +1,16 @@
 import { NextRequest } from "next/server";
-import type { Message } from "@/lib/domain/definitions";
 import {
   authErrorResponse,
   requireWorkspace,
 } from "@/lib/workspace/auth";
+import { fetchWorkspaceMessages } from "@/lib/chat/messages";
 import {
   exportChat,
   getChatExportFilename,
   getChatExportMimeType,
   type ChatExportFormat,
 } from "@/lib/export/chat";
-import { createServiceClient } from "@/lib/supabase/server";
 import { handleRouteError, jsonError } from "@/lib/api/errors";
-
-async function fetchWorkspaceMessages(
-  workspaceId: string,
-): Promise<Message[]> {
-  const supabase = createServiceClient();
-
-  const { data, error } = await supabase
-    .from("messages")
-    .select("*")
-    .eq("workspace_id", workspaceId)
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    throw new Error(`Failed to fetch messages: ${error.message}`);
-  }
-
-  return (data ?? []) as Message[];
-}
 
 function parseExportFormat(value: string | null): ChatExportFormat | null {
   if (value === "markdown" || value === "json") {

@@ -1,6 +1,1 @@
-export {
-  embedQuery,
-  embedText,
-  embedTexts,
-  type EmbedOptions,
-} from "@/lib/openrouter/embeddings";
+export { embedTexts } from "@/lib/openrouter/embeddings";

@@ -5,7 +5,7 @@ import {
 } from "@/lib/ingestion/pipeline";
 import { createServiceClient } from "@/lib/supabase/server";
 
-export const SOURCE_INGESTION_SNAPSHOT_SELECT =
+const SOURCE_INGESTION_SNAPSHOT_SELECT =
   "id, name, status, type, created_at, error_message, metadata";
 
 export interface IngestionAttemptResult {

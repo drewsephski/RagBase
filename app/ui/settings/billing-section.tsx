@@ -7,7 +7,6 @@ import { useBillingPortal } from "@/hooks/use-billing-portal";
 import { useCheckout } from "@/hooks/use-checkout";
 import { isCheckoutAvailable } from "@/lib/billing/checkout-url";
 import { formatBillingPeriodEnd } from "@/lib/billing/display";
-import { trackEvent } from "@/lib/analytics/track";
 import { getProPriceDisplay } from "@/lib/site";
 import { supportMailto } from "@/lib/support";
 import { Button } from "@/components/ui/button";
