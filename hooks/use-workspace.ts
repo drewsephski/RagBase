@@ -29,7 +29,7 @@ interface CreateWorkspaceResponse {
   workspaceSecret: string;
 }
 
-interface UseWorkspacesState {
+export interface UseWorkspacesState {
   workspaces: StoredWorkspace[];
   activeWorkspace: StoredWorkspace | null;
   headers: WorkspaceHeaders | null;

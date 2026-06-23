@@ -4,9 +4,11 @@ import { useCallback, useState } from "react";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { apiJson } from "@/lib/api/client";
 import { trackEvent } from "@/lib/analytics/track";
+import { persistCheckoutWorkspaceId } from "@/lib/billing/checkout-return-state";
 
 interface UseCheckoutOptions {
   workspaceHeaders: WorkspaceHeaders | null;
+  workspaceId?: string | null;
   surface?: string;
 }
 
@@ -18,6 +20,7 @@ interface UseCheckoutState {
 
 export function useCheckout({
   workspaceHeaders,
+  workspaceId = null,
   surface = "checkout",
 }: UseCheckoutOptions): UseCheckoutState {
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
@@ -43,6 +46,10 @@ export function useCheckout({
         workspaceHeaders,
       });
 
+      if (workspaceId) {
+        persistCheckoutWorkspaceId(workspaceId);
+      }
+
       window.location.href = result.url;
     } catch (error) {
       setCheckoutError(
@@ -51,7 +58,7 @@ export function useCheckout({
     } finally {
       setIsStartingCheckout(false);
     }
-  }, [surface, workspaceHeaders]);
+  }, [surface, workspaceHeaders, workspaceId]);
 
   return { startCheckout, isStartingCheckout, checkoutError };
 }

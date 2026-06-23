@@ -54,6 +54,7 @@ export function FullSitePaywallDialog({
   const { startCheckout, isStartingCheckout, checkoutError: checkoutStartError } =
     useCheckout({
       workspaceHeaders: workspaceHeaders ?? null,
+      workspaceId,
       surface,
     });
 

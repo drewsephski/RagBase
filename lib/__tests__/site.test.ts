@@ -63,6 +63,7 @@ describe("checkout return helpers", () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://www.ragbase.dev";
 
     expect(isSameAppOrigin("https://www.ragbase.dev")).toBe(true);
+    expect(isSameAppOrigin("https://ragbase.dev")).toBe(true);
     expect(isSameAppOrigin("https://rag-base-preview.vercel.app")).toBe(false);
   });
 

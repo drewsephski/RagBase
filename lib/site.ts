@@ -15,9 +15,18 @@ export function getAppUrl(): string {
   return DEFAULT_APP_URL;
 }
 
+export function normalizeAppHostname(hostname: string): string {
+  return hostname.replace(/^www\./i, "").toLowerCase();
+}
+
 export function isSameAppOrigin(origin: string): boolean {
   try {
-    return new URL(origin).origin === new URL(getAppUrl()).origin;
+    const appOrigin = new URL(getAppUrl());
+    const currentOrigin = new URL(origin);
+    return (
+      normalizeAppHostname(currentOrigin.hostname) ===
+      normalizeAppHostname(appOrigin.hostname)
+    );
   } catch {
     return false;
   }

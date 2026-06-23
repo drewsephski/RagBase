@@ -69,7 +69,6 @@ export function useSubscription({
   const [isLoading, setIsLoading] = useState(false);
   const [isPendingActivation, setIsPendingActivation] = useState(false);
   const pollStartedAtRef = useRef<number | null>(null);
-  const confirmAttemptedRef = useRef<string | null>(null);
   const subscriptionRef = useRef(subscription);
 
   subscriptionRef.current = subscription;
@@ -89,16 +88,9 @@ export function useSubscription({
       return false;
     }
 
-    const syncKey = checkoutSessionId ?? "latest";
-    if (confirmAttemptedRef.current === syncKey) {
-      return subscriptionRef.current?.isProActive ?? false;
-    }
-
-    confirmAttemptedRef.current = syncKey;
-
     const nextSubscription = await syncCheckoutActivation(headers, checkoutSessionId);
     if (!nextSubscription) {
-      return false;
+      return subscriptionRef.current?.isProActive ?? false;
     }
 
     setSubscription(nextSubscription);

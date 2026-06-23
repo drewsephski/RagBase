@@ -4,16 +4,11 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { CreateWorkspaceOptions } from "@/lib/domain/definitions";
 import { APP_PATH } from "@/lib/domain/site";
-import {
-  buildCheckoutReturnLocation,
-  isSameAppOrigin,
-  replaceBrowserUrl,
-} from "@/lib/site";
-import { useWorkspaces } from "@/hooks/use-workspace";
+import { useWorkspaces, type UseWorkspacesState } from "@/hooks/use-workspace";
 import { useWorkspaceTemplate } from "@/hooks/use-workspace-template";
 import { useSources } from "@/hooks/use-sources";
 import { useIngestion } from "@/hooks/use-ingestion";
-import { useSubscription } from "@/hooks/use-subscription";
+import { useCheckoutFlow } from "@/hooks/use-checkout-flow";
 import { trackEvent } from "@/lib/analytics/track";
 import {
   isRecoveryConfirmedLocally,
@@ -22,6 +17,8 @@ import {
   setRecoveryConfirmedLocally,
   setRecoveryPromptDismissedLocally,
 } from "@/lib/billing/recovery-state";
+import type { CheckoutReturnParams } from "@/lib/billing/checkout-return-state";
+import type { SubscriptionStatusResponse } from "@/lib/billing/types";
 import {
   peekPendingPrompt,
   setPendingPrompt,
@@ -35,29 +32,22 @@ import { LandingHome } from "@/app/ui/home/landing-home";
 import { UrlIngestChoiceDialog } from "@/app/ui/home/url-ingest-choice-dialog";
 import { AppShell } from "@/app/ui/layout/app-shell";
 import { FullSitePaywallDialog } from "@/app/ui/upsell/full-site-paywall-dialog";
-import { CheckoutPending } from "@/app/ui/billing/checkout-pending";
+import { CheckoutReturnHost } from "@/app/ui/billing/checkout-return-host";
 import { RecoveryBanner } from "@/app/ui/billing/recovery-banner";
 import { RecoverySetup } from "@/app/ui/billing/recovery-setup";
-import type { RecoverySetupContext } from "@/app/ui/billing/recovery-setup";
 import { Loader2 } from "lucide-react";
 import { SettingsPanel } from "@/app/ui/settings/settings-panel";
 
 interface AppContentProps {
-  checkoutHandled: boolean;
-  setCheckoutHandled: (handled: boolean) => void;
-  showRecoverySetup: boolean;
-  setShowRecoverySetup: (show: boolean) => void;
-  recoverySetupContext: RecoverySetupContext;
-  setRecoverySetupContext: (context: RecoverySetupContext) => void;
+  workspace: UseWorkspacesState;
+  subscription: SubscriptionStatusResponse | null;
+  refreshSubscription: () => Promise<void>;
 }
 
 function AppContent({
-  checkoutHandled,
-  setCheckoutHandled,
-  showRecoverySetup,
-  setShowRecoverySetup,
-  recoverySetupContext,
-  setRecoverySetupContext,
+  workspace,
+  subscription,
+  refreshSubscription,
 }: AppContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -71,7 +61,7 @@ function AppContent({
     createWorkspace,
     renameWorkspace,
     deleteWorkspace,
-  } = useWorkspaces();
+  } = workspace;
 
   const activeWorkspaceId = activeWorkspace?.id ?? null;
 
@@ -102,81 +92,15 @@ function AppContent({
   }, [bumpRefresh, refresh]);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showRecoverySetup, setShowRecoverySetup] = useState(false);
   const [freeRecoveryEligible, setFreeRecoveryEligible] = useState(false);
-  const checkoutCancelTrackedRef = useRef(false);
   const [pendingPromptHint, setPendingPromptHint] = useState<string | null>(null);
-  const checkoutParam = searchParams.get("checkout");
-  const checkoutSessionId = searchParams.get("session_id");
-  const isCheckoutSuccess = checkoutParam === "success";
-  const [isRedirectingCheckoutReturn, setIsRedirectingCheckoutReturn] = useState(false);
-
-  useEffect(() => {
-    if (checkoutParam !== "success" || typeof window === "undefined") {
-      return;
-    }
-
-    if (isSameAppOrigin(window.location.origin)) {
-      return;
-    }
-
-    setIsRedirectingCheckoutReturn(true);
-    window.location.replace(
-      buildCheckoutReturnLocation(
-        window.location.pathname,
-        window.location.search,
-      ),
-    );
-  }, [checkoutParam]);
-
-  const { subscription, isPendingActivation, refresh: refreshSubscription } =
-    useSubscription({
-      headers,
-      enabled: isReady && Boolean(headers),
-      pollWhilePending: isCheckoutSuccess && !checkoutHandled && !isRedirectingCheckoutReturn,
-      checkoutSessionId,
-    });
 
   const ingestion = useIngestion({
     headers,
     isProActive: subscription?.isProActive ?? false,
     onIngestionSuccess: handleIngestionSuccess,
   });
-
-  useEffect(() => {
-    if (checkoutParam !== "cancel" || checkoutCancelTrackedRef.current) {
-      return;
-    }
-
-    checkoutCancelTrackedRef.current = true;
-    replaceBrowserUrl(APP_PATH);
-  }, [checkoutParam]);
-
-  useEffect(() => {
-    if (!isCheckoutSuccess || checkoutHandled || !subscription?.isProActive) {
-      return;
-    }
-
-    setCheckoutHandled(true);
-    replaceBrowserUrl(APP_PATH);
-
-    if (!activeWorkspaceId) {
-      return;
-    }
-
-    const confirmed =
-      subscription.recoveryLinkConfirmed ||
-      isRecoveryConfirmedLocally(activeWorkspaceId);
-
-    if (!confirmed) {
-      setRecoverySetupContext("pro_checkout");
-      setShowRecoverySetup(true);
-    }
-  }, [
-    activeWorkspaceId,
-    checkoutHandled,
-    isCheckoutSuccess,
-    subscription,
-  ]);
 
   const recoverySaved =
     Boolean(subscription?.recoveryLinkConfirmed) ||
@@ -194,7 +118,6 @@ function AppContent({
   const showRecoverySection = Boolean(activeWorkspaceId) && !recoverySaved;
 
   const handleOpenRecoverySetup = useCallback(() => {
-    setRecoverySetupContext("workspace");
     setShowRecoverySetup(true);
   }, []);
 
@@ -327,18 +250,6 @@ function AppContent({
     bumpRefresh();
   }, [activeWorkspace, bumpRefresh, deleteWorkspace, resetSources]);
 
-  const checkoutPendingOverlay =
-    isCheckoutSuccess && !isRedirectingCheckoutReturn && (isPendingActivation || !checkoutHandled) ? (
-      <CheckoutPending
-        timedOut={
-          isReady &&
-          !isPendingActivation &&
-          !subscription?.isProActive
-        }
-        onRefresh={() => void refreshSubscription()}
-      />
-    ) : null;
-
   const paywallDialogs = (
     <>
       <UrlIngestChoiceDialog
@@ -367,13 +278,11 @@ function AppContent({
         surface={ingestion.paywallSurface}
       />
 
-      {checkoutPendingOverlay}
-
       {showRecoverySetup && headers && activeWorkspaceId ? (
         <RecoverySetup
           workspaceId={activeWorkspaceId}
           workspaceHeaders={headers}
-          context={recoverySetupContext}
+          context="workspace"
           onComplete={handleRecoveryComplete}
           onDefer={handleRecoveryDefer}
         />
@@ -383,21 +292,14 @@ function AppContent({
 
   if (!isReady || isApplyingTemplate) {
     return (
-      <>
-        <div className="flex min-h-dvh items-center justify-center p-4 pt-safe sm:p-6">
-          <div className="text-muted-foreground flex items-center gap-2 text-center text-sm">
-            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            {isRedirectingCheckoutReturn
-              ? "Returning to RagBase…"
-              : template
-                ? `Setting up ${template.workspaceName}…`
-                : isCheckoutSuccess
-                  ? "Confirming your payment…"
-                  : "Setting up your private workspace…"}
-          </div>
+      <div className="flex min-h-dvh items-center justify-center p-4 pt-safe sm:p-6">
+        <div className="text-muted-foreground flex items-center gap-2 text-center text-sm">
+          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+          {template
+            ? `Setting up ${template.workspaceName}…`
+            : "Setting up your private workspace…"}
         </div>
-        {checkoutPendingOverlay}
-      </>
+      </div>
     );
   }
 
@@ -506,31 +408,42 @@ function AppContent({
   );
 }
 
-export function App() {
-  const [checkoutHandled, setCheckoutHandled] = useState(false);
-  const [showRecoverySetup, setShowRecoverySetup] = useState(false);
-  const [recoverySetupContext, setRecoverySetupContext] =
-    useState<RecoverySetupContext>("workspace");
+interface AppProps {
+  checkoutReturn: CheckoutReturnParams;
+}
+
+export function App({ checkoutReturn: initialReturn }: AppProps) {
+  const workspace = useWorkspaces();
+  const activeWorkspaceId = workspace.activeWorkspace?.id ?? null;
+
+  const checkoutFlow = useCheckoutFlow({
+    initialReturn,
+    headers: workspace.headers,
+    activeWorkspaceId,
+    isReady: workspace.isReady,
+    onSwitchWorkspace: workspace.switchWorkspace,
+  });
 
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-dvh items-center justify-center p-4 pt-safe sm:p-6">
-          <div className="text-muted-foreground flex items-center gap-2 text-center text-sm">
-            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            Loading workspace…
+    <>
+      <CheckoutReturnHost checkoutFlow={checkoutFlow} workspace={workspace} />
+
+      <Suspense
+        fallback={
+          <div className="flex min-h-dvh items-center justify-center p-4 pt-safe sm:p-6">
+            <div className="text-muted-foreground flex items-center gap-2 text-center text-sm">
+              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              Loading workspace…
+            </div>
           </div>
-        </div>
-      }
-    >
-      <AppContent
-        checkoutHandled={checkoutHandled}
-        setCheckoutHandled={setCheckoutHandled}
-        showRecoverySetup={showRecoverySetup}
-        setShowRecoverySetup={setShowRecoverySetup}
-        recoverySetupContext={recoverySetupContext}
-        setRecoverySetupContext={setRecoverySetupContext}
-      />
-    </Suspense>
+        }
+      >
+        <AppContent
+          workspace={workspace}
+          subscription={checkoutFlow.subscription}
+          refreshSubscription={checkoutFlow.refreshSubscription}
+        />
+      </Suspense>
+    </>
   );
 }
