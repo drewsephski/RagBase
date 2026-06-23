@@ -76,9 +76,12 @@ function mergeWithInlineMarkers(
 
 function findContextBlock(
   blocks: ContextBlock[],
-  chunkId: string,
+  item: { ref: number; chunkId: string },
 ): ContextBlock | undefined {
-  return blocks.find((block) => block.chunkId === chunkId);
+  return (
+    blocks.find((block) => block.chunkId === item.chunkId) ??
+    blocks.find((block) => block.ref === item.ref)
+  );
 }
 
 export function parseCitationsFromResponse(
@@ -95,7 +98,7 @@ export function parseCitationsFromResponse(
   const citations: Citation[] = [];
 
   for (const item of parsed) {
-    const block = findContextBlock(contextBlocks, item.chunkId);
+    const block = findContextBlock(contextBlocks, item);
     if (!block) {
       continue;
     }

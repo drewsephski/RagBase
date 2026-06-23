@@ -5,9 +5,10 @@ import type { Message } from "ai/react";
 import { Check, Copy } from "lucide-react";
 import {
   getDisplayContent,
-  resolveDisplayCitations,
+  getMessageDisplayCitations,
   type DisplayCitation,
 } from "@/lib/chat/citations";
+import { getUiMessageCitations } from "@/lib/chat/messages";
 import {
   buildAnswerAnalyticsProperties,
   getAnswerLengthBucket,
@@ -68,8 +69,14 @@ function MessageBubble({
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
   const citations = useMemo(
-    () => (isUser ? [] : resolveDisplayCitations(message.content)),
-    [isUser, message.content],
+    () =>
+      isUser
+        ? []
+        : getMessageDisplayCitations(
+            message.content,
+            getUiMessageCitations(message),
+          ),
+    [isUser, message.content, message.data],
   );
   const displayContent = isUser ? message.content : getDisplayContent(message.content);
 

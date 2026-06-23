@@ -9,7 +9,7 @@ import {
   checkMessageLimit,
   incrementMessageCount,
 } from "@/lib/limits";
-import { parseCitationsFromResponse } from "@/lib/chat/citations";
+import { resolveStorageCitations } from "@/lib/chat/resolve-storage-citations";
 import { buildSystemPrompt } from "@/lib/chat/prompts";
 import {
   buildConversationMessages,
@@ -140,7 +140,12 @@ export async function POST(request: NextRequest): Promise<Response> {
       ],
       maxTokens: RETRIEVAL.MAX_OUTPUT_TOKENS,
       onFinish: async ({ text }) => {
-        const parsedResponse = parseCitationsFromResponse(text, contextBlocks);
+        const parsedResponse = await resolveStorageCitations(
+          supabase,
+          workspace.id,
+          text,
+          contextBlocks,
+        );
 
         await supabase.from("messages").insert({
           workspace_id: workspace.id,

@@ -4,6 +4,19 @@ import type { Citation, Message } from "@/lib/domain/definitions";
 import { getDisplayContent } from "@/lib/chat/citations";
 import { createServiceClient } from "@/lib/supabase/server";
 
+export interface UiMessageCitationData {
+  citations: Citation[] | null;
+}
+
+export function getUiMessageCitations(message: UiMessage): Citation[] | null {
+  if (!message.data || typeof message.data !== "object" || Array.isArray(message.data)) {
+    return null;
+  }
+
+  const citations = (message.data as unknown as UiMessageCitationData).citations;
+  return Array.isArray(citations) ? citations : null;
+}
+
 /** Max prior turns sent to the model (user + assistant pairs). */
 export const CHAT_HISTORY_MESSAGE_LIMIT = 20;
 
@@ -35,6 +48,10 @@ export function storedMessageToUiMessage(message: Message): UiMessage {
     role: message.role,
     content,
     createdAt: new Date(message.created_at),
+    data:
+      message.role === "assistant"
+        ? ({ citations: message.citations ?? null } satisfies UiMessageCitationData)
+        : undefined,
   };
 }
 

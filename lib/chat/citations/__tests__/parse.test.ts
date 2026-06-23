@@ -135,11 +135,28 @@ describe("parseCitationsFromResponse", () => {
     ]);
   });
 
-  test("skips citations whose chunk is not in context", () => {
+  test("skips citations that match neither chunkId nor ref", () => {
     const unknownChunk = "33333333-3333-4333-8333-333333333333";
-    const raw = `<citations>[{"ref":1,"chunkId":"${unknownChunk}","snippet":"orphan"}]</citations>`;
+    const raw = `<citations>[{"ref":9,"chunkId":"${unknownChunk}","snippet":"orphan"}]</citations>`;
 
     expect(parseCitationsFromResponse(raw, contextBlocks).citations).toEqual([]);
+  });
+
+  test("matches context blocks by ref when chunkId is wrong", () => {
+    const wrongChunk = "33333333-3333-4333-8333-333333333333";
+    const raw = `Answer [1].\n<citations>[{"ref":1,"chunkId":"${wrongChunk}","snippet":"purple elephant forty-two"}]</citations>`;
+
+    expect(parseCitationsFromResponse(raw, contextBlocks).citations).toEqual([
+      {
+        chunkId: CHUNK_ID,
+        sourceId: SOURCE_ID,
+        sourceName: "docs.example.com (3 pages)",
+        pageNumber: null,
+        sourceLocation: "https://docs.example.com/pricing",
+        snippet: "purple elephant forty-two",
+        context: "The secret phrase is purple elephant forty-two.",
+      },
+    ]);
   });
 });
 
