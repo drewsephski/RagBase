@@ -35,13 +35,13 @@ export function SourceItem({
 }: SourceItemProps) {
   const isLoading =
     source.status === "pending" || source.status === "processing";
-  const errorHint = getIngestionErrorHint(source.error_message);
+  const errorHint = getIngestionErrorHint(source);
   const ocrIntentTrackedRef = useRef(false);
 
   useEffect(() => {
     if (
       source.status !== "error" ||
-      !isScannedPdfError(source.error_message) ||
+      !isScannedPdfError(source) ||
       ocrIntentTrackedRef.current
     ) {
       return;
@@ -49,7 +49,7 @@ export function SourceItem({
 
     ocrIntentTrackedRef.current = true;
     trackPaidIntent("ocr", { surface: "ingestion_error" });
-  }, [source.error_message, source.status]);
+  }, [source]);
 
   return (
     <article
@@ -78,6 +78,7 @@ export function SourceItem({
             </p>
 
             <StatusBadge
+              source={source}
               status={source.status}
               className="shrink-0 px-1 py-0 text-[9px] leading-4"
             />

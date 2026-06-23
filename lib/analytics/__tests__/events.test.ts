@@ -12,6 +12,16 @@ describe("analytics event taxonomy", () => {
     );
   });
 
+  test("includes OCR observability events", () => {
+    expect(ANALYTICS_EVENTS).toEqual(
+      expect.arrayContaining([
+        "ocr_attempted",
+        "ocr_completed",
+        "ocr_failed",
+      ]),
+    );
+  });
+
   test("includes answer-quality observability events", () => {
     expect(ANALYTICS_EVENTS).toEqual(
       expect.arrayContaining([

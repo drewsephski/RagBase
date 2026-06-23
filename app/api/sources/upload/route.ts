@@ -5,8 +5,9 @@ import {
   requireWorkspace,
 } from "@/lib/workspace/auth";
 import { checkSourceLimit } from "@/lib/limits";
-import { runIngestionPipeline } from "@/lib/ingestion/pipeline";
+import { executeSourceIngestion } from "@/lib/api/source-ingestion";
 import { validateUpload } from "@/lib/ingestion/validate";
+import { parseOpenRouterKeyFromForm } from "@/lib/openrouter/parse-request-key";
 import { enforceUploadRateLimit } from "@/lib/rate-limit/enforce";
 import { createServiceClient } from "@/lib/supabase/server";
 import { handleRouteError, jsonError } from "@/lib/api/errors";
@@ -21,6 +22,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     const formData = await request.formData();
     const fileEntry = formData.get("file");
+    const openRouterKey = parseOpenRouterKeyFromForm(formData);
 
     if (!(fileEntry instanceof File)) {
       return jsonError("Missing file upload", 400);
@@ -72,19 +74,15 @@ export async function POST(request: NextRequest): Promise<Response> {
       return jsonError("Failed to create source record", 500);
     }
 
-    try {
-      await runIngestionPipeline(sourceId);
-    } catch (pipelineError) {
-      console.error("Ingestion pipeline failed:", pipelineError);
-    }
+    const { source: ingestedSource } = await executeSourceIngestion(sourceId, {
+      openRouterKey,
+      prefetchedFileBuffer: buffer,
+    });
 
-    const { data: updatedSource } = await supabase
-      .from("sources")
-      .select("id, name, status, type, created_at, error_message")
-      .eq("id", sourceId)
-      .single();
-
-    return Response.json({ source: updatedSource ?? source }, { status: 201 });
+    return Response.json(
+      { source: ingestedSource ?? source },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof Error && error.name === "WorkspaceAuthError") {
       return authErrorResponse(error);

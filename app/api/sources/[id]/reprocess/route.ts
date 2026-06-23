@@ -3,9 +3,10 @@ import {
   authErrorResponse,
   requireWorkspace,
 } from "@/lib/workspace/auth";
-import { reprocessSource } from "@/lib/ingestion/pipeline";
+import { executeSourceIngestion } from "@/lib/api/source-ingestion";
 import { createServiceClient } from "@/lib/supabase/server";
 import { handleRouteError, jsonError } from "@/lib/api/errors";
+import { parseOpenRouterKey } from "@/lib/openrouter/parse-request-key";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -19,6 +20,11 @@ export async function POST(
     const workspace = await requireWorkspace(request);
     const { id } = await params;
     const supabase = createServiceClient();
+
+    const openRouterKey =
+      request.headers.get("content-type")?.includes("application/json")
+        ? parseOpenRouterKey(await request.json())
+        : undefined;
 
     const { data: source, error } = await supabase
       .from("sources")
@@ -35,12 +41,15 @@ export async function POST(
       return jsonError("Source not found", 404);
     }
 
-    await reprocessSource(id);
+    const result = await executeSourceIngestion(id, { openRouterKey });
+
+    if (!result.source) {
+      return jsonError("Failed to fetch source after reprocess", 500);
+    }
 
     return Response.json({
-      success: true,
-      sourceId: id,
-      status: "processing",
+      success: result.success,
+      source: result.source,
     });
   } catch (error) {
     if (error instanceof Error && error.name === "WorkspaceAuthError") {

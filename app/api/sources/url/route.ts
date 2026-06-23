@@ -5,7 +5,7 @@ import {
   requireWorkspace,
 } from "@/lib/workspace/auth";
 import { checkSourceLimit } from "@/lib/limits";
-import { runIngestionPipeline } from "@/lib/ingestion/pipeline";
+import { executeSourceIngestion } from "@/lib/api/source-ingestion";
 import {
   isRootUrl,
   normalizeUrl,
@@ -101,21 +101,11 @@ export async function POST(request: NextRequest): Promise<Response> {
       return jsonError("Failed to create source record", 500);
     }
 
-    try {
-      await runIngestionPipeline(source.id);
-    } catch (pipelineError) {
-      console.error("URL ingestion pipeline failed:", pipelineError);
-    }
-
-    const { data: updatedSource } = await supabase
-      .from("sources")
-      .select("id, name, status, type, created_at, error_message")
-      .eq("id", source.id)
-      .single();
+    const { source: ingestedSource } = await executeSourceIngestion(source.id);
 
     return Response.json(
       {
-        source: updatedSource ?? source,
+        source: ingestedSource ?? source,
         notice: isHomepage ? ROOT_URL_INGESTION_NOTICE : undefined,
       },
       { status: 201 },

@@ -12,6 +12,17 @@ Run through this checklist before each beta release or after significant changes
 | Public URL | Paste a clean article URL (not homepage) | Page ingested; source ready; title reflects page |
 | Root URL | Paste a site homepage URL | Choice dialog appears; “Add this page only” ingests with Pro notice; “Crawl entire site” opens paywall |
 | Scanned PDF | Upload a image-only / scanned PDF | Graceful failure or OCR upsell; clear error in documents panel |
+
+## OCR (phase 6b)
+
+| Scenario | Steps | Expected |
+| --- | --- | --- |
+| Scanned PDF ≤10 pages (free) | Upload a scanned PDF with ≤10 pages, no OpenRouter key | Status shows “Reading scanned pages…” during OCR; source becomes ready; `ocr_attempted` + `ocr_completed` in PostHog |
+| Scanned PDF >10 pages (free) | Upload an 11+ page scanned PDF without OpenRouter key | Error before any OCR provider call; actionable recovery copy (split file or add key); `ocr_failed` with `failure_category: over_cap` |
+| Scanned PDF with BYOK ≤50 pages | Add OpenRouter key in Settings; upload scanned PDF ≤50 pages | Vision OCR runs using user key; Settings shows “OCR for larger scans will use your OpenRouter key”; source becomes ready |
+| Scanned PDF with BYOK >50 pages | With OpenRouter key saved, upload 51+ page scanned PDF | Error before provider call; recovery copy mentions splitting |
+| Reprocess scanned failure | Fail a scanned upload (e.g. over free cap), add key or fix file, tap Reindex | OCR path retries; no stuck processing state |
+| OCR analytics hygiene | Inspect `ocr_*` events in PostHog after OCR upload | Properties include only `page_count`, `tier`, `provider`, `success`, `failure_category` — no document text or API keys |
 | Blocked URL | Paste a URL that blocks scraping (e.g. login wall) | User-friendly error; no stuck “processing” state |
 
 ## Dirty documents (low-quality / messy inputs)

@@ -44,6 +44,48 @@ export type StoredWorkspace = z.infer<typeof storedWorkspaceSchema>;
 export const DEFAULT_WORKSPACE_NAME = "My workspace";
 export const UNTITLED_WORKSPACE_NAME = "Untitled workspace";
 
+export const ingestionErrorCategorySchema = z.enum([
+  "scanned_pdf",
+  "ocr_over_cap",
+  "ocr_provider_error",
+  "oversized_file",
+  "too_many_pages",
+  "blocked_url",
+  "unsupported_type",
+  "empty_content",
+  "service_unavailable",
+  "unknown",
+]);
+export type IngestionErrorCategory = z.infer<typeof ingestionErrorCategorySchema>;
+
+export const sourceMetadataSchema = z
+  .object({
+    ingestionPhase: z.literal("ocr").nullable().optional(),
+    errorCategory: ingestionErrorCategorySchema.nullable().optional(),
+  })
+  .passthrough();
+export type SourceMetadata = z.infer<typeof sourceMetadataSchema>;
+
+export function parseSourceMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+): SourceMetadata {
+  const parsed = sourceMetadataSchema.safeParse(metadata ?? {});
+  return parsed.success ? parsed.data : {};
+}
+
+export function isSourceOcrProcessing(source: {
+  status: SourceStatus;
+  metadata: SourceMetadata | null;
+}): boolean {
+  if (source.status !== "processing") {
+    return false;
+  }
+
+  return parseSourceMetadata(
+    source.metadata as Record<string, unknown> | null | undefined,
+  ).ingestionPhase === "ocr";
+}
+
 export const sourceSchema = z.object({
   id: z.string().uuid(),
   workspace_id: z.string().uuid(),
@@ -51,7 +93,7 @@ export const sourceSchema = z.object({
   name: z.string(),
   status: sourceStatusSchema,
   storage_path: z.string().nullable(),
-  metadata: z.record(z.unknown()).nullable(),
+  metadata: sourceMetadataSchema.nullable(),
   error_message: z.string().nullable().optional(),
   created_at: z.string(),
 });
@@ -125,6 +167,8 @@ export const LIMITS = {
   MAX_MESSAGES_DAY_WITH_KEY: 200,
   RETENTION_DAYS: 14,
   LOW_TEXT_CHARS_PER_PAGE: 50,
+  OCR_PAGES_FREE: 10,
+  OCR_PAGES_BYOK: 50,
 } as const;
 
 export type FormState = {

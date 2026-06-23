@@ -7,6 +7,7 @@ import { APP_PATH } from "@/app/lib/site";
 import { useWorkspaces } from "@/hooks/use-workspace";
 import { useWorkspaceTemplate } from "@/hooks/use-workspace-template";
 import { apiFetch, apiJson, ApiError } from "@/lib/api/client";
+import { getOpenRouterKey } from "@/lib/openrouter/client-key";
 import { trackEvent } from "@/lib/analytics/track";
 import { trackPaidIntent } from "@/lib/analytics/paid-intent";
 import { trackLimitBoundary } from "@/lib/analytics/limit-boundary";
@@ -189,6 +190,11 @@ function AppContent() {
 
       const formData = new FormData();
       formData.append("file", file);
+
+      const openRouterKey = getOpenRouterKey();
+      if (openRouterKey) {
+        formData.append("openRouterKey", openRouterKey);
+      }
 
       const response = await apiFetch("/api/sources/upload", {
         method: "POST",

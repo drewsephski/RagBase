@@ -49,8 +49,8 @@ export function LandingHome({
   workspaceSwitcherProps,
 }: LandingHomeProps) {
   return (
-    <div className="flex min-h-dvh flex-col overflow-hidden">
-      <header className="flex shrink-0 items-center justify-between gap-2 px-safe py-3 pt-safe sm:px-6 sm:py-4">
+    <div className="chat-surface flex min-h-dvh flex-col overflow-hidden">
+      <header className="border-border/60 bg-background/80 flex shrink-0 items-center justify-between gap-2 px-safe py-3 backdrop-blur-md pt-safe sm:px-6 sm:py-4">
         <WorkspaceSwitcher {...workspaceSwitcherProps} />
         <div className="flex items-center gap-1.5 sm:gap-2">
           <ThemeToggle />
@@ -85,7 +85,7 @@ export function LandingHome({
                 className="mx-auto max-sm:[&_p:first-of-type]:text-xl"
               />
               <div className="mx-auto max-w-md space-y-2">
-                <h1 className="text-pretty text-lg font-medium leading-snug sm:text-xl">
+                <h1 className="text-pretty text-lg font-medium leading-snug tracking-tight sm:text-xl">
                   Chat with PDFs, contracts, notes, and webpages
                 </h1>
                 <p className="text-muted-foreground text-pretty text-sm leading-relaxed">
@@ -131,7 +131,7 @@ export function LandingHome({
         </div>
       </main>
 
-      <div className="mt-auto shrink-0 border-t">
+      <div className="mt-auto shrink-0">
         <ChatInput
           value=""
           onChange={() => {}}

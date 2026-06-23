@@ -211,7 +211,8 @@ export function SettingsPanel({
               </div>
               <p className="text-muted-foreground text-xs">
                 Optional. Stored only in this browser and shared across
-                workspaces. Unlock higher daily limits and choose your model.
+                workspaces. Unlock higher daily limits, choose your model, and
+                OCR for larger scans (up to 50 pages) using your key.
               </p>
               <div className="space-y-2">
                 <Label htmlFor="openrouter-key">API key</Label>
@@ -230,6 +231,11 @@ export function SettingsPanel({
                 {savedMessage ? (
                   <p className="text-muted-foreground text-xs" role="status">
                     {savedMessage}
+                  </p>
+                ) : null}
+                {hasKey ? (
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    OCR for larger scans will use your OpenRouter key.
                   </p>
                 ) : null}
               </div>

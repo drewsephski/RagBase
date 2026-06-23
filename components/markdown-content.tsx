@@ -48,7 +48,7 @@ export function createMarkdownComponents(
     ),
     em: ({ children }) => <em className="italic">{children}</em>,
     blockquote: ({ children }) => (
-      <blockquote className="border-border text-muted-foreground mb-2 border-l-2 pl-3 last:mb-0">
+      <blockquote className="border-border/80 text-muted-foreground mb-2 border-l-[3px] pl-3.5 last:mb-0 italic">
         {children}
       </blockquote>
     ),
@@ -75,13 +75,13 @@ export function createMarkdownComponents(
       }
 
       return (
-        <code className="bg-background/60 rounded px-1 py-0.5 font-mono text-[0.9em]">
+        <code className="bg-muted/50 rounded-md px-1.5 py-0.5 font-mono text-[0.875em]">
           {children}
         </code>
       );
     },
     pre: ({ children }) => (
-      <pre className="bg-background/60 mb-2 overflow-x-auto rounded-lg p-3 text-sm last:mb-0">
+      <pre className="bg-muted/40 border-border/50 mb-2 overflow-x-auto rounded-xl border p-3.5 text-sm last:mb-0">
         {children}
       </pre>
     ),

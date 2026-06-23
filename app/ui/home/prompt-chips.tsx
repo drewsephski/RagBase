@@ -83,8 +83,10 @@ export function PromptChips({
   );
 
   return (
-    <section aria-label="Example questions" className="space-y-2 text-left">
-      <p className="text-muted-foreground text-sm">{label}</p>
+    <section aria-label="Example questions" className="space-y-2.5 text-left">
+      <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+        {label}
+      </p>
 
       <AnimatePresence initial={false}>
         {hint ? (
@@ -128,13 +130,14 @@ export function PromptChips({
                 aria-pressed={isSelected}
                 aria-label={`Example question: ${prompt}`}
                 className={cn(
-                  "h-auto whitespace-normal text-left transition-[border-color,background-color,box-shadow]",
+                  "h-auto whitespace-normal text-left transition-[border-color,background-color,box-shadow,transform]",
+                  "hover:border-border hover:bg-card/60 hover:shadow-sm",
                   enableShareLinks && "pr-9",
                   useGrid
-                    ? "w-full justify-start px-3 py-2.5 text-xs sm:text-sm"
+                    ? "w-full justify-start px-3.5 py-3 text-xs sm:text-sm"
                     : "max-w-full px-2.5 py-1.5 text-[11px] sm:px-3 sm:py-2 sm:text-sm",
                   isSelected &&
-                    "border-primary/50 bg-primary/5 ring-primary/20 shadow-sm ring-1",
+                    "border-primary/40 bg-primary/5 ring-primary/15 shadow-sm ring-1",
                 )}
               >
                 {prompt}

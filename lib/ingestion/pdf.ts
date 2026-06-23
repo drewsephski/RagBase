@@ -15,15 +15,6 @@ export interface ParsedPdf {
   isLowText: boolean;
 }
 
-export class ScannedPdfError extends Error {
-  constructor(
-    message = "This looks like a scanned PDF. OCR support is coming soon — try a text-based PDF or Word file instead.",
-  ) {
-    super(message);
-    this.name = "ScannedPdfError";
-  }
-}
-
 interface PdfTextItem {
   str: string;
 }
@@ -74,20 +65,19 @@ export async function parsePdf(buffer: Buffer): Promise<ParsedPdf> {
   pages.sort((left, right) => left.pageNumber - right.pageNumber);
 
   const isLowText = detectLowTextPdf(pages);
-  if (isLowText) {
-    throw new ScannedPdfError();
-  }
 
-  const rawText = pages
-    .map((page) => page.text)
-    .filter((text) => text.length > 0)
-    .join("\n\n");
+  const rawText = isLowText
+    ? ""
+    : pages
+        .map((page) => page.text)
+        .filter((text) => text.length > 0)
+        .join("\n\n");
 
   return {
     pages,
     pageCount: result.numpages,
     rawText,
-    isLowText: false,
+    isLowText,
   };
 }
 

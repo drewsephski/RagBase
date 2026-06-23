@@ -21,6 +21,9 @@ export const ANALYTICS_EVENTS = [
   "paywall_viewed",
   "paywall_primary_clicked",
   "paywall_waitlist_submitted",
+  "ocr_attempted",
+  "ocr_completed",
+  "ocr_failed",
 ] as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];

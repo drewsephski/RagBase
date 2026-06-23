@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Source } from "@/app/lib/definitions";
 import { LIMITS } from "@/app/lib/definitions";
 import { apiFetch, apiJson, ApiError } from "@/lib/api/client";
+import { getOpenRouterKey } from "@/lib/openrouter/client-key";
 import { trackEvent } from "@/lib/analytics/track";
+import { getSourceIngestionFailure } from "@/lib/ingestion/user-errors";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SourceItem } from "@/app/ui/sources/source-item";
@@ -53,8 +55,10 @@ export function SourceList({
           !trackedErrorSourceIdsRef.current.has(source.id)
         ) {
           trackedErrorSourceIdsRef.current.add(source.id);
+          const failure = getSourceIngestionFailure(source);
           trackEvent("ingestion_failed", {
             source_type: source.type,
+            ...(failure ? { error_category: failure.category } : {}),
           });
         }
       }
@@ -114,8 +118,14 @@ export function SourceList({
       return;
     }
 
+    const openRouterKey = getOpenRouterKey();
+
     await apiFetch(`/api/sources/${sourceId}/reprocess`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        openRouterKey ? { openRouterKey } : {},
+      ),
       workspaceHeaders,
     });
 

@@ -16,18 +16,18 @@ export function ChatEmptyState({
   return (
     <div
       className={cn(
-        "flex flex-1 flex-col items-center justify-center px-4 py-6 text-center sm:px-6 sm:py-10",
+        "flex flex-1 flex-col items-center justify-center px-4 py-8 text-center sm:px-6 sm:py-12",
         className,
       )}
     >
       <RagBaseLogo layout="vertical" markSize={48} showTagline />
 
-      <p className="text-muted-foreground mt-4 max-w-md text-sm leading-relaxed sm:mt-5">
+      <p className="text-muted-foreground mt-5 max-w-sm text-pretty text-sm leading-relaxed tracking-wide sm:mt-6">
         {description}
       </p>
 
       {children ? (
-        <div className="mt-6 w-full max-w-2xl sm:mt-8">{children}</div>
+        <div className="mt-7 w-full max-w-2xl sm:mt-9">{children}</div>
       ) : null}
     </div>
   );

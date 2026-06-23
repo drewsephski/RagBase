@@ -242,7 +242,7 @@ export function ChatPanel({
   return (
     <section
       aria-label="Chat"
-      className="flex h-full min-h-0 flex-col bg-background"
+      className="chat-surface flex h-full min-h-0 flex-col"
     >
       {isChatEmpty ? (
         <div className="flex min-h-0 flex-1 flex-col">
@@ -306,14 +306,14 @@ export function ChatPanel({
         </div>
       ) : (
         <>
-          <div className="border-b px-3 py-2.5 sm:px-4 sm:py-3">
-            <RagBaseLogo markSize={24} />
+          <div className="border-border/60 bg-surface-elevated/40 border-b px-4 py-3 backdrop-blur-sm sm:px-5 sm:py-3.5">
+            <RagBaseLogo markSize={22} />
             {scopedSourceId ? (
-              <p className="text-muted-foreground mt-1.5 text-xs sm:mt-2">
+              <p className="text-muted-foreground mt-1.5 text-xs tracking-wide sm:mt-2">
                 Answers use only the selected document.
               </p>
             ) : (
-              <p className="text-muted-foreground mt-1.5 text-xs sm:mt-2">
+              <p className="text-muted-foreground mt-1.5 text-xs tracking-wide sm:mt-2">
                 Answers draw from all ready documents, with citations.
               </p>
             )}

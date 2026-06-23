@@ -1,6 +1,7 @@
 "use client";
 
 import type { Source, SourceStatus } from "@/app/lib/definitions";
+import { getStatusLabel } from "@/lib/sources/ingestion-status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -189,35 +190,24 @@ export function getStatusBadgeVariant(
   }
 }
 
-export function getStatusLabel(status: SourceStatus): string {
-  switch (status) {
-    case "pending":
-      return "Queued";
-    case "processing":
-      return "Reading";
-    case "ready":
-      return "Ready";
-    case "error":
-      return "Could not read";
-    default:
-      return status;
-  }
-}
-
 export function StatusBadge({
+  source,
   status,
   className,
 }: {
+  source?: Source;
   status: SourceStatus;
   className?: string;
 }) {
+  const label = getStatusLabel(source ?? status);
+
   return (
     <Badge
       variant={getStatusBadgeVariant(status)}
-      aria-label={`Status: ${getStatusLabel(status)}`}
+      aria-label={`Status: ${label}`}
       className={className}
     >
-      {getStatusLabel(status)}
+      {label}
     </Badge>
   );
 }

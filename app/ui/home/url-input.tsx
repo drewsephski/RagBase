@@ -5,6 +5,8 @@ import { Link2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { UrlIngestLoader } from "@/app/ui/home/url-ingest-loader";
+import { cn } from "@/lib/utils";
 
 interface UrlInputProps {
   onSubmit: (
@@ -28,10 +30,13 @@ export function UrlInput({
   variant = "default",
 }: UrlInputProps) {
   const [url, setUrl] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingUrl, setSubmittingUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
+
+  const isSubmitting = submittingUrl !== null;
+  const loaderVariant = variant === "minimal" ? "default" : "compact";
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -46,7 +51,7 @@ export function UrlInput({
       setError(null);
       setSuccessMessage(null);
       setNoticeMessage(null);
-      setIsSubmitting(true);
+      setSubmittingUrl(trimmed);
 
       try {
         const result = await onSubmit(trimmed);
@@ -70,7 +75,7 @@ export function UrlInput({
             : "Could not add that link. Try another URL.",
         );
       } finally {
-        setIsSubmitting(false);
+        setSubmittingUrl(null);
       }
     },
     [onSubmit, url],
@@ -84,10 +89,18 @@ export function UrlInput({
         </Label>
       ) : null}
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+      <div
+        className={cn(
+          "flex flex-col gap-2 sm:flex-row sm:items-start",
+          isSubmitting && "sm:items-stretch",
+        )}
+      >
         <div className="relative min-w-0 flex-1">
           <Link2
-            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            className={cn(
+              "text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 transition-opacity",
+              isSubmitting && "opacity-40",
+            )}
             aria-hidden
           />
           <Input
@@ -102,8 +115,9 @@ export function UrlInput({
             value={url}
             disabled={disabled || isSubmitting}
             onChange={(event) => setUrl(event.target.value)}
-            className="pl-9"
+            className={cn("pl-9 transition-opacity", isSubmitting && "opacity-60")}
             aria-label="Public page URL"
+            aria-busy={isSubmitting}
           />
         </div>
 
@@ -117,7 +131,7 @@ export function UrlInput({
           {isSubmitting ? (
             <>
               <Loader2 className="size-4 animate-spin" aria-hidden />
-              Adding…
+              Reading…
             </>
           ) : variant === "minimal" ? (
             "Add"
@@ -126,6 +140,10 @@ export function UrlInput({
           )}
         </Button>
       </div>
+
+      {isSubmitting && submittingUrl ? (
+        <UrlIngestLoader url={submittingUrl} variant={loaderVariant} />
+      ) : null}
 
       {error ? (
         <p className="text-destructive text-sm" role="alert">

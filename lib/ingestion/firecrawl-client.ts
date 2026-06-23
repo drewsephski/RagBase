@@ -30,7 +30,7 @@ function getFirecrawlApiKey(): string {
 
 let client: Firecrawl | null = null;
 
-function getFirecrawlClient(): Firecrawl {
+export function getFirecrawlClient(): Firecrawl {
   if (!client) {
     client = new Firecrawl({ apiKey: getFirecrawlApiKey() });
   }

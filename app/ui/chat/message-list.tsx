@@ -28,6 +28,26 @@ interface MessageListProps {
   model?: string;
 }
 
+function ThinkingIndicator() {
+  return (
+    <div
+      className="flex items-center gap-2.5 px-1 py-1"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Generating answer"
+    >
+      <div className="flex items-center gap-1" aria-hidden>
+        <span className="thinking-dot bg-muted-foreground/60 size-1.5 rounded-full" />
+        <span className="thinking-dot bg-muted-foreground/60 size-1.5 rounded-full" />
+        <span className="thinking-dot bg-muted-foreground/60 size-1.5 rounded-full" />
+      </div>
+      <span className="text-muted-foreground text-[13px] tracking-wide">
+        Reading your documents…
+      </span>
+    </div>
+  );
+}
+
 function MessageBubble({
   message,
   onCitationClick,
@@ -69,13 +89,20 @@ function MessageBubble({
       className={cn("flex", isUser ? "justify-end" : "justify-start")}
       aria-label={isUser ? "Your message" : "Assistant message"}
     >
-      <div className="flex max-w-[min(92%,20rem)] flex-col gap-1.5 sm:max-w-[85%]">
+      <div
+        className={cn(
+          "flex flex-col gap-1.5",
+          isUser
+            ? "max-w-[min(88%,22rem)] sm:max-w-[75%]"
+            : "max-w-[min(92%,36rem)] sm:max-w-[85%]",
+        )}
+      >
         <div
           className={cn(
-            "rounded-2xl px-3.5 py-2.5 text-[15px] leading-relaxed sm:px-4 sm:py-3 sm:text-sm",
+            "px-3.5 py-2.5 text-[15px] leading-[1.65] sm:px-4 sm:py-3 sm:text-[15px]",
             isUser
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted/60 text-foreground",
+              ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md shadow-sm"
+              : "bg-card/70 text-foreground border-border/60 rounded-2xl rounded-bl-md border shadow-sm backdrop-blur-sm",
           )}
         >
           {isUser ? (
@@ -90,8 +117,8 @@ function MessageBubble({
         </div>
 
         {!isUser ? (
-          <div className="flex flex-col gap-2 px-1">
-            <div className="flex items-center gap-1">
+          <div className="flex flex-col gap-2 px-0.5">
+            <div className="flex items-center gap-0.5">
               <Button
                 type="button"
                 variant="ghost"
@@ -184,8 +211,8 @@ export function MessageList({
 
   return (
     <>
-      <ScrollArea className="min-h-0 flex-1 px-2 py-3 sm:px-4 sm:py-4">
-        <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:gap-4">
+      <ScrollArea className="min-h-0 flex-1 px-3 py-4 sm:px-5 sm:py-6">
+        <div className="mx-auto flex max-w-3xl flex-col gap-4 sm:gap-5">
           {messages.length === 0 ? (
             <p className="text-muted-foreground text-center text-sm">
               Ask a question to get started. Answers include quotes from your
@@ -206,15 +233,7 @@ export function MessageList({
             ))
           )}
 
-          {isLoading ? (
-            <p
-              className="text-muted-foreground text-sm"
-              aria-live="polite"
-              aria-busy="true"
-            >
-              Thinking…
-            </p>
-          ) : null}
+          {isLoading ? <ThinkingIndicator /> : null}
         </div>
       </ScrollArea>
 

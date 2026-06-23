@@ -9,13 +9,13 @@ import {
 import { parseDocx } from "@/lib/ingestion/docx";
 import { embedTexts } from "@/lib/ingestion/embed";
 import {
-  parsePdf,
-  pdfPagesToSegments,
-  ScannedPdfError,
-} from "@/lib/ingestion/pdf";
-import { scrapeUrl, UrlScrapeError } from "@/lib/ingestion/url";
+  ingestPdfBuffer,
+  type ParsedPdf,
+} from "@/lib/ingestion/pdf-ingestion";
+import { parsePdf } from "@/lib/ingestion/pdf";
+import { scrapeUrl } from "@/lib/ingestion/url";
 import { getFileKind, type FileKind } from "@/lib/ingestion/validate";
-import { normalizeIngestionError, normalizeIngestionErrorFromUnknown } from "@/lib/ingestion/user-errors";
+import { resolveIngestionFailure } from "@/lib/ingestion/user-errors";
 import { createServiceClient } from "@/lib/supabase/server";
 
 const UPLOADS_BUCKET = "uploads";
@@ -72,19 +72,31 @@ function getMetadataString(
   return trimmed.length > 0 ? trimmed : null;
 }
 
+export interface IngestionPipelineOptions {
+  openRouterKey?: string;
+  /** Reuse a buffer already loaded from storage (avoids duplicate downloads). */
+  prefetchedFileBuffer?: Buffer;
+  /** Reuse an earlier PDF probe from the same buffer (avoids duplicate parsing). */
+  prefetchedPdfParse?: ParsedPdf;
+}
+
 export async function parseTextBuffer(
   buffer: Buffer,
   kind: FileKind,
   sourceName: string,
+  options: IngestionPipelineOptions = {},
 ): Promise<ParsedSourceContent> {
   switch (kind) {
     case "pdf": {
-      const parsed = await parsePdf(buffer);
+      const outcome = await ingestPdfBuffer(buffer, sourceName, {
+        openRouterKey: options.openRouterKey,
+        probe: options.prefetchedPdfParse,
+      });
 
       return {
-        rawText: parsed.rawText,
-        pageCount: parsed.pageCount,
-        segments: pdfPagesToSegments(parsed.pages),
+        rawText: outcome.rawText,
+        pageCount: outcome.pageCount,
+        segments: outcome.segments,
       };
     }
     case "docx": {
@@ -183,15 +195,20 @@ export async function loadFileBuffer(
   return Buffer.from(arrayBuffer);
 }
 
-export async function parseSourceContent(source: SourceRow): Promise<ParsedSourceContent> {
+export async function parseSourceContent(
+  source: SourceRow,
+  options: IngestionPipelineOptions = {},
+): Promise<ParsedSourceContent> {
   if (source.type === "file") {
     if (!source.storage_path) {
       throw new IngestionError("Uploaded file is missing from storage.");
     }
 
-    const buffer = await loadFileBuffer(source.storage_path);
+    const buffer =
+      options.prefetchedFileBuffer ??
+      (await loadFileBuffer(source.storage_path));
     const kind = getFileKind(source.name);
-    return parseTextBuffer(buffer, kind, source.name);
+    return parseTextBuffer(buffer, kind, source.name, options);
   }
 
   if (source.type === "url") {
@@ -266,13 +283,33 @@ async function setSourceStatus(
   sourceId: string,
   status: Source["status"],
   errorMessage: string | null = null,
+  metadataPatch: Record<string, unknown> | null = null,
 ): Promise<void> {
   const supabase = createServiceClient();
+
+  let metadataUpdate: Record<string, unknown> | undefined;
+
+  if (metadataPatch) {
+    const { data: existing } = await supabase
+      .from("sources")
+      .select("metadata")
+      .eq("id", sourceId)
+      .single();
+
+    const currentMetadata =
+      existing?.metadata && typeof existing.metadata === "object"
+        ? (existing.metadata as Record<string, unknown>)
+        : {};
+
+    metadataUpdate = { ...currentMetadata, ...metadataPatch };
+  }
+
   const { error } = await supabase
     .from("sources")
     .update({
       status,
       error_message: errorMessage,
+      ...(metadataUpdate ? { metadata: metadataUpdate } : {}),
     })
     .eq("id", sourceId);
 
@@ -338,34 +375,53 @@ async function storeDocumentAndChunks(
   }
 }
 
-function toUserFacingError(error: unknown): string {
-  if (error instanceof ScannedPdfError) {
-    return normalizeIngestionError(error.message).message;
-  }
-
-  if (error instanceof UrlScrapeError) {
-    return normalizeIngestionError(error.message).message;
-  }
-
-  if (error instanceof IngestionError) {
-    return normalizeIngestionError(error.message).message;
-  }
-
-  if (error instanceof Error) {
-    return normalizeIngestionErrorFromUnknown(error);
-  }
-
-  return normalizeIngestionErrorFromUnknown(error);
-}
-
-export async function runIngestionPipeline(sourceId: string): Promise<void> {
-  await setSourceStatus(sourceId, "processing", null);
+export async function runIngestionPipeline(
+  sourceId: string,
+  options: IngestionPipelineOptions = {},
+): Promise<void> {
+  await setSourceStatus(sourceId, "processing", null, {
+    errorCategory: null,
+    ingestionPhase: null,
+  });
 
   try {
     const source = await fetchSource(sourceId);
     await deleteExistingDocuments(sourceId);
 
-    const parsed = await parseSourceContent(source);
+    const buffer =
+      source.type === "file" && source.storage_path
+        ? options.prefetchedFileBuffer ??
+          (await loadFileBuffer(source.storage_path))
+        : null;
+    const fileKind =
+      source.type === "file" ? getFileKind(source.name) : null;
+
+    let needsOcr = false;
+    let prefetchedPdfParse: ParsedPdf | undefined;
+
+    if (buffer && fileKind === "pdf") {
+      prefetchedPdfParse = await parsePdf(buffer);
+      needsOcr = prefetchedPdfParse.isLowText;
+    }
+
+    if (needsOcr) {
+      await setSourceStatus(sourceId, "processing", null, {
+        ingestionPhase: "ocr",
+      });
+    }
+
+    const parsed = await parseSourceContent(source, {
+      ...options,
+      ...(buffer ? { prefetchedFileBuffer: buffer } : {}),
+      ...(prefetchedPdfParse ? { prefetchedPdfParse } : {}),
+    });
+
+    if (needsOcr) {
+      await setSourceStatus(sourceId, "processing", null, {
+        ingestionPhase: null,
+      });
+    }
+
     const chunks = buildChunks(parsed.segments);
 
     if (chunks.length === 0) {
@@ -374,14 +430,23 @@ export async function runIngestionPipeline(sourceId: string): Promise<void> {
 
     const embeddings = await embedTexts(chunks.map((chunk) => chunk.text));
     await storeDocumentAndChunks(sourceId, parsed, chunks, embeddings);
-    await setSourceStatus(sourceId, "ready", null);
+    await setSourceStatus(sourceId, "ready", null, {
+      ingestionPhase: null,
+      errorCategory: null,
+    });
   } catch (error) {
-    const message = toUserFacingError(error);
-    await setSourceStatus(sourceId, "error", message);
+    const failure = resolveIngestionFailure(error);
+    await setSourceStatus(sourceId, "error", failure.message, {
+      ingestionPhase: null,
+      errorCategory: failure.category,
+    });
     throw error;
   }
 }
 
-export async function reprocessSource(sourceId: string): Promise<void> {
-  await runIngestionPipeline(sourceId);
+export async function reprocessSource(
+  sourceId: string,
+  options: IngestionPipelineOptions = {},
+): Promise<void> {
+  await runIngestionPipeline(sourceId, options);
 }

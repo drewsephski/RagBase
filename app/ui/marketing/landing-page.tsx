@@ -7,6 +7,7 @@ import { CitationDemo } from "@/app/ui/marketing/citation-demo";
 import { TemplateSpotlight } from "@/app/ui/marketing/template-spotlight";
 import { HowItWorks } from "@/app/ui/marketing/how-it-works";
 import { LandingHeader } from "@/app/ui/marketing/landing-header";
+import { FromDrewNote } from "@/app/ui/layout/from-drew-note";
 
 export function LandingPage() {
   return (
@@ -87,15 +88,28 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t px-4 py-6 pb-safe sm:px-6">
-        <div className="text-muted-foreground mx-auto flex max-w-5xl flex-col items-center justify-between gap-2 text-center text-xs sm:flex-row sm:text-left">
-          <p>RagBase — document Q&amp;A with citations</p>
-          <Link
-            href={APP_PATH}
-            className="hover:text-foreground underline-offset-4 transition-colors hover:underline"
-          >
-            Go to workspace
-          </Link>
+      <footer className="border-border/60 bg-background/70 border-t backdrop-blur-sm">
+        <div className="mx-auto flex max-w-5xl flex-col gap-5 px-4 py-7 pb-safe sm:px-6 sm:py-8">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="space-y-0.5 text-center sm:text-left">
+              <p className="text-sm font-medium tracking-tight">RagBase</p>
+              <p className="text-muted-foreground text-xs">
+                Document Q&amp;A with citations
+              </p>
+            </div>
+
+            <Link
+              href={APP_PATH}
+              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-xs transition-colors hover:underline hover:underline-offset-4"
+            >
+              Go to workspace
+              <ArrowRight className="size-3.5" aria-hidden />
+            </Link>
+          </div>
+
+          <div className="border-border/50 flex items-center justify-center border-t pt-5">
+            <FromDrewNote />
+          </div>
         </div>
       </footer>
     </div>
