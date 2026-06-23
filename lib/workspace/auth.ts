@@ -56,7 +56,10 @@ export async function requireWorkspace(
   if (workspaceSecret) {
     const valid = await verifySecret(workspaceSecret, workspace.secret_hash);
     if (!valid) {
-      throw new WorkspaceAuthError("Invalid workspace secret");
+      const user = await getAuthenticatedUser();
+      if (!user || workspace.owner_user_id !== user.id) {
+        throw new WorkspaceAuthError("Invalid workspace secret");
+      }
     }
   } else {
     const user = await getAuthenticatedUser();

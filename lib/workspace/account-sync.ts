@@ -17,6 +17,19 @@ export function createAccountLinkedWorkspace(
   };
 }
 
+function toAccountLinkedWorkspace(
+  existing: StoredWorkspace,
+  summary: AccountWorkspaceSummary,
+): StoredWorkspace {
+  return {
+    id: existing.id,
+    name: existing.name || summary.name,
+    createdAt: existing.createdAt,
+    accountLinked: true,
+    ...(existing.templateId ? { templateId: existing.templateId } : {}),
+  };
+}
+
 export function mergeAccountWorkspaces(
   accountWorkspaces: AccountWorkspaceSummary[],
 ): StoredWorkspace[] {
@@ -32,11 +45,8 @@ export function mergeAccountWorkspaces(
         continue;
       }
 
-      next[index] = {
-        ...existing,
-        accountLinked: true,
-        name: existing.name || summary.name,
-      };
+      // Drop any local secret — account-owned workspaces authenticate via session.
+      next[index] = toAccountLinkedWorkspace(existing, summary);
       continue;
     }
 
