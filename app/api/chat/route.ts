@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { streamText } from "ai";
+import { createDataStreamResponse, streamText } from "ai";
 import { z } from "zod";
 import {
   authErrorResponse,
@@ -139,7 +139,15 @@ export async function POST(request: NextRequest): Promise<Response> {
         { role: "user", content: message },
       ],
       maxTokens: RETRIEVAL.MAX_OUTPUT_TOKENS,
-      onFinish: async ({ text }) => {
+    });
+
+    return createDataStreamResponse({
+      execute: async (dataStream) => {
+        result.mergeIntoDataStream(dataStream, {
+          experimental_sendFinish: false,
+        });
+
+        const text = await result.text;
         const parsedResponse = await resolveStorageCitations(
           supabase,
           workspace.id,
@@ -156,10 +164,14 @@ export async function POST(request: NextRequest): Promise<Response> {
           source_scope: sourceId ?? null,
         });
         await incrementMessageCount(workspace.id);
+
+        if (parsedResponse.citations.length > 0) {
+          dataStream.writeMessageAnnotation({
+            citations: parsedResponse.citations,
+          });
+        }
       },
     });
-
-    return result.toDataStreamResponse();
   } catch (error) {
     if (error instanceof Error && error.name === "WorkspaceAuthError") {
       return authErrorResponse(error);

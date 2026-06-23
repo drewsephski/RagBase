@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { isFallbackCitation, type DisplayCitation } from "@/lib/chat/citations";
 import { MarkdownContent } from "@/components/markdown-content";
 import {
@@ -14,17 +15,22 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface CitationDrawerProps {
   citation: DisplayCitation | null;
   open: boolean;
+  isLoading?: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export function CitationDrawer({
   citation,
   open,
+  isLoading = false,
   onOpenChange,
 }: CitationDrawerProps) {
   if (!citation) {
     return null;
   }
+
+  const showUnavailable =
+    !isLoading && isFallbackCitation(citation);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -32,7 +38,9 @@ export function CitationDrawer({
         <DialogHeader>
           <DialogTitle>Source [{citation.ref}]</DialogTitle>
           <DialogDescription>
-            {isFallbackCitation(citation) ? (
+            {isLoading ? (
+              "Loading source details…"
+            ) : showUnavailable ? (
               "We couldn't load the full source details for this citation yet."
             ) : citation.sourceName ? (
               <>
@@ -58,9 +66,19 @@ export function CitationDrawer({
         </DialogHeader>
 
         <ScrollArea className="max-h-[40vh] rounded-md border p-3 sm:max-h-[50vh] sm:p-4">
-          <div className="border-primary border-l-2 pl-3">
-            <MarkdownContent content={citation.snippet} size="sm" />
-          </div>
+          {isLoading ? (
+            <div
+              className="text-muted-foreground flex items-center gap-2 text-sm"
+              aria-live="polite"
+            >
+              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              Loading the cited passage…
+            </div>
+          ) : (
+            <div className="border-primary border-l-2 pl-3">
+              <MarkdownContent content={citation.snippet} size="sm" />
+            </div>
+          )}
         </ScrollArea>
 
         <p className="text-muted-foreground text-xs">

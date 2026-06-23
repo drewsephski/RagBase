@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { parseCitationsFromResponse } from "@/lib/chat/citations";
+import {
+  findContextBlock,
+  parseCitationsFromResponse,
+} from "@/lib/chat/citations";
+import { parseRawCitationItems } from "@/lib/chat/citations/block";
 import type { Citation } from "@/lib/domain/definitions";
 import type { ContextBlock } from "@/lib/retrieval/context";
 
@@ -70,6 +74,21 @@ function citationFromChunkRow(
   };
 }
 
+function citationFromContextBlock(
+  block: ContextBlock,
+  snippet: string,
+): Citation {
+  return {
+    chunkId: block.chunkId,
+    sourceId: block.sourceId,
+    sourceName: block.sourceName,
+    pageNumber: block.pageNumber,
+    sourceLocation: block.sourceLocation,
+    snippet,
+    context: block.text,
+  };
+}
+
 export async function resolveStorageCitations(
   supabase: SupabaseClient,
   workspaceId: string,
@@ -80,49 +99,9 @@ export async function resolveStorageCitations(
   const resolvedChunkIds = new Set(
     parsedResponse.citations.map((citation) => citation.chunkId),
   );
+  const rawItems = parseRawCitationItems(rawContent);
 
-  const citationsBlockMatch = rawContent.match(
-    /<citations>([\s\S]*?)<\/citations>/i,
-  );
-
-  if (!citationsBlockMatch?.[1]) {
-    return parsedResponse;
-  }
-
-  let rawItems: Array<{ ref: number; chunkId: string; snippet: string }> = [];
-
-  try {
-    const normalizedJson = citationsBlockMatch[1]
-      .trim()
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/, "")
-      .trim();
-    const parsed = JSON.parse(normalizedJson) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return parsedResponse;
-    }
-
-    rawItems = parsed.flatMap((item) => {
-      if (
-        typeof item !== "object" ||
-        item === null ||
-        typeof (item as { ref?: unknown }).ref !== "number" ||
-        typeof (item as { chunkId?: unknown }).chunkId !== "string" ||
-        typeof (item as { snippet?: unknown }).snippet !== "string"
-      ) {
-        return [];
-      }
-
-      return [
-        {
-          ref: (item as { ref: number }).ref,
-          chunkId: (item as { chunkId: string }).chunkId,
-          snippet: (item as { snippet: string }).snippet.trim(),
-        },
-      ];
-    });
-  } catch {
+  if (rawItems.length === 0) {
     return parsedResponse;
   }
 
@@ -139,17 +118,26 @@ export async function resolveStorageCitations(
   const citations: Citation[] = [...parsedResponse.citations];
 
   for (const item of rawItems) {
-    if (resolvedChunkIds.has(item.chunkId)) {
+    const contextBlock = findContextBlock(contextBlocks, item);
+    const resolvedChunkId = contextBlock?.chunkId ?? item.chunkId;
+
+    if (resolvedChunkIds.has(resolvedChunkId)) {
       continue;
     }
 
     const chunkRow = chunkRows.get(item.chunkId);
-    if (!chunkRow) {
+    if (chunkRow) {
+      citations.push(citationFromChunkRow(chunkRow, item.snippet));
+      resolvedChunkIds.add(chunkRow.id);
       continue;
     }
 
-    citations.push(citationFromChunkRow(chunkRow, item.snippet));
-    resolvedChunkIds.add(chunkRow.id);
+    if (!contextBlock) {
+      continue;
+    }
+
+    citations.push(citationFromContextBlock(contextBlock, item.snippet));
+    resolvedChunkIds.add(contextBlock.chunkId);
   }
 
   return {

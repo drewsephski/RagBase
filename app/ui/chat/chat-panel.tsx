@@ -423,6 +423,7 @@ export function ChatPanel({
             isLoading={isLoading}
             sourceCount={sources.length}
             workspaceId={workspaceHeaders?.["X-Workspace-Id"]}
+            workspaceHeaders={workspaceHeaders}
             model={hasOpenRouterKey() ? getSelectedModel() : "free"}
           />
         </>

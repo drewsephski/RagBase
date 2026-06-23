@@ -1,20 +1,11 @@
-import { z } from "zod";
-
 import type { Citation } from "@/lib/domain/definitions";
 import type { ContextBlock } from "@/lib/retrieval/context";
 
+import { parseRawCitationItems } from "./block";
 import { CITATIONS_BLOCK_REGEX } from "./constants";
 import { extractCitationRefs } from "./display";
 import { createFallbackCitation } from "./fallback";
 import type { DisplayCitation, ParsedAssistantResponse } from "./types";
-
-const rawCitationSchema = z.object({
-  ref: z.number().int().positive(),
-  chunkId: z.string().uuid(),
-  snippet: z.string().min(1),
-});
-
-const rawCitationsSchema = z.array(rawCitationSchema);
 
 export function stripCitationsBlock(content: string): string {
   return content.replace(CITATIONS_BLOCK_REGEX, "").trim();
@@ -35,26 +26,37 @@ export function getDisplayContent(content: string): string {
   return stripPartialCitationsBlock(content);
 }
 
-function parseRawCitationsBlock(
-  rawContent: string,
-): z.infer<typeof rawCitationsSchema> | null {
-  const match = rawContent.match(CITATIONS_BLOCK_REGEX);
+function buildDisplayCitationsFromPersisted(
+  persisted: Citation[],
+  content: string,
+): DisplayCitation[] {
+  const parsed = parseRawCitationItems(content);
+  const persistedByChunkId = new Map(
+    persisted.map((citation) => [citation.chunkId, citation]),
+  );
 
-  if (!match?.[1]) {
-    return null;
+  if (parsed.length > 0) {
+    return parsed.map((item) => {
+      const stored = persistedByChunkId.get(item.chunkId);
+
+      return {
+        ref: item.ref,
+        chunkId: item.chunkId,
+        snippet: item.snippet,
+        ...(stored
+          ? {
+              sourceId: stored.sourceId,
+              sourceName: stored.sourceName,
+              pageNumber: stored.pageNumber,
+              sourceLocation: stored.sourceLocation,
+              context: stored.context,
+            }
+          : {}),
+      };
+    });
   }
 
-  const normalizedJson = match[1]
-    .trim()
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/, "")
-    .trim();
-
-  try {
-    return rawCitationsSchema.parse(JSON.parse(normalizedJson));
-  } catch {
-    return null;
-  }
+  return citationsToDisplay(persisted);
 }
 
 function mergeWithInlineMarkers(
@@ -74,7 +76,7 @@ function mergeWithInlineMarkers(
   );
 }
 
-function findContextBlock(
+export function findContextBlock(
   blocks: ContextBlock[],
   item: { ref: number; chunkId: string },
 ): ContextBlock | undefined {
@@ -89,9 +91,9 @@ export function parseCitationsFromResponse(
   contextBlocks: ContextBlock[],
 ): ParsedAssistantResponse {
   const content = stripCitationsBlock(rawContent);
-  const parsed = parseRawCitationsBlock(rawContent);
+  const parsed = parseRawCitationItems(rawContent);
 
-  if (!parsed) {
+  if (parsed.length === 0) {
     return { content, citations: [] };
   }
 
@@ -133,16 +135,10 @@ export function citationsToDisplay(citations: Citation[]): DisplayCitation[] {
 export function parseDisplayCitationsFromContent(
   content: string,
 ): DisplayCitation[] {
-  const parsed = parseRawCitationsBlock(content);
-
-  if (!parsed) {
-    return [];
-  }
-
-  return parsed.map((item) => ({
+  return parseRawCitationItems(content).map((item) => ({
     ref: item.ref,
     chunkId: item.chunkId,
-    snippet: item.snippet.trim(),
+    snippet: item.snippet,
   }));
 }
 
@@ -153,7 +149,10 @@ export function getMessageDisplayCitations(
   const displayContent = getDisplayContent(content);
 
   if (persisted && persisted.length > 0) {
-    return mergeWithInlineMarkers(displayContent, citationsToDisplay(persisted));
+    return mergeWithInlineMarkers(
+      displayContent,
+      buildDisplayCitationsFromPersisted(persisted, content),
+    );
   }
 
   const parsed = parseDisplayCitationsFromContent(content);

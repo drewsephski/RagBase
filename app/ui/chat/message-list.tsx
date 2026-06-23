@@ -6,14 +6,18 @@ import { Check, Copy } from "lucide-react";
 import {
   getDisplayContent,
   getMessageDisplayCitations,
+  isFallbackCitation,
   type DisplayCitation,
 } from "@/lib/chat/citations";
-import { getUiMessageCitations } from "@/lib/chat/messages";
+import { getUiMessageCitations, storedMessageToUiMessage } from "@/lib/chat/messages";
 import {
   buildAnswerAnalyticsProperties,
   getAnswerLengthBucket,
 } from "@/lib/analytics/answer-quality";
 import { trackEvent } from "@/lib/analytics/track";
+import { apiJson } from "@/lib/api/client";
+import type { Message as StoredMessage } from "@/lib/domain/definitions";
+import type { WorkspaceHeaders } from "@/lib/api/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,7 +30,50 @@ interface MessageListProps {
   isLoading?: boolean;
   sourceCount?: number;
   workspaceId?: string;
+  workspaceHeaders?: WorkspaceHeaders | null;
   model?: string;
+}
+
+interface MessagesResponse {
+  messages: StoredMessage[];
+}
+
+function getLatestStoredAssistantMessage(
+  messages: StoredMessage[],
+): StoredMessage | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === "assistant") {
+      return message;
+    }
+  }
+
+  return null;
+}
+
+function resolveCitationFromStoredMessages(
+  storedMessages: StoredMessage[],
+  message: Message,
+  citationRef: number,
+): DisplayCitation | null {
+  const matchingMessage =
+    storedMessages.find(
+      (storedMessage) =>
+        storedMessage.id === message.id && storedMessage.role === "assistant",
+    ) ?? getLatestStoredAssistantMessage(storedMessages);
+
+  if (!matchingMessage) {
+    return null;
+  }
+
+  const uiMessage = storedMessageToUiMessage(matchingMessage);
+
+  return (
+    getMessageDisplayCitations(
+      uiMessage.content,
+      getUiMessageCitations(uiMessage),
+    ).find((item) => item.ref === citationRef) ?? null
+  );
 }
 
 function ThinkingIndicator() {
@@ -76,7 +123,7 @@ function MessageBubble({
             message.content,
             getUiMessageCitations(message),
           ),
-    [isUser, message.content, message.data],
+    [isUser, message.annotations, message.content, message.data],
   );
   const displayContent = isUser ? message.content : getDisplayContent(message.content);
 
@@ -164,11 +211,13 @@ export function MessageList({
   isLoading = false,
   sourceCount = 0,
   workspaceId,
+  workspaceHeaders = null,
   model,
 }: MessageListProps) {
   const [activeCitation, setActiveCitation] =
     useState<DisplayCitation | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isResolvingCitation, setIsResolvingCitation] = useState(false);
 
   const lastAssistantMessageId = useMemo(() => {
     if (isLoading) {
@@ -184,7 +233,10 @@ export function MessageList({
     return null;
   }, [isLoading, messages]);
 
-  function handleCitationClick(citation: DisplayCitation) {
+  async function handleCitationClick(
+    citation: DisplayCitation,
+    message: Message,
+  ) {
     trackEvent("citation_clicked", {
       citation_ref: citation.ref,
     });
@@ -193,6 +245,43 @@ export function MessageList({
     });
     setActiveCitation(citation);
     setDrawerOpen(true);
+
+    if (!isFallbackCitation(citation)) {
+      return;
+    }
+
+    const resolvedFromMessage = getMessageDisplayCitations(
+      message.content,
+      getUiMessageCitations(message),
+    ).find((item) => item.ref === citation.ref);
+
+    if (resolvedFromMessage && !isFallbackCitation(resolvedFromMessage)) {
+      setActiveCitation(resolvedFromMessage);
+      return;
+    }
+
+    if (!workspaceHeaders) {
+      return;
+    }
+
+    setIsResolvingCitation(true);
+
+    try {
+      const data = await apiJson<MessagesResponse>("/api/messages", {
+        workspaceHeaders,
+      });
+      const resolved = resolveCitationFromStoredMessages(
+        data.messages,
+        message,
+        citation.ref,
+      );
+
+      if (resolved && !isFallbackCitation(resolved)) {
+        setActiveCitation(resolved);
+      }
+    } finally {
+      setIsResolvingCitation(false);
+    }
   }
 
   function handleDrawerOpenChange(open: boolean) {
@@ -230,7 +319,9 @@ export function MessageList({
               <MessageBubble
                 key={message.id}
                 message={message}
-                onCitationClick={handleCitationClick}
+                onCitationClick={(selectedCitation) =>
+                  void handleCitationClick(selectedCitation, message)
+                }
                 onCopyAnswer={handleCopyAnswer}
                 showFeedback={message.id === lastAssistantMessageId}
                 sourceCount={sourceCount}
@@ -247,6 +338,7 @@ export function MessageList({
       <CitationDrawer
         citation={activeCitation}
         open={drawerOpen}
+        isLoading={isResolvingCitation}
         onOpenChange={handleDrawerOpenChange}
       />
     </>

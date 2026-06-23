@@ -6,7 +6,9 @@ export {
   parseDisplayCitationsFromContent,
   resolveDisplayCitations,
   stripPartialCitationsBlock,
+  findContextBlock,
 } from "./parse";
+export { parseRawCitationItems } from "./block";
 export {
   extractCitationRefs,
   linkifyCitationMarkers,

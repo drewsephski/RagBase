@@ -10,11 +10,45 @@ export interface UiMessageCitationData {
 
 export function getUiMessageCitations(message: UiMessage): Citation[] | null {
   if (!message.data || typeof message.data !== "object" || Array.isArray(message.data)) {
+    const fromAnnotations = getCitationsFromAnnotations(message.annotations);
+    if (fromAnnotations) {
+      return fromAnnotations;
+    }
+
     return null;
   }
 
   const citations = (message.data as unknown as UiMessageCitationData).citations;
-  return Array.isArray(citations) ? citations : null;
+  if (Array.isArray(citations)) {
+    return citations;
+  }
+
+  return getCitationsFromAnnotations(message.annotations);
+}
+
+function getCitationsFromAnnotations(
+  annotations: UiMessage["annotations"],
+): Citation[] | null {
+  if (!Array.isArray(annotations)) {
+    return null;
+  }
+
+  for (const annotation of annotations) {
+    if (
+      typeof annotation !== "object" ||
+      annotation === null ||
+      !("citations" in annotation)
+    ) {
+      continue;
+    }
+
+    const citations = (annotation as { citations?: unknown }).citations;
+    if (Array.isArray(citations)) {
+      return citations as Citation[];
+    }
+  }
+
+  return null;
 }
 
 /** Max prior turns sent to the model (user + assistant pairs). */
