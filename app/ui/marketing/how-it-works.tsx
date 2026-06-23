@@ -43,16 +43,18 @@ export function HowItWorks() {
 
         <ul className="grid gap-6 sm:grid-cols-3 sm:gap-8">
           {STEPS.map((step) => (
-            <li key={step.title} className="group space-y-3">
-              <div className="bg-muted/40 text-foreground inline-flex size-10 items-center justify-center rounded-lg border transition-colors group-hover:bg-muted/70">
-                <step.icon className="size-[18px]" aria-hidden />
-              </div>
-              <div className="space-y-1.5">
-                <h3 className="text-base font-medium">{step.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {step.description}
-                </p>
-              </div>
+            <li key={step.title}>
+              <article className="how-it-works-card group h-full space-y-3 p-5 sm:p-6">
+                <div className="bg-muted/30 text-foreground inline-flex size-10 items-center justify-center rounded-lg border border-transparent transition-colors duration-500 group-hover:bg-muted/45">
+                  <step.icon className="size-[18px]" aria-hidden />
+                </div>
+                <div className="space-y-1.5">
+                  <h3 className="text-base font-medium">{step.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
+              </article>
             </li>
           ))}
         </ul>

@@ -47,6 +47,9 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  --how-it-works-neon: #39d491;
+  --how-it-works-neon-border: color-mix(in srgb, var(--how-it-works-neon) 14%, var(--border));
+  --how-it-works-neon-halo: color-mix(in srgb, var(--how-it-works-neon) 5%, transparent);
 }
 
 .dark {
@@ -68,6 +71,8 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  --how-it-works-neon-border: color-mix(in srgb, var(--how-it-works-neon) 18%, var(--border));
+  --how-it-works-neon-halo: color-mix(in srgb, var(--how-it-works-neon) 7%, transparent);
 }
 
 @layer base {
@@ -126,6 +131,26 @@
     .group:hover .icon-arrow-nudge,
     .group:focus-visible .icon-arrow-nudge {
       transform: none;
+    }
+  }
+
+  .how-it-works-card {
+    border: 1px solid var(--border);
+    background: color-mix(in oklch, var(--background) 88%, var(--muted));
+    border-radius: var(--radius-xl);
+    transition:
+      border-color 480ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 480ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .how-it-works-card:hover {
+    border-color: var(--how-it-works-neon-border);
+    box-shadow: 0 0 0 1px var(--how-it-works-neon-halo);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .how-it-works-card {
+      transition: none;
     }
   }
 }
