@@ -41,7 +41,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const secret = generateWorkspaceSecret();
     const secretHash = await hashSecret(secret);
     const supabase = createServiceClient();
-    const user = await getAuthenticatedUser();
+    const user = await getAuthenticatedUser(request);
 
     const { data: workspace, error } = await supabase
       .from("workspaces")

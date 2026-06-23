@@ -212,6 +212,42 @@ export function renameWorkspaceLocal(
   return next;
 }
 
+export const WORKSPACE_REGISTRY_UPDATED_EVENT = "ragbase-workspace-registry-updated";
+
+export function notifyWorkspaceRegistryUpdated(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(WORKSPACE_REGISTRY_UPDATED_EVENT));
+  }
+}
+
+export function markWorkspaceAccountLinkedLocal(
+  id: string,
+  storage: Storage = localStorage,
+): StoredWorkspace[] {
+  const workspaces = loadRegistry(storage);
+  const next = workspaces.map((workspace) => {
+    if (workspace.id !== id) {
+      return workspace;
+    }
+
+    return {
+      id: workspace.id,
+      name: workspace.name,
+      createdAt: workspace.createdAt,
+      accountLinked: true,
+      ...(workspace.templateId ? { templateId: workspace.templateId } : {}),
+    };
+  });
+
+  if (!next.some((workspace) => workspace.id === id)) {
+    throw new WorkspaceRegistryError("Workspace not found in registry.");
+  }
+
+  writeRegistryToStorage(storage, next);
+  notifyWorkspaceRegistryUpdated();
+  return next;
+}
+
 export function createStoredWorkspace(
   id: string,
   secret: string,

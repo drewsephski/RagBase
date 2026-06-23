@@ -1,6 +1,7 @@
 import { trackLimitBoundary } from "@/lib/analytics/limit-boundary";
 import { ApiError } from "@/lib/api/api-error";
 import type { WorkspaceHeaders } from "@/lib/api/types";
+import { markWorkspaceAccountLinkedLocal } from "@/lib/workspace/registry";
 
 export { ApiError } from "@/lib/api/api-error";
 
@@ -24,9 +25,18 @@ function applyWorkspaceHeaders(
   }
 }
 
-export async function apiFetch(
+async function readErrorMessage(response: Response): Promise<string | null> {
+  try {
+    const body = (await response.json()) as { error?: string };
+    return body.error ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function executeFetch(
   path: string,
-  options: ApiFetchOptions = {},
+  options: ApiFetchOptions,
 ): Promise<Response> {
   const { workspaceHeaders, headers: initHeaders, ...init } = options;
   const headers = new Headers(initHeaders);
@@ -36,23 +46,48 @@ export async function apiFetch(
   return fetch(path, {
     ...init,
     headers,
+    credentials: "include",
   });
+}
+
+export async function apiFetch(
+  path: string,
+  options: ApiFetchOptions = {},
+): Promise<Response> {
+  const { workspaceHeaders } = options;
+  const response = await executeFetch(path, options);
+
+  if (
+    response.status === 401 &&
+    workspaceHeaders?.["X-Workspace-Secret"] &&
+    workspaceHeaders["X-Workspace-Id"]
+  ) {
+    const errorMessage = await readErrorMessage(response.clone());
+    if (errorMessage === "Invalid workspace secret") {
+      try {
+        markWorkspaceAccountLinkedLocal(workspaceHeaders["X-Workspace-Id"]);
+      } catch {
+        // Registry may not include this workspace; still retry with session auth.
+      }
+
+      return executeFetch(path, {
+        ...options,
+        workspaceHeaders: {
+          "X-Workspace-Id": workspaceHeaders["X-Workspace-Id"],
+        },
+      });
+    }
+  }
+
+  return response;
 }
 
 export async function readApiErrorMessage(
   response: Response,
   fallback: string,
 ): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string };
-    if (body.error) {
-      return body.error;
-    }
-  } catch {
-    // ignore parse errors
-  }
-
-  return fallback;
+  const message = await readErrorMessage(response);
+  return message ?? fallback;
 }
 
 export async function apiJson<T>(

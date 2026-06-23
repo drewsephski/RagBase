@@ -20,6 +20,7 @@ import {
   removeWorkspace,
   renameWorkspaceLocal,
   setActiveWorkspace,
+  WORKSPACE_REGISTRY_UPDATED_EVENT,
   WorkspaceRegistryError,
 } from "@/lib/workspace/registry";
 
@@ -69,7 +70,7 @@ function headersFromWorkspace(
     "X-Workspace-Id": workspace.id,
   };
 
-  if (workspace.secret) {
+  if (workspace.secret && !workspace.accountLinked) {
     headers["X-Workspace-Secret"] = workspace.secret;
   }
 
@@ -143,6 +144,19 @@ export function useWorkspaces(): UseWorkspacesState {
 
     return () => {
       cancelled = true;
+    };
+  }, [syncFromStorage]);
+
+  useEffect(() => {
+    function handleRegistryUpdated() {
+      const { registry, active } = syncFromStorage();
+      setWorkspaces(registry);
+      setActiveWorkspaceState(active);
+    }
+
+    window.addEventListener(WORKSPACE_REGISTRY_UPDATED_EVENT, handleRegistryUpdated);
+    return () => {
+      window.removeEventListener(WORKSPACE_REGISTRY_UPDATED_EVENT, handleRegistryUpdated);
     };
   }, [syncFromStorage]);
 

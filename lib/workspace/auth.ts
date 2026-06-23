@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAuthenticatedUser } from "@/lib/supabase/auth-server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { verifySecret } from "@/lib/workspace/crypto";
@@ -31,6 +32,24 @@ export function getWorkspaceHeaders(request: NextRequest): {
   };
 }
 
+async function maybeLinkWorkspaceOwner(
+  supabase: SupabaseClient,
+  request: NextRequest,
+  workspaceId: string,
+  ownerUserId: string | null,
+): Promise<void> {
+  const user = await getAuthenticatedUser(request);
+  if (!user || ownerUserId) {
+    return;
+  }
+
+  await supabase
+    .from("workspaces")
+    .update({ owner_user_id: user.id })
+    .eq("id", workspaceId)
+    .is("owner_user_id", null);
+}
+
 export async function requireWorkspace(
   request: NextRequest,
 ): Promise<WorkspaceContext> {
@@ -56,13 +75,20 @@ export async function requireWorkspace(
   if (workspaceSecret) {
     const valid = await verifySecret(workspaceSecret, workspace.secret_hash);
     if (!valid) {
-      const user = await getAuthenticatedUser();
+      const user = await getAuthenticatedUser(request);
       if (!user || workspace.owner_user_id !== user.id) {
         throw new WorkspaceAuthError("Invalid workspace secret");
       }
+    } else {
+      await maybeLinkWorkspaceOwner(
+        supabase,
+        request,
+        workspaceId,
+        workspace.owner_user_id,
+      );
     }
   } else {
-    const user = await getAuthenticatedUser();
+    const user = await getAuthenticatedUser(request);
     if (!user || workspace.owner_user_id !== user.id) {
       throw new WorkspaceAuthError("Missing workspace credentials");
     }

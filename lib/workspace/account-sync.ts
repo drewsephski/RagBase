@@ -3,7 +3,7 @@ import {
 } from "@/lib/domain/definitions";
 import { LIMITS } from "@/lib/domain/definitions";
 import type { AccountWorkspaceSummary } from "@/lib/workspace/account";
-import { loadRegistry } from "@/lib/workspace/registry";
+import { loadRegistry, notifyWorkspaceRegistryUpdated } from "@/lib/workspace/registry";
 import { WORKSPACE_REGISTRY_KEY } from "@/lib/workspace/keys";
 
 export function createAccountLinkedWorkspace(
@@ -74,6 +74,7 @@ export async function syncAccountWorkspacesToRegistry(): Promise<StoredWorkspace
   const accountWorkspaces = await fetchAccountWorkspaces();
   const merged = mergeAccountWorkspaces(accountWorkspaces);
   localStorage.setItem(WORKSPACE_REGISTRY_KEY, JSON.stringify(merged));
+  notifyWorkspaceRegistryUpdated();
   return merged;
 }
 
