@@ -147,31 +147,33 @@ export function AccountSection({
           </div>
         </div>
       ) : (
-        <div className="ingest-composer space-y-1.5 rounded-xl border p-1">
-          <div className="settings-form-row gap-1.5">
-            <Label htmlFor="account-email" className="sr-only sm:not-sr-only">
-              Email
-            </Label>
-            <Input
-              id="account-email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              aria-label="Email for sign in"
-              className="min-w-0 flex-1 border-0 shadow-none focus-visible:ring-1"
-            />
-            <Button
-              type="button"
-              size="sm"
-              className="shrink-0"
-              onClick={() => void handleSignIn()}
-              disabled={isSubmitting}
-            >
-              <LogIn aria-hidden />
-              {isSubmitting ? "Sending…" : "Sign in"}
-            </Button>
+        <div className="settings-field">
+          <Label htmlFor="account-email">Email</Label>
+          <div className="settings-field-control">
+            <div className="ingest-composer rounded-xl border p-1">
+              <div className="settings-field-inline">
+                <Input
+                  id="account-email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  aria-label="Email for sign in"
+                  className="border-0 shadow-none focus-visible:ring-1"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => void handleSignIn()}
+                  disabled={isSubmitting}
+                >
+                  <LogIn aria-hidden />
+                  {isSubmitting ? "Sending…" : "Sign in"}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}

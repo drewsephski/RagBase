@@ -227,25 +227,31 @@ export function SettingsPanel({
                 title="Current workspace"
                 description="Rename this workspace or save a recovery link."
               >
-                <div className="settings-form-row">
+                <div className="settings-field">
                   <Label htmlFor="workspace-name">Name</Label>
-                  <Input
-                    id="workspace-name"
-                    value={workspaceNameInput}
-                    onChange={(event) => setWorkspaceNameInput(event.target.value)}
-                    maxLength={64}
-                    aria-label="Workspace name"
-                    className="min-w-0 flex-1"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="shrink-0 sm:ml-auto"
-                    onClick={() => void handleRenameWorkspace()}
-                    disabled={isRenaming}
-                  >
-                    {isRenaming ? "Saving…" : "Save"}
-                  </Button>
+                  <div className="settings-field-control">
+                    <div className="ingest-composer rounded-xl border p-1">
+                      <div className="settings-field-inline">
+                        <Input
+                          id="workspace-name"
+                          value={workspaceNameInput}
+                          onChange={(event) => setWorkspaceNameInput(event.target.value)}
+                          maxLength={64}
+                          aria-label="Workspace name"
+                          className="border-0 shadow-none focus-visible:ring-1"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="shrink-0"
+                          onClick={() => void handleRenameWorkspace()}
+                          disabled={isRenaming}
+                        >
+                          {isRenaming ? "Saving…" : "Save"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 {renameError ? (
                   <p className="text-destructive text-[11px]" role="alert">
@@ -276,36 +282,38 @@ export function SettingsPanel({
               description="Optional. Stored in this browser only — unlock higher limits, model choice, and OCR for larger scans."
               className={auth && onRenameWorkspace ? undefined : "lg:col-span-2"}
             >
-              <div className="ingest-composer rounded-xl border p-1">
-                <div className="settings-form-row gap-1.5 sm:gap-1.5">
-                  <Label htmlFor="openrouter-key" className="sr-only sm:not-sr-only">
-                    API key
-                  </Label>
-                  <Input
-                    id="openrouter-key"
-                    type="password"
-                    autoComplete="off"
-                    value={openRouterKeyInput}
-                    onChange={(event) => setOpenRouterKeyInput(event.target.value)}
-                    placeholder="sk-or-…"
-                    aria-label="OpenRouter API key"
-                    className="min-w-0 flex-1 border-0 shadow-none focus-visible:ring-1"
-                  />
-                  <Button type="button" size="sm" className="shrink-0" onClick={handleSaveKey}>
-                    Save key
-                  </Button>
+              <div className="settings-field">
+                <Label htmlFor="openrouter-key">API key</Label>
+                <div className="settings-field-control">
+                  <div className="ingest-composer rounded-xl border p-1">
+                    <div className="settings-field-inline">
+                      <Input
+                        id="openrouter-key"
+                        type="password"
+                        autoComplete="off"
+                        value={openRouterKeyInput}
+                        onChange={(event) => setOpenRouterKeyInput(event.target.value)}
+                        placeholder="sk-or-…"
+                        aria-label="OpenRouter API key"
+                        className="border-0 shadow-none focus-visible:ring-1"
+                      />
+                      <Button type="button" size="sm" className="shrink-0" onClick={handleSaveKey}>
+                        Save key
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {hasKey ? (
-                <div className="settings-form-row">
+                <div className="settings-field">
                   <Label htmlFor="model-select">Model</Label>
                   <select
                     id="model-select"
                     value={selectedModel}
                     onChange={handleModelChange}
                     aria-label="Choose AI model"
-                    className="surface-premium-inset border-input/80 focus-visible:ring-ring h-9 min-w-0 flex-1 rounded-xl border px-3 text-xs focus-visible:ring-1 focus-visible:outline-none sm:text-sm"
+                    className="surface-premium-inset border-input/80 focus-visible:ring-ring h-9 w-full rounded-xl border px-3 text-xs focus-visible:ring-1 focus-visible:outline-none sm:text-sm"
                   >
                     {MODEL_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
