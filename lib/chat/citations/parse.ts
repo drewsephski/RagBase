@@ -69,6 +69,7 @@ export function parseCitationsFromResponse(
       sourceId: block.sourceId,
       sourceName: block.sourceName,
       pageNumber: block.pageNumber,
+      sourceLocation: block.sourceLocation,
       snippet: item.snippet.trim(),
       context: block.text,
     });
@@ -84,6 +85,7 @@ export function citationsToDisplay(citations: Citation[]): DisplayCitation[] {
     sourceId: citation.sourceId,
     sourceName: citation.sourceName,
     pageNumber: citation.pageNumber,
+    sourceLocation: citation.sourceLocation,
     snippet: citation.snippet,
     context: citation.context,
   }));

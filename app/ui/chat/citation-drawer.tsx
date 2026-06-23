@@ -32,7 +32,26 @@ export function CitationDrawer({
         <DialogHeader>
           <DialogTitle>Source [{citation.ref}]</DialogTitle>
           <DialogDescription>
-            Exact passage referenced in the answer
+            {citation.sourceName ? (
+              <>
+                {citation.sourceName}
+                {citation.sourceLocation ? (
+                  <>
+                    {" · "}
+                    <a
+                      href={citation.sourceLocation}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2"
+                    >
+                      {citation.sourceLocation}
+                    </a>
+                  </>
+                ) : null}
+              </>
+            ) : (
+              "Exact passage referenced in the answer"
+            )}
           </DialogDescription>
         </DialogHeader>
 

@@ -35,6 +35,19 @@ describe("analytics event taxonomy", () => {
     );
   });
 
+  test("includes crawl lifecycle events", () => {
+    expect(ANALYTICS_EVENTS).toEqual(
+      expect.arrayContaining([
+        "crawl_started",
+        "crawl_completed",
+        "crawl_failed",
+        "crawl_canceled",
+        "crawl_partial_success",
+        "post_crawl_first_question_suggested",
+      ]),
+    );
+  });
+
   test("includes answer-quality observability events", () => {
     expect(ANALYTICS_EVENTS).toEqual(
       expect.arrayContaining([

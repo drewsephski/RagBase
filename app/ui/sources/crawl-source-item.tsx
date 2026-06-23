@@ -220,6 +220,17 @@ export function CrawlSourceItem({
             </ul>
           ) : null}
 
+          {source.status === "ready" &&
+          (crawlMeta?.failedPageCount ?? 0) > 0 ? (
+            <p
+              className="text-muted-foreground mt-1 text-[10px] leading-snug"
+              role="status"
+            >
+              {crawlMeta?.failedPageCount} page
+              {crawlMeta?.failedPageCount === 1 ? "" : "s"} could not be read.
+            </p>
+          ) : null}
+
           {source.status === "error" && source.error_message ? (
             <p className="text-destructive mt-1 line-clamp-3 text-[10px] leading-snug" role="alert">
               {source.error_message}

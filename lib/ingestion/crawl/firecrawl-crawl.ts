@@ -1,4 +1,5 @@
 import { getFirecrawlClient } from "@/lib/ingestion/firecrawl-client";
+import { getCrawlLimitsConfig } from "@/lib/billing/crawl-limits";
 
 interface FirecrawlDocument {
   markdown?: string;
@@ -9,7 +10,6 @@ interface FirecrawlDocument {
     error?: string;
   };
 }
-import { getCrawlLimitsConfig } from "@/lib/billing/crawl-limits";
 
 export interface StartCrawlResult {
   jobId: string;

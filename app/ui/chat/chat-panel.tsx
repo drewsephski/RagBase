@@ -36,6 +36,7 @@ import { BetaFeedbackCta } from "@/app/ui/feedback/beta-feedback-cta";
 import { QualityDebugPanel } from "@/app/ui/chat/quality-debug-panel";
 import { isDebugPanelEnabled } from "@/lib/env/public";
 import { useChatHistory } from "@/hooks/use-chat-history";
+import { usePostCrawlStarters } from "@/hooks/use-post-crawl-starters";
 
 interface ChatPanelProps {
   workspaceHeaders: WorkspaceHeaders | null;
@@ -116,6 +117,17 @@ export function ChatPanel({
       };
     },
   });
+
+  const postCrawlPrompts = usePostCrawlStarters(
+    sources,
+    workspaceHeaders,
+    messages.length,
+  );
+
+  const starterPrompts = postCrawlPrompts ?? [...DOCUMENT_STARTER_PROMPTS];
+  const starterLabel = postCrawlPrompts
+    ? "Ask across your crawled site:"
+    : "Try asking:";
 
   const { isHistoryReady } = useChatHistory({
     workspaceHeaders,
@@ -349,11 +361,11 @@ export function ChatPanel({
                 </div>
               ) : (
                 <PromptChips
-                  prompts={DOCUMENT_STARTER_PROMPTS}
+                  prompts={starterPrompts}
                   onSelect={handlePromptSelect}
                   disabled={isLoading}
                   columns={2}
-                  label="Try asking:"
+                  label={starterLabel}
                 />
               )}
             </ChatEmptyState>

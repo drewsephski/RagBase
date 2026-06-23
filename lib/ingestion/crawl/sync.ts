@@ -1,4 +1,5 @@
 import {
+  decrementCrawlAttempt,
   incrementCrawledPages,
 } from "@/lib/billing/crawl-limits";
 import {
@@ -117,6 +118,14 @@ export async function syncCrawlSource(sourceId: string): Promise<void> {
       pagesIndexed > 0
         ? null
         : "Could not crawl this site. Check that it is public and try again.";
+
+    if (pagesIndexed === 0) {
+      try {
+        await decrementCrawlAttempt(supabase, source.workspace_id);
+      } catch (decrementError) {
+        console.error("Failed to reverse crawl attempt count:", decrementError);
+      }
+    }
   } else if (crawlStatus === "canceled") {
     nextSourceStatus = pagesIndexed > 0 ? "ready" : "error";
     errorMessage = pagesIndexed > 0 ? null : "Crawl canceled before any pages were read.";

@@ -112,6 +112,32 @@ export async function assertCrawlAllowed(
   }
 }
 
+export async function decrementCrawlAttempt(
+  supabase: SupabaseClient,
+  workspaceId: string,
+): Promise<void> {
+  const { data, error: fetchError } = await supabase
+    .from("workspaces")
+    .select("crawl_count_period")
+    .eq("id", workspaceId)
+    .single();
+
+  if (fetchError || !data) {
+    throw new Error("Failed to update crawl usage");
+  }
+
+  const nextCount = Math.max(0, (data.crawl_count_period ?? 0) - 1);
+
+  const { error } = await supabase
+    .from("workspaces")
+    .update({ crawl_count_period: nextCount })
+    .eq("id", workspaceId);
+
+  if (error) {
+    throw new Error(`Failed to decrement crawl count: ${error.message}`);
+  }
+}
+
 export async function incrementCrawlAttempt(
   supabase: SupabaseClient,
   workspaceId: string,

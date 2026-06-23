@@ -93,6 +93,7 @@ const citationSchema = z.object({
   sourceId: z.string().uuid(),
   sourceName: z.string(),
   pageNumber: z.number().nullable(),
+  sourceLocation: z.string().nullable().optional(),
   snippet: z.string(),
   context: z.string().optional(),
 });

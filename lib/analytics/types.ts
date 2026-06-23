@@ -37,7 +37,11 @@ export const ANALYTICS_EVENTS = [
   "checkout_confirmed",
   "paywall_subscribe_clicked",
   "crawl_started",
+  "crawl_completed",
+  "crawl_failed",
   "crawl_canceled",
+  "crawl_partial_success",
+  "post_crawl_first_question_suggested",
 ] as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];

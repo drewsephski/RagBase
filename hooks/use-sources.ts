@@ -7,6 +7,12 @@ import type { WorkspaceHeaders } from "@/lib/api/types";
 import { trackEvent } from "@/lib/analytics/track";
 import { getSourceIngestionFailure } from "@/lib/ingestion/user-errors";
 import { getOpenRouterKey } from "@/lib/openrouter/client-key";
+import {
+  buildCrawlEventProperties,
+  getCrawlAnalyticsSnapshot,
+  resolveCrawlTerminalEvent,
+} from "@/lib/sources/crawl-analytics";
+import type { CrawlAnalyticsSnapshot } from "@/lib/sources/crawl-analytics";
 
 interface SourcesResponse {
   sources: Source[];
@@ -32,6 +38,8 @@ export function useSources({
   const [scopedSourceId, setScopedSourceId] = useState<string | null>(null);
   const [scopedDocumentId, setScopedDocumentId] = useState<string | null>(null);
   const trackedErrorSourceIdsRef = useRef<Set<string>>(new Set());
+  const crawlSnapshotsRef = useRef<Map<string, CrawlAnalyticsSnapshot>>(new Map());
+  const trackedCrawlEventsRef = useRef<Set<string>>(new Set());
 
   const fetchSources = useCallback(async () => {
     if (!headers) {
@@ -45,6 +53,23 @@ export function useSources({
       setSources(data.sources);
 
       for (const source of data.sources) {
+        const snapshot = getCrawlAnalyticsSnapshot(source);
+        if (snapshot) {
+          const previous = crawlSnapshotsRef.current.get(source.id) ?? null;
+          const terminalEvent = resolveCrawlTerminalEvent(previous, snapshot);
+          const eventKey = `${source.id}:${terminalEvent}`;
+
+          if (terminalEvent && !trackedCrawlEventsRef.current.has(eventKey)) {
+            trackedCrawlEventsRef.current.add(eventKey);
+            trackEvent(
+              terminalEvent,
+              buildCrawlEventProperties(source, snapshot),
+            );
+          }
+
+          crawlSnapshotsRef.current.set(source.id, snapshot);
+        }
+
         if (
           source.status === "error" &&
           !trackedErrorSourceIdsRef.current.has(source.id)
@@ -82,6 +107,8 @@ export function useSources({
     setScopedDocumentId(null);
     setError(null);
     trackedErrorSourceIdsRef.current = new Set();
+    crawlSnapshotsRef.current = new Map();
+    trackedCrawlEventsRef.current = new Set();
     void fetchSources();
   }, [activeWorkspaceId, fetchSources, headers, isReady, refreshToken]);
 

@@ -6,6 +6,7 @@ export interface DisplayCitation {
   sourceId?: string;
   sourceName?: string;
   pageNumber?: number | null;
+  sourceLocation?: string | null;
   snippet: string;
   context?: string;
 }
