@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  createFallbackCitation,
   linkifyCitationMarkers,
   parseCitationLinkHref,
   type DisplayCitation,
@@ -13,6 +14,16 @@ interface MarkdownMessageProps {
   citations: DisplayCitation[];
   onCitationClick: (citation: DisplayCitation) => void;
   className?: string;
+}
+
+function resolveCitation(
+  citations: DisplayCitation[],
+  citationRef: number,
+): DisplayCitation {
+  return (
+    citations.find((item) => item.ref === citationRef) ??
+    createFallbackCitation(citationRef)
+  );
 }
 
 export function MarkdownMessage({
@@ -30,15 +41,11 @@ export function MarkdownMessage({
           const citationRef = parseCitationLinkHref(href);
 
           if (citationRef !== null) {
-            const citation = citations.find((item) => item.ref === citationRef);
+            const citation = resolveCitation(citations, citationRef);
 
-            if (citation) {
-              return (
-                <CitationBadge citation={citation} onClick={onCitationClick} />
-              );
-            }
-
-            return <span>[{citationRef}]</span>;
+            return (
+              <CitationBadge citation={citation} onClick={onCitationClick} />
+            );
           }
 
           return (

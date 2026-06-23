@@ -6,7 +6,9 @@ import {
   getMessageDisplayCitations,
   parseCitationsFromResponse,
   parseDisplayCitationsFromContent,
+  resolveDisplayCitations,
   stripCitationsBlock,
+  stripPartialCitationsBlock,
 } from "@/lib/chat/citations/parse";
 
 const CHUNK_ID = "11111111-1111-4111-8111-111111111111";
@@ -41,6 +43,18 @@ describe("getDisplayContent", () => {
     const raw = `Visible answer.\n<citations>[]</citations>`;
     expect(getDisplayContent(raw)).toBe("Visible answer.");
   });
+
+  test("removes incomplete citations blocks during streaming", () => {
+    const raw = `Visible answer [1].\n<citations>[{"ref":1,"chunkId":"`;
+    expect(getDisplayContent(raw)).toBe("Visible answer [1].");
+  });
+});
+
+describe("stripPartialCitationsBlock", () => {
+  test("removes trailing partial citations block", () => {
+    const raw = `Answer [2].\n<citations>[{"ref":2`;
+    expect(stripPartialCitationsBlock(raw)).toBe("Answer [2].");
+  });
 });
 
 describe("parseDisplayCitationsFromContent", () => {
@@ -64,6 +78,40 @@ describe("parseDisplayCitationsFromContent", () => {
     expect(parseDisplayCitationsFromContent("Claim [1] without a block.")).toEqual(
       [],
     );
+  });
+});
+
+describe("resolveDisplayCitations", () => {
+  test("creates fallback citations from inline markers when block is missing", () => {
+    expect(resolveDisplayCitations("Claim [1] and [3] without a block.")).toEqual([
+      {
+        ref: 1,
+        chunkId: "00000000-0000-4000-8000-000000000000",
+        snippet: "Source details are loading or unavailable.",
+      },
+      {
+        ref: 3,
+        chunkId: "00000000-0000-4000-8000-000000000000",
+        snippet: "Source details are loading or unavailable.",
+      },
+    ]);
+  });
+
+  test("fills missing inline refs when citations block is partial", () => {
+    const raw = `Claim [1][3].\n<citations>[{"ref":1,"chunkId":"${CHUNK_ID}","snippet":"purple elephant forty-two"}]</citations>`;
+
+    expect(resolveDisplayCitations(raw)).toEqual([
+      {
+        ref: 1,
+        chunkId: CHUNK_ID,
+        snippet: "purple elephant forty-two",
+      },
+      {
+        ref: 3,
+        chunkId: "00000000-0000-4000-8000-000000000000",
+        snippet: "Source details are loading or unavailable.",
+      },
+    ]);
   });
 });
 

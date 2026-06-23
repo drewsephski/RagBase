@@ -1,6 +1,6 @@
 "use client";
 
-import type { DisplayCitation } from "@/lib/chat/citations";
+import { isFallbackCitation, type DisplayCitation } from "@/lib/chat/citations";
 import { MarkdownContent } from "@/components/markdown-content";
 import {
   Dialog,
@@ -32,7 +32,9 @@ export function CitationDrawer({
         <DialogHeader>
           <DialogTitle>Source [{citation.ref}]</DialogTitle>
           <DialogDescription>
-            {citation.sourceName ? (
+            {isFallbackCitation(citation) ? (
+              "We couldn't load the full source details for this citation yet."
+            ) : citation.sourceName ? (
               <>
                 {citation.sourceName}
                 {citation.sourceLocation ? (

@@ -4,6 +4,8 @@ import type { Citation } from "@/lib/domain/definitions";
 import type { ContextBlock } from "@/lib/retrieval/context";
 
 import { CITATIONS_BLOCK_REGEX } from "./constants";
+import { extractCitationRefs } from "./display";
+import { createFallbackCitation } from "./fallback";
 import type { DisplayCitation, ParsedAssistantResponse } from "./types";
 
 const rawCitationSchema = z.object({
@@ -18,8 +20,19 @@ export function stripCitationsBlock(content: string): string {
   return content.replace(CITATIONS_BLOCK_REGEX, "").trim();
 }
 
+export function stripPartialCitationsBlock(content: string): string {
+  const withoutCompleteBlock = stripCitationsBlock(content);
+  const partialBlockIndex = withoutCompleteBlock.search(/<citations\b/i);
+
+  if (partialBlockIndex === -1) {
+    return withoutCompleteBlock;
+  }
+
+  return withoutCompleteBlock.slice(0, partialBlockIndex).trim();
+}
+
 export function getDisplayContent(content: string): string {
-  return stripCitationsBlock(content);
+  return stripPartialCitationsBlock(content);
 }
 
 function parseRawCitationsBlock(
@@ -31,11 +44,34 @@ function parseRawCitationsBlock(
     return null;
   }
 
+  const normalizedJson = match[1]
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+
   try {
-    return rawCitationsSchema.parse(JSON.parse(match[1].trim()));
+    return rawCitationsSchema.parse(JSON.parse(normalizedJson));
   } catch {
     return null;
   }
+}
+
+function mergeWithInlineMarkers(
+  displayContent: string,
+  citations: DisplayCitation[],
+): DisplayCitation[] {
+  const byRef = new Map(citations.map((citation) => [citation.ref, citation]));
+
+  for (const ref of extractCitationRefs(displayContent)) {
+    if (!byRef.has(ref)) {
+      byRef.set(ref, createFallbackCitation(ref));
+    }
+  }
+
+  return Array.from(byRef.values()).sort(
+    (left, right) => left.ref - right.ref,
+  );
 }
 
 function findContextBlock(
@@ -111,9 +147,20 @@ export function getMessageDisplayCitations(
   content: string,
   persisted?: Citation[] | null,
 ): DisplayCitation[] {
+  const displayContent = getDisplayContent(content);
+
   if (persisted && persisted.length > 0) {
-    return citationsToDisplay(persisted);
+    return mergeWithInlineMarkers(displayContent, citationsToDisplay(persisted));
   }
 
-  return parseDisplayCitationsFromContent(content);
+  const parsed = parseDisplayCitationsFromContent(content);
+  if (parsed.length > 0) {
+    return mergeWithInlineMarkers(displayContent, parsed);
+  }
+
+  return extractCitationRefs(displayContent).map(createFallbackCitation);
+}
+
+export function resolveDisplayCitations(content: string): DisplayCitation[] {
+  return getMessageDisplayCitations(content);
 }

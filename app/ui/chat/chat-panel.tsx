@@ -16,8 +16,9 @@ import { trackEvent } from "@/lib/analytics/track";
 import { trackPaidIntent } from "@/lib/analytics/paid-intent";
 import {
   getDisplayContent,
-  parseDisplayCitationsFromContent,
+  resolveDisplayCitations,
 } from "@/lib/chat/citations";
+import { reconcileLatestAssistantMessage } from "@/lib/chat/reconcile-assistant";
 import { getIngestionProgressMessage } from "@/lib/sources/ingestion-status";
 import {
   getOpenRouterKey,
@@ -192,7 +193,7 @@ export function ChatPanel({
           .find((message) => message.role === "assistant");
 
         if (lastAssistantMessage) {
-          const citations = parseDisplayCitationsFromContent(
+          const citations = resolveDisplayCitations(
             lastAssistantMessage.content,
           );
           const displayContent = getDisplayContent(lastAssistantMessage.content);
@@ -214,13 +215,31 @@ export function ChatPanel({
             onFirstAnswerComplete?.();
           }
         }
+
+        if (workspaceHeaders) {
+          void reconcileLatestAssistantMessage(workspaceHeaders, messages).then(
+            (reconciledMessages) => {
+              if (reconciledMessages) {
+                setMessages(reconciledMessages);
+              }
+            },
+          );
+        }
       }
 
       answerStartRef.current = null;
     }
 
     prevIsLoadingRef.current = isLoading;
-  }, [answerAnalyticsContext, error, isLoading, messages, onFirstAnswerComplete]);
+  }, [
+    answerAnalyticsContext,
+    error,
+    isLoading,
+    messages,
+    onFirstAnswerComplete,
+    setMessages,
+    workspaceHeaders,
+  ]);
 
   useEffect(() => {
     if (!error || chatLimitTrackedRef.current) {

@@ -5,7 +5,7 @@ import type { Message } from "ai/react";
 import { Check, Copy } from "lucide-react";
 import {
   getDisplayContent,
-  parseDisplayCitationsFromContent,
+  resolveDisplayCitations,
   type DisplayCitation,
 } from "@/lib/chat/citations";
 import {
@@ -68,7 +68,7 @@ function MessageBubble({
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
   const citations = useMemo(
-    () => (isUser ? [] : parseDisplayCitationsFromContent(message.content)),
+    () => (isUser ? [] : resolveDisplayCitations(message.content)),
     [isUser, message.content],
   );
   const displayContent = isUser ? message.content : getDisplayContent(message.content);
