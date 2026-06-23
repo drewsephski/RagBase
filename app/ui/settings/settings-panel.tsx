@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WorkspaceRecoverySection } from "@/app/ui/settings/workspace-recovery-section";
-import { BillingSection } from "@/app/ui/settings/billing-section";
 import { AccountSection } from "@/app/ui/settings/account-section";
 import type { UseAuthState } from "@/hooks/use-auth";
 import {
@@ -229,8 +228,6 @@ export function SettingsPanel({
             {!onRenameWorkspace && showRecoverySection ? (
               <WorkspaceRecoverySection onOpenRecoverySetup={onOpenRecoverySetup} />
             ) : null}
-
-            <BillingSection workspaceHeaders={workspaceHeaders} open={open} />
 
             <section aria-label="OpenRouter API key" className="space-y-3">
               <div className="flex items-center gap-2">
