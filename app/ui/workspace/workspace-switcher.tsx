@@ -6,8 +6,8 @@ import {
   LIMITS,
   type CreateWorkspaceOptions,
   type StoredWorkspace,
-} from "@/app/lib/definitions";
-import { getWorkspaceTemplate } from "@/app/lib/templates";
+} from "@/lib/domain/definitions";
+import { getWorkspaceTemplate } from "@/lib/domain/templates";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

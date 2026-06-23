@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getTemplateAppPath, parseTemplateId } from "@/app/lib/templates";
+import { getTemplateAppPath, parseTemplateId } from "@/lib/domain/templates";
 
 interface TemplateAppRedirectPageProps {
   params: Promise<{ id: string }>;

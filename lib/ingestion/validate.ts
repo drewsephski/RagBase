@@ -2,7 +2,7 @@ import {
   ALLOWED_FILE_EXTENSIONS,
   ALLOWED_MIME_TYPES,
   LIMITS,
-} from "@/app/lib/definitions";
+} from "@/lib/domain/definitions";
 
 export type AllowedFileExtension = (typeof ALLOWED_FILE_EXTENSIONS)[number];
 export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];

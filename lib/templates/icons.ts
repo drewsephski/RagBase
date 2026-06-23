@@ -9,7 +9,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import type { TemplateId } from "@/app/lib/templates";
+import type { TemplateId } from "@/lib/domain/templates";
 
 export const TEMPLATE_ICONS: Record<TemplateId, LucideIcon> = {
   "hospital-qi": ClipboardCheck,

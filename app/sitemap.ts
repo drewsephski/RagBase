@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
-import { APP_PATH, getSiteUrl } from "@/app/lib/site";
-import { TEMPLATE_LIST, getTemplateLandingPath } from "@/app/lib/templates";
+import { APP_PATH, getSiteUrl } from "@/lib/domain/site";
+import { TEMPLATE_LIST, getTemplateLandingPath } from "@/lib/domain/templates";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = getSiteUrl();

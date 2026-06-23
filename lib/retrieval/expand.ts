@@ -1,5 +1,5 @@
 import { estimateTokenCount } from "@/lib/ingestion/chunk";
-import type { MatchChunkResult } from "@/lib/retrieval/search";
+import type { MatchChunkResult } from "@/lib/retrieval/types";
 
 export function dedupeChunks(chunks: MatchChunkResult[]): MatchChunkResult[] {
   const byId = new Map<string, MatchChunkResult>();

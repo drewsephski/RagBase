@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, ShieldAlert } from "lucide-react";
 import { useCallback, useId, useState } from "react";
-import type { WorkspaceTemplate } from "@/app/lib/templates";
+import type { WorkspaceTemplate } from "@/lib/domain/templates";
 
 interface SafeUseNoteProps {
   safeUse: WorkspaceTemplate["safeUse"];

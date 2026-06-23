@@ -1,4 +1,4 @@
-import type { WorkspaceHeaders } from "@/hooks/use-workspace";
+import type { WorkspaceHeaders } from "@/lib/api/types";
 import { trackLimitBoundary } from "@/lib/analytics/limit-boundary";
 
 export class ApiError extends Error {

@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { CreateWorkspaceOptions, StoredWorkspace } from "@/app/lib/definitions";
+import type { CreateWorkspaceOptions, StoredWorkspace } from "@/lib/domain/definitions";
 import {
   getWorkspaceTemplate,
   parseTemplateId,
   type TemplateId,
   type WorkspaceTemplate,
-} from "@/app/lib/templates";
+} from "@/lib/domain/templates";
 import {
   ACTIVE_TEMPLATE_KEY,
   readTemplateWorkspaceId,

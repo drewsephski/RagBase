@@ -23,3 +23,7 @@ Reading a PDF file: probe the buffer for embedded text, run OCR when the scan is
 ## OCR provider adapter
 
 A seam behind OCR that returns normalized per-page text (`PdfPage[]`) regardless of whether Firecrawl or OpenRouter vision performed the extraction.
+
+## Citation
+
+A numbered reference from an assistant answer to a specific chunk in a Source. The model emits a structured `<citations>` JSON block; the server enriches entries with source metadata before persisting. The client renders citation markers from that block only — not from heuristic inline parsing.

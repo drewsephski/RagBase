@@ -1,6 +1,6 @@
 "use client";
 
-import type { Source, SourceStatus } from "@/app/lib/definitions";
+import type { Source, SourceStatus } from "@/lib/domain/definitions";
 import { getStatusLabel } from "@/lib/sources/ingestion-status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

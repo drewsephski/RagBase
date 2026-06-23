@@ -1,26 +1,12 @@
-import type { Citation } from "@/app/lib/definitions";
+import type { Citation } from "@/lib/domain/definitions";
 import { embedQuery } from "@/lib/openrouter/client";
+import type {
+  MatchChunkResult,
+  SearchChunksOptions,
+} from "@/lib/retrieval/types";
 import { createServiceClient } from "@/lib/supabase/server";
 
-export interface MatchChunkResult {
-  id: string;
-  chunk_text: string;
-  page_number: number | null;
-  source_location: string | null;
-  source_id: string;
-  source_name: string;
-  document_id: string;
-  chunk_index: number;
-  similarity: number;
-}
-
-export interface SearchChunksOptions {
-  query: string;
-  workspaceId: string;
-  sourceId?: string | null;
-  matchCount?: number;
-  apiKey?: string;
-}
+export type { MatchChunkResult, SearchChunksOptions } from "@/lib/retrieval/types";
 
 const DEFAULT_MATCH_COUNT = 8;
 

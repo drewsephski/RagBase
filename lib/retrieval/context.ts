@@ -1,4 +1,4 @@
-import type { MatchChunkResult } from "@/lib/retrieval/search";
+import type { MatchChunkResult } from "@/lib/retrieval/types";
 
 export interface ContextBlock {
   ref: number;

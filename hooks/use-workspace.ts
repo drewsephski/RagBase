@@ -5,10 +5,11 @@ import {
   DEFAULT_WORKSPACE_NAME,
   type CreateWorkspaceOptions,
   type StoredWorkspace,
-} from "@/app/lib/definitions";
-import { getWorkspaceTemplate } from "@/app/lib/templates";
+} from "@/lib/domain/definitions";
+import { getWorkspaceTemplate } from "@/lib/domain/templates";
 import { writeTemplateWorkspaceId } from "@/lib/templates/keys";
 import { apiFetch, apiJson } from "@/lib/api/client";
+import type { WorkspaceHeaders } from "@/lib/api/types";
 import { trackEvent } from "@/lib/analytics/track";
 import {
   addWorkspace,
@@ -22,10 +23,7 @@ import {
   WorkspaceRegistryError,
 } from "@/lib/workspace/registry";
 
-export interface WorkspaceHeaders {
-  "X-Workspace-Id": string;
-  "X-Workspace-Secret": string;
-}
+export type { WorkspaceHeaders } from "@/lib/api/types";
 
 interface CreateWorkspaceResponse {
   workspaceId: string;

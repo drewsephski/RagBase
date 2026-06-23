@@ -8,7 +8,7 @@ import {
   normalizeIngestionError,
   resolveIngestionFailure,
 } from "@/lib/ingestion/user-errors";
-import type { Source } from "@/app/lib/definitions";
+import type { Source } from "@/lib/domain/definitions";
 
 function makeSource(overrides: Partial<Source>): Source {
   return {

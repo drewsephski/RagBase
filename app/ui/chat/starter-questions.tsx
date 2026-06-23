@@ -1,6 +1,6 @@
 "use client";
 
-import type { StarterQuestion } from "@/app/lib/definitions";
+import type { StarterQuestion } from "@/lib/domain/definitions";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 

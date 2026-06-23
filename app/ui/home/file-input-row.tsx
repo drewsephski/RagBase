@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { FileUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ALLOWED_FILE_EXTENSIONS } from "@/app/lib/definitions";
+import { ALLOWED_FILE_EXTENSIONS } from "@/lib/domain/definitions";
 import { cn } from "@/lib/utils";
 
 interface FileInputRowProps {

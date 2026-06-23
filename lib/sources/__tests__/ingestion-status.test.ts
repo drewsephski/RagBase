@@ -5,7 +5,7 @@ import {
   getStatusLabel,
   isScannedPdfError,
 } from "@/lib/sources/ingestion-status";
-import type { Source } from "@/app/lib/definitions";
+import type { Source } from "@/lib/domain/definitions";
 
 function makeSource(overrides: Partial<Source>): Source {
   return {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Link2 } from "lucide-react";
-import type { TemplateId, WorkspaceTemplate } from "@/app/lib/templates";
+import type { TemplateId, WorkspaceTemplate } from "@/lib/domain/templates";
 import { buildPromptAppUrl } from "@/lib/templates/prompt-link";
 
 interface TemplatePromptLinksProps {

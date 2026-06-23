@@ -5,9 +5,9 @@ import type { Message } from "ai/react";
 import { Check, Copy } from "lucide-react";
 import {
   getDisplayContent,
-  parseMessageCitations,
-  type ParsedMessageCitation,
-} from "@/lib/chat/parse-message";
+  parseDisplayCitationsFromContent,
+  type DisplayCitation,
+} from "@/lib/chat/citations";
 import {
   buildAnswerAnalyticsProperties,
   getAnswerLengthBucket,
@@ -58,7 +58,7 @@ function MessageBubble({
   model,
 }: {
   message: Message;
-  onCitationClick: (citation: ParsedMessageCitation) => void;
+  onCitationClick: (citation: DisplayCitation) => void;
   onCopyAnswer: (content: string) => void;
   showFeedback: boolean;
   sourceCount: number;
@@ -68,7 +68,7 @@ function MessageBubble({
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
   const citations = useMemo(
-    () => (isUser ? [] : parseMessageCitations(message.content)),
+    () => (isUser ? [] : parseDisplayCitationsFromContent(message.content)),
     [isUser, message.content],
   );
   const displayContent = isUser ? message.content : getDisplayContent(message.content);
@@ -160,7 +160,7 @@ export function MessageList({
   model,
 }: MessageListProps) {
   const [activeCitation, setActiveCitation] =
-    useState<ParsedMessageCitation | null>(null);
+    useState<DisplayCitation | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const lastAssistantMessageId = useMemo(() => {
@@ -177,7 +177,7 @@ export function MessageList({
     return null;
   }, [isLoading, messages]);
 
-  function handleCitationClick(citation: ParsedMessageCitation) {
+  function handleCitationClick(citation: DisplayCitation) {
     trackEvent("citation_clicked", {
       citation_ref: citation.ref,
     });

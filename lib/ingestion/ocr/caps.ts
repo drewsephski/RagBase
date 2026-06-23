@@ -1,4 +1,4 @@
-import { LIMITS } from "@/app/lib/definitions";
+import { LIMITS } from "@/lib/domain/definitions";
 import type { OcrTier } from "@/lib/ingestion/ocr/types";
 
 export class OcrPageCapError extends Error {

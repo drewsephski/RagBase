@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { FileUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ALLOWED_FILE_EXTENSIONS } from "@/app/lib/definitions";
+import { ALLOWED_FILE_EXTENSIONS } from "@/lib/domain/definitions";
 
 interface UploadZoneProps {
   onUpload: (file: File) => Promise<void>;

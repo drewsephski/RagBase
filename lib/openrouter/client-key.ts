@@ -1,6 +1,6 @@
 "use client";
 
-import { DEFAULT_MODEL } from "@/app/lib/definitions";
+import { DEFAULT_MODEL } from "@/lib/domain/definitions";
 import {
   OPENROUTER_KEY,
   SELECTED_MODEL_KEY,

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { Source } from "@/app/lib/definitions";
+import type { Source } from "@/lib/domain/definitions";
 import { FileText, Globe, Loader2 } from "lucide-react";
 import { trackPaidIntent } from "@/lib/analytics/paid-intent";
 import { cn } from "@/lib/utils";
-import { getIngestionErrorHint, isScannedPdfError } from "@/lib/sources/ingestion-status";
+import { getIngestionFailureDisplay } from "@/lib/ingestion/user-errors";
 import { SourceActions, StatusBadge } from "@/app/ui/sources/source-actions";
 
 interface SourceItemProps {
@@ -35,13 +35,13 @@ export function SourceItem({
 }: SourceItemProps) {
   const isLoading =
     source.status === "pending" || source.status === "processing";
-  const errorHint = getIngestionErrorHint(source);
+  const failure = getIngestionFailureDisplay(source);
   const ocrIntentTrackedRef = useRef(false);
 
   useEffect(() => {
     if (
       source.status !== "error" ||
-      !isScannedPdfError(source) ||
+      !failure?.isOcrUpsell ||
       ocrIntentTrackedRef.current
     ) {
       return;
@@ -49,7 +49,7 @@ export function SourceItem({
 
     ocrIntentTrackedRef.current = true;
     trackPaidIntent("ocr", { surface: "ingestion_error" });
-  }, [source]);
+  }, [failure?.isOcrUpsell, source.status]);
 
   return (
     <article
@@ -100,9 +100,9 @@ export function SourceItem({
               <p className="text-destructive line-clamp-3 text-[10px] leading-snug">
                 {source.error_message}
               </p>
-              {errorHint ? (
+              {failure?.recovery ? (
                 <p className="text-muted-foreground text-[10px] leading-snug">
-                  {errorHint}
+                  {failure.recovery}
                 </p>
               ) : null}
             </div>

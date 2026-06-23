@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "ai/react";
 import { Loader2 } from "lucide-react";
-import type { Source } from "@/app/lib/definitions";
-import type { WorkspaceTemplate } from "@/app/lib/templates";
+import type { Source } from "@/lib/domain/definitions";
+import type { WorkspaceTemplate } from "@/lib/domain/templates";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { DOCUMENT_STARTER_PROMPTS } from "@/lib/chat/starter-prompts";
 import {
@@ -16,8 +16,8 @@ import { trackEvent } from "@/lib/analytics/track";
 import { trackPaidIntent } from "@/lib/analytics/paid-intent";
 import {
   getDisplayContent,
-  parseMessageCitations,
-} from "@/lib/chat/parse-message";
+  parseDisplayCitationsFromContent,
+} from "@/lib/chat/citations";
 import { getIngestionProgressMessage } from "@/lib/sources/ingestion-status";
 import {
   getOpenRouterKey,
@@ -145,7 +145,9 @@ export function ChatPanel({
           .find((message) => message.role === "assistant");
 
         if (lastAssistantMessage) {
-          const citations = parseMessageCitations(lastAssistantMessage.content);
+          const citations = parseDisplayCitationsFromContent(
+            lastAssistantMessage.content,
+          );
           const displayContent = getDisplayContent(lastAssistantMessage.content);
 
           setLastLatencyMs(latencyMs ?? null);

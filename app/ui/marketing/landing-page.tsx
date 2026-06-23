@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { APP_PATH, SITE_TAGLINE } from "@/app/lib/site";
+import { APP_PATH, SITE_TAGLINE } from "@/lib/domain/site";
 import { Button } from "@/components/ui/button";
 import { TrustRow } from "@/app/ui/home/trust-row";
 import { CitationDemo } from "@/app/ui/marketing/citation-demo";

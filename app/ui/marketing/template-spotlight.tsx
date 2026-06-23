@@ -17,7 +17,7 @@ import {
   TEMPLATE_LIST,
   type TemplateId,
   type WorkspaceTemplate,
-} from "@/app/lib/templates";
+} from "@/lib/domain/templates";
 import { TEMPLATE_ICONS } from "@/lib/templates/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

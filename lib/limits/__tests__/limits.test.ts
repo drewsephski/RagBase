@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { LIMITS } from "@/app/lib/definitions";
+import { LIMITS } from "@/lib/domain/definitions";
 import { checkFileSize, checkPdfPages } from "@/lib/limits";
 import { chunkText } from "@/lib/ingestion/chunk";
 import { isRootUrl } from "@/lib/ingestion/url-utils";

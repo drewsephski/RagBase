@@ -1,4 +1,4 @@
-import { LIMITS } from "@/app/lib/definitions";
+import { LIMITS } from "@/lib/domain/definitions";
 import { Lock, ShieldCheck, Trash2, Clock } from "lucide-react";
 
 const TRUST_ITEMS = [

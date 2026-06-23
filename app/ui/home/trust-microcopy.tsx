@@ -1,4 +1,4 @@
-import { LIMITS } from "@/app/lib/definitions";
+import { LIMITS } from "@/lib/domain/definitions";
 import { cn } from "@/lib/utils";
 
 interface TrustMicrocopyProps {

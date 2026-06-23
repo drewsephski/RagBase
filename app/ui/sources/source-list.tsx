@@ -1,141 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { Source } from "@/app/lib/definitions";
-import { LIMITS } from "@/app/lib/definitions";
-import { apiFetch, apiJson, ApiError } from "@/lib/api/client";
-import { getOpenRouterKey } from "@/lib/openrouter/client-key";
-import { trackEvent } from "@/lib/analytics/track";
-import { getSourceIngestionFailure } from "@/lib/ingestion/user-errors";
-import type { WorkspaceHeaders } from "@/hooks/use-workspace";
+import type { Source } from "@/lib/domain/definitions";
+import { LIMITS } from "@/lib/domain/definitions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SourceItem } from "@/app/ui/sources/source-item";
 
 interface SourceListProps {
-  workspaceHeaders: WorkspaceHeaders | null;
-  scopedSourceId: string | null;
-  onScopedSourceChange: (sourceId: string | null) => void;
-  refreshToken?: number;
-  onSourcesChange?: (sources: Source[]) => void;
-}
-
-interface SourcesResponse {
   sources: Source[];
+  isLoading: boolean;
+  error: string | null;
+  scopedSourceId: string | null;
+  onToggleScope: (sourceId: string) => void;
+  onReprocess: (sourceId: string) => Promise<void>;
+  onDelete: (sourceId: string) => Promise<void>;
 }
-
-const POLL_INTERVAL_MS = 2000;
 
 export function SourceList({
-  workspaceHeaders,
+  sources,
+  isLoading,
+  error,
   scopedSourceId,
-  onScopedSourceChange,
-  refreshToken = 0,
-  onSourcesChange,
+  onToggleScope,
+  onReprocess,
+  onDelete,
 }: SourceListProps) {
-  const [sources, setSources] = useState<Source[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const trackedErrorSourceIdsRef = useRef<Set<string>>(new Set());
-
-  const fetchSources = useCallback(async () => {
-    if (!workspaceHeaders) {
-      return;
-    }
-
-    try {
-      const data = await apiJson<SourcesResponse>("/api/sources", {
-        workspaceHeaders,
-      });
-      setSources(data.sources);
-      onSourcesChange?.(data.sources);
-
-      for (const source of data.sources) {
-        if (
-          source.status === "error" &&
-          !trackedErrorSourceIdsRef.current.has(source.id)
-        ) {
-          trackedErrorSourceIdsRef.current.add(source.id);
-          const failure = getSourceIngestionFailure(source);
-          trackEvent("ingestion_failed", {
-            source_type: source.type,
-            ...(failure ? { error_category: failure.category } : {}),
-          });
-        }
-      }
-
-      setError(null);
-    } catch (fetchError) {
-      setError(
-        fetchError instanceof ApiError
-          ? fetchError.message
-          : "Could not load your documents.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [onSourcesChange, workspaceHeaders]);
-
-  useEffect(() => {
-    void fetchSources();
-  }, [fetchSources, refreshToken]);
-
-  useEffect(() => {
-    const hasPending = sources.some(
-      (source) =>
-        source.status === "pending" || source.status === "processing",
-    );
-
-    if (!hasPending || !workspaceHeaders) {
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      void fetchSources();
-    }, POLL_INTERVAL_MS);
-
-    return () => window.clearInterval(interval);
-  }, [fetchSources, sources, workspaceHeaders]);
-
-  async function handleDelete(sourceId: string) {
-    if (!workspaceHeaders) {
-      return;
-    }
-
-    await apiJson(`/api/sources/${sourceId}`, {
-      method: "DELETE",
-      workspaceHeaders,
-    });
-
-    if (scopedSourceId === sourceId) {
-      onScopedSourceChange(null);
-    }
-
-    await fetchSources();
-  }
-
-  async function handleReprocess(sourceId: string) {
-    if (!workspaceHeaders) {
-      return;
-    }
-
-    const openRouterKey = getOpenRouterKey();
-
-    await apiFetch(`/api/sources/${sourceId}/reprocess`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        openRouterKey ? { openRouterKey } : {},
-      ),
-      workspaceHeaders,
-    });
-
-    await fetchSources();
-  }
-
-  function handleToggleScope(sourceId: string) {
-    onScopedSourceChange(scopedSourceId === sourceId ? null : sourceId);
-  }
-
   if (isLoading) {
     return (
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -169,7 +57,7 @@ export function SourceList({
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden">
       <div className="flex shrink-0 items-center justify-between gap-2">
-        <h2 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <h2 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
           Documents
         </h2>
         <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
@@ -184,9 +72,9 @@ export function SourceList({
               <SourceItem
                 source={source}
                 isScoped={scopedSourceId === source.id}
-                onToggleScope={() => handleToggleScope(source.id)}
-                onReprocess={() => handleReprocess(source.id)}
-                onDelete={() => handleDelete(source.id)}
+                onToggleScope={() => onToggleScope(source.id)}
+                onReprocess={() => onReprocess(source.id)}
+                onDelete={() => onDelete(source.id)}
               />
             </li>
           ))}

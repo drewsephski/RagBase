@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { LIMITS } from "@/app/lib/definitions";
+import { LIMITS } from "@/lib/domain/definitions";
 import { detectLowTextPdf } from "@/lib/ingestion/pdf";
 
 describe("detectLowTextPdf", () => {

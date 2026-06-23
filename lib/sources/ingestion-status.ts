@@ -1,10 +1,10 @@
-import type { Source, SourceStatus } from "@/app/lib/definitions";
-import { isSourceOcrProcessing } from "@/app/lib/definitions";
+import type { Source, SourceStatus } from "@/lib/domain/definitions";
+import { isSourceOcrProcessing } from "@/lib/domain/definitions";
 import {
   classifyIngestionError,
+  getIngestionFailureDisplay,
   getIngestionRecoveryAction,
   getSourceIngestionFailure,
-  isOcrUpsellCategory,
 } from "@/lib/ingestion/user-errors";
 
 export function getStatusLabel(source: Source | SourceStatus): string {
@@ -76,12 +76,11 @@ export function isScannedPdfError(
   }
 
   if (typeof sourceOrMessage === "object") {
-    const failure = getSourceIngestionFailure(sourceOrMessage);
-    return failure ? isOcrUpsellCategory(failure.category) : false;
+    return getIngestionFailureDisplay(sourceOrMessage)?.isOcrUpsell ?? false;
   }
 
   const category = classifyIngestionError(sourceOrMessage);
-  return isOcrUpsellCategory(category);
+  return category === "scanned_pdf" || category === "ocr_over_cap";
 }
 
 export function getIngestionErrorHint(
@@ -92,8 +91,10 @@ export function getIngestionErrorHint(
   }
 
   if (typeof sourceOrMessage === "object") {
-    return getSourceIngestionFailure(sourceOrMessage)?.recovery ?? null;
+    return getIngestionFailureDisplay(sourceOrMessage)?.recovery ?? null;
   }
 
   return getIngestionRecoveryAction(classifyIngestionError(sourceOrMessage));
 }
+
+export { getSourceIngestionFailure };

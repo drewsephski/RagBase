@@ -2,7 +2,7 @@ import { describe, expect, test } from "@jest/globals";
 import {
   linkifyCitationMarkers,
   parseCitationLinkHref,
-} from "@/lib/chat/citation-markdown";
+} from "@/lib/chat/citations/display";
 
 describe("linkifyCitationMarkers", () => {
   test("converts inline citation markers to markdown links", () => {

@@ -5,7 +5,7 @@ import {
   sortChunksForContext,
   trimChunksToTokenBudget,
 } from "@/lib/retrieval/expand";
-import type { MatchChunkResult } from "@/lib/retrieval/search";
+import type { MatchChunkResult } from "@/lib/retrieval/types";
 
 function makeChunk(
   overrides: Partial<MatchChunkResult> & Pick<MatchChunkResult, "id">,

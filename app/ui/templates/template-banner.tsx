@@ -1,4 +1,4 @@
-import type { WorkspaceTemplate } from "@/app/lib/templates";
+import type { WorkspaceTemplate } from "@/lib/domain/templates";
 import { Badge } from "@/components/ui/badge";
 import { TEMPLATE_ICONS } from "@/lib/templates/icons";
 

@@ -2,16 +2,13 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { CreateWorkspaceOptions, Source } from "@/app/lib/definitions";
-import { APP_PATH } from "@/app/lib/site";
+import type { CreateWorkspaceOptions } from "@/lib/domain/definitions";
+import { APP_PATH } from "@/lib/domain/site";
 import { useWorkspaces } from "@/hooks/use-workspace";
 import { useWorkspaceTemplate } from "@/hooks/use-workspace-template";
-import { apiFetch, apiJson, ApiError } from "@/lib/api/client";
-import { getOpenRouterKey } from "@/lib/openrouter/client-key";
+import { useSources } from "@/hooks/use-sources";
+import { useIngestion } from "@/hooks/use-ingestion";
 import { trackEvent } from "@/lib/analytics/track";
-import { trackPaidIntent } from "@/lib/analytics/paid-intent";
-import { trackLimitBoundary } from "@/lib/analytics/limit-boundary";
-import { isRootUrl } from "@/lib/ingestion/url-utils";
 import {
   peekPendingPrompt,
   setPendingPrompt,
@@ -28,18 +25,6 @@ import { FullSitePaywallDialog } from "@/app/ui/upsell/full-site-paywall-dialog"
 import { Loader2 } from "lucide-react";
 import { SettingsPanel } from "@/app/ui/settings/settings-panel";
 
-interface UrlResponse {
-  source?: Source;
-  teaser?: boolean;
-  message?: string;
-  notice?: string;
-  url?: string;
-}
-
-interface SourcesResponse {
-  sources: Source[];
-}
-
 function AppContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -54,19 +39,42 @@ function AppContent() {
     renameWorkspace,
     deleteWorkspace,
   } = useWorkspaces();
-  const [sources, setSources] = useState<Source[]>([]);
-  const [hasLoadedSources, setHasLoadedSources] = useState(false);
-  const [refreshToken, setRefreshToken] = useState(0);
-  const [scopedSourceId, setScopedSourceId] = useState<string | null>(null);
+
+  const activeWorkspaceId = activeWorkspace?.id ?? null;
+
+  const {
+    sources,
+    isLoading: sourcesLoading,
+    error: sourcesError,
+    scopedSourceId,
+    showAppShell,
+    refresh,
+    bumpRefresh,
+    resetSources,
+    deleteSource,
+    reprocessSource,
+    toggleScope,
+  } = useSources({
+    headers,
+    activeWorkspaceId,
+    isReady,
+  });
+
+  const handleIngestionSuccess = useCallback(async () => {
+    await refresh();
+    bumpRefresh();
+  }, [bumpRefresh, refresh]);
+
+  const ingestion = useIngestion({
+    headers,
+    onIngestionSuccess: handleIngestionSuccess,
+  });
+
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [paywallOpen, setPaywallOpen] = useState(false);
-  const [paywallPendingUrl, setPaywallPendingUrl] = useState<string | undefined>();
-  const [paywallSurface, setPaywallSurface] = useState("paywall_dialog");
-  const [urlChoiceOpen, setUrlChoiceOpen] = useState(false);
-  const [pendingRootUrl, setPendingRootUrl] = useState<string | null>(null);
   const [pendingPromptHint, setPendingPromptHint] = useState<string | null>(null);
   const [templateRoutingDismissed, setTemplateRoutingDismissed] = useState(false);
   const promptDeeplinkAppliedRef = useRef(false);
+
   const { template, isApplyingTemplate } = useWorkspaceTemplate({
     isReady,
     workspaces,
@@ -75,36 +83,6 @@ function AppContent() {
     switchWorkspace,
     templateRoutingDismissed,
   });
-
-  const activeWorkspaceId = activeWorkspace?.id ?? null;
-
-  const fetchSources = useCallback(async () => {
-    if (!headers) {
-      return;
-    }
-
-    try {
-      const data = await apiJson<SourcesResponse>("/api/sources", {
-        workspaceHeaders: headers,
-      });
-      setSources(data.sources);
-    } catch {
-      setSources([]);
-    } finally {
-      setHasLoadedSources(true);
-    }
-  }, [headers]);
-
-  useEffect(() => {
-    if (!isReady || !headers || !activeWorkspaceId) {
-      return;
-    }
-
-    setSources([]);
-    setHasLoadedSources(false);
-    setScopedSourceId(null);
-    void fetchSources();
-  }, [activeWorkspaceId, fetchSources, headers, isReady, refreshToken]);
 
   useEffect(() => {
     setPendingPromptHint(peekPendingPrompt());
@@ -134,10 +112,6 @@ function AppContent() {
     const query = nextParams.toString();
     router.replace(query ? `${APP_PATH}?${query}` : APP_PATH);
   }, [router, searchParams]);
-
-  const bumpRefresh = useCallback(() => {
-    setRefreshToken((current) => current + 1);
-  }, []);
 
   const handlePromptChipSelect = useCallback((prompt: string) => {
     setPendingPrompt(prompt);
@@ -182,160 +156,37 @@ function AppContent() {
     [clearQueuedPrompt, createWorkspace, dismissTemplateUrlRoute],
   );
 
-  const handleUpload = useCallback(
-    async (file: File) => {
-      if (!headers) {
-        throw new Error("Workspace is not ready yet.");
-      }
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const openRouterKey = getOpenRouterKey();
-      if (openRouterKey) {
-        formData.append("openRouterKey", openRouterKey);
-      }
-
-      const response = await apiFetch("/api/sources/upload", {
-        method: "POST",
-        body: formData,
-        workspaceHeaders: headers,
-      });
-
-      if (!response.ok) {
-        let message = "Upload failed. Please try again.";
-        try {
-          const body = (await response.json()) as { error?: string };
-          if (body.error) {
-            message = body.error;
-          }
-        } catch {
-          // ignore
-        }
-        const apiError = new ApiError(message, response.status);
-        trackLimitBoundary(apiError);
-        throw apiError;
-      }
-
-      trackEvent("file_uploaded", {
-        extension: file.name.split(".").pop()?.toLowerCase() ?? "unknown",
-      });
-
-      await fetchSources();
-      bumpRefresh();
-    },
-    [bumpRefresh, fetchSources, headers],
-  );
-
-  const openFullSitePaywall = useCallback((url?: string, surface = "crawl_hint") => {
-    trackPaidIntent("full_site_crawl", { surface });
-    setPaywallSurface(surface);
-    setPaywallPendingUrl(url);
-    setPaywallOpen(true);
-  }, []);
-
-  const handleUrlSubmit = useCallback(
-    async (url: string) => {
-      if (!headers) {
-        throw new Error("Workspace is not ready yet.");
-      }
-
-      const data = await apiJson<UrlResponse>("/api/sources/url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-        workspaceHeaders: headers,
-      });
-
-      trackEvent("url_ingested", {
-        is_homepage: Boolean(data.notice),
-      });
-
-      await fetchSources();
-      bumpRefresh();
-      return data;
-    },
-    [bumpRefresh, fetchSources, headers],
-  );
-
-  const handleUrlSubmitWithChoice = useCallback(
-    async (url: string) => {
-      try {
-        if (isRootUrl(url)) {
-          setPendingRootUrl(url);
-          setUrlChoiceOpen(true);
-          return;
-        }
-
-        return await handleUrlSubmit(url);
-      } catch (error) {
-        if (error instanceof ApiError) {
-          trackLimitBoundary(error);
-        }
-        throw error;
-      }
-    },
-    [handleUrlSubmit],
-  );
-
-  const handleRootUrlSinglePage = useCallback(
-    async (url: string) => {
-      try {
-        return await handleUrlSubmit(url);
-      } catch (error) {
-        if (error instanceof ApiError) {
-          trackLimitBoundary(error);
-        }
-        throw error;
-      }
-    },
-    [handleUrlSubmit],
-  );
-
-  const handleRootUrlCrawlSite = useCallback(
-    (url: string) => {
-      openFullSitePaywall(url, "root_url_choice");
-    },
-    [openFullSitePaywall],
-  );
-
-  const handlePaywallAddPageOnly = useCallback(() => {
-    if (!paywallPendingUrl) {
-      return;
-    }
-
-    void handleRootUrlSinglePage(paywallPendingUrl);
-  }, [handleRootUrlSinglePage, paywallPendingUrl]);
-
   const handleWorkspaceDeleted = useCallback(async () => {
     if (!activeWorkspace) {
       return;
     }
 
     await deleteWorkspace(activeWorkspace.id);
-    setSources([]);
-    setHasLoadedSources(false);
-    setScopedSourceId(null);
+    resetSources();
     bumpRefresh();
-  }, [activeWorkspace, bumpRefresh, deleteWorkspace]);
+  }, [activeWorkspace, bumpRefresh, deleteWorkspace, resetSources]);
 
   const paywallDialogs = (
     <>
       <UrlIngestChoiceDialog
-        open={urlChoiceOpen}
-        onOpenChange={setUrlChoiceOpen}
-        url={pendingRootUrl ?? ""}
-        onSinglePage={(url) => void handleRootUrlSinglePage(url)}
-        onCrawlSite={handleRootUrlCrawlSite}
+        open={ingestion.urlChoiceOpen}
+        onOpenChange={ingestion.setUrlChoiceOpen}
+        url={ingestion.pendingRootUrl ?? ""}
+        onSinglePage={(url) => void ingestion.submitSinglePage(url)}
+        onCrawlSite={ingestion.handleRootUrlCrawlSite}
       />
 
       <FullSitePaywallDialog
-        open={paywallOpen}
-        onOpenChange={setPaywallOpen}
-        pendingUrl={paywallPendingUrl}
+        open={ingestion.paywallOpen}
+        onOpenChange={ingestion.setPaywallOpen}
+        pendingUrl={ingestion.paywallPendingUrl}
         workspaceHeaders={headers}
-        onAddPageOnly={paywallPendingUrl ? handlePaywallAddPageOnly : undefined}
-        surface={paywallSurface}
+        onAddPageOnly={
+          ingestion.paywallPendingUrl
+            ? ingestion.handlePaywallAddPageOnly
+            : undefined
+        }
+        surface={ingestion.paywallSurface}
       />
     </>
   );
@@ -363,8 +214,6 @@ function AppContent() {
     );
   }
 
-  const showAppShell = hasLoadedSources && sources.length > 0;
-
   const workspaceSwitcherProps = {
     workspaces,
     activeWorkspace,
@@ -382,13 +231,17 @@ function AppContent() {
           activeWorkspaceId={activeWorkspaceId}
           workspaceSwitcherProps={workspaceSwitcherProps}
           sources={sources}
-          refreshToken={refreshToken}
+          sourcesLoading={sourcesLoading}
+          sourcesError={sourcesError}
           scopedSourceId={scopedSourceId}
-          onScopedSourceChange={setScopedSourceId}
-          onSourcesChange={setSources}
-          onUpload={handleUpload}
-          onUrlSubmit={handleUrlSubmitWithChoice}
-          onFullSitePaywallOpen={() => openFullSitePaywall(undefined, "crawl_hint")}
+          onToggleScope={toggleScope}
+          onDeleteSource={deleteSource}
+          onReprocessSource={reprocessSource}
+          onUpload={ingestion.upload}
+          onUrlSubmit={ingestion.submitUrlWithChoice}
+          onFullSitePaywallOpen={() =>
+            ingestion.openFullSitePaywall(undefined, "crawl_hint")
+          }
           onWorkspaceDeleted={() => void handleWorkspaceDeleted()}
           template={template}
         />
@@ -401,11 +254,13 @@ function AppContent() {
   return (
     <>
       <LandingHome
-        onUrlSubmit={handleUrlSubmitWithChoice}
-        onUpload={handleUpload}
+        onUrlSubmit={ingestion.submitUrlWithChoice}
+        onUpload={ingestion.upload}
         onOpenSettings={() => setSettingsOpen(true)}
         onPromptChipSelect={handlePromptChipSelect}
-        onFullSitePaywallOpen={() => openFullSitePaywall(undefined, "crawl_hint")}
+        onFullSitePaywallOpen={() =>
+          ingestion.openFullSitePaywall(undefined, "crawl_hint")
+        }
         pendingPromptHint={
           pendingPromptHint
             ? `Queued: "${pendingPromptHint}" — we'll ask this when your first document is ready.`

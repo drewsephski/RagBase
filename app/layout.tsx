@@ -7,7 +7,7 @@ import {
   SITE_KEYWORDS,
   SITE_NAME,
   SITE_TAGLINE,
-} from "@/app/lib/site";
+} from "@/lib/domain/site";
 import "./globals.css";
 
 const geistSans = Geist({

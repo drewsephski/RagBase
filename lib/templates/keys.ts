@@ -2,7 +2,7 @@ import {
   parseTemplateId,
   TEMPLATE_LIST,
   type TemplateId,
-} from "@/app/lib/templates";
+} from "@/lib/domain/templates";
 
 export const ACTIVE_TEMPLATE_KEY = "ragbase:active-template";
 export const PENDING_PROMPT_KEY = "ragbase:pending-prompt";

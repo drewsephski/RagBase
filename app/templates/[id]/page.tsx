@@ -7,8 +7,8 @@ import {
   getWorkspaceTemplate,
   parseTemplateId,
   TEMPLATE_LIST,
-} from "@/app/lib/templates";
-import { APP_PATH, SITE_NAME } from "@/app/lib/site";
+} from "@/lib/domain/templates";
+import { APP_PATH, SITE_NAME } from "@/lib/domain/site";
 import { Button } from "@/components/ui/button";
 import { SafeUseNote } from "@/app/ui/templates/safe-use-note";
 import { TemplateBanner } from "@/app/ui/templates/template-banner";

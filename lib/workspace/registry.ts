@@ -3,7 +3,7 @@ import {
   LIMITS,
   storedWorkspaceSchema,
   type StoredWorkspace,
-} from "@/app/lib/definitions";
+} from "@/lib/domain/definitions";
 import {
   ACTIVE_WORKSPACE_ID_KEY,
   WORKSPACE_ID_KEY,

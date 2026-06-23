@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, FolderOpen, type LucideIcon } from "lucide-react";
-import { TEMPLATE_LIST, type TemplateId } from "@/app/lib/templates";
+import { TEMPLATE_LIST, type TemplateId } from "@/lib/domain/templates";
 import { TEMPLATE_ICONS } from "@/lib/templates/icons";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";

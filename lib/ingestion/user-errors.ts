@@ -1,7 +1,8 @@
-import type { IngestionErrorCategory, Source } from "@/app/lib/definitions";
-import { ingestionErrorCategorySchema, parseSourceMetadata } from "@/app/lib/definitions";
+import type { IngestionErrorCategory, Source } from "@/lib/domain/definitions";
+import { ingestionErrorCategorySchema, parseSourceMetadata } from "@/lib/domain/definitions";
 import { OcrPageCapError } from "@/lib/ingestion/ocr/caps";
 import { OcrProviderError } from "@/lib/ingestion/ocr/errors";
+import type { OcrFailureCategory } from "@/lib/ingestion/ocr/types";
 import { UrlScrapeError } from "@/lib/ingestion/url-utils";
 
 export type { IngestionErrorCategory };
@@ -188,4 +189,48 @@ export function getSourceIngestionFailure(
 
 export function isOcrUpsellCategory(category: IngestionErrorCategory): boolean {
   return category === "scanned_pdf" || category === "ocr_over_cap";
+}
+
+/** Map OCR provider errors to analytics failure categories. */
+export function classifyOcrAnalyticsFailure(error: unknown): OcrFailureCategory {
+  if (error instanceof OcrPageCapError) {
+    return "over_cap";
+  }
+
+  if (error instanceof OcrProviderError) {
+    if (/key is required|openrouter key/i.test(error.message)) {
+      return "missing_key";
+    }
+
+    if (/no readable text|no text/i.test(error.message)) {
+      return "empty_result";
+    }
+
+    return "provider_error";
+  }
+
+  return "unknown";
+}
+
+export interface IngestionFailureDisplay {
+  category: IngestionErrorCategory;
+  message: string;
+  recovery: string | null;
+  isOcrUpsell: boolean;
+}
+
+/** Single read facade for Source ingestion failure UI and analytics. */
+export function getIngestionFailureDisplay(
+  source: Pick<Source, "status" | "error_message" | "metadata">,
+): IngestionFailureDisplay | null {
+  const failure = getSourceIngestionFailure(source);
+
+  if (!failure) {
+    return null;
+  }
+
+  return {
+    ...failure,
+    isOcrUpsell: isOcrUpsellCategory(failure.category),
+  };
 }

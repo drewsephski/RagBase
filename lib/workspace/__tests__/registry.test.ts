@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach } from "@jest/globals";
-import { DEFAULT_WORKSPACE_NAME, LIMITS } from "@/app/lib/definitions";
+import { DEFAULT_WORKSPACE_NAME, LIMITS } from "@/lib/domain/definitions";
 import {
   ACTIVE_WORKSPACE_ID_KEY,
   WORKSPACE_ID_KEY,

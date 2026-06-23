@@ -9,8 +9,8 @@ import {
   Settings,
   X,
 } from "lucide-react";
-import type { Source } from "@/app/lib/definitions";
-import type { WorkspaceTemplate } from "@/app/lib/templates";
+import type { Source } from "@/lib/domain/definitions";
+import type { WorkspaceTemplate } from "@/lib/domain/templates";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { RagBaseLogo } from "@/components/brand/ragbase-logo";
@@ -33,10 +33,12 @@ interface AppShellProps {
   activeWorkspaceId: string | null;
   workspaceSwitcherProps: WorkspaceSwitcherProps;
   sources: Source[];
-  refreshToken: number;
+  sourcesLoading: boolean;
+  sourcesError: string | null;
   scopedSourceId: string | null;
-  onScopedSourceChange: (sourceId: string | null) => void;
-  onSourcesChange: (sources: Source[]) => void;
+  onToggleScope: (sourceId: string) => void;
+  onDeleteSource: (sourceId: string) => Promise<void>;
+  onReprocessSource: (sourceId: string) => Promise<void>;
   onUpload: (file: File) => Promise<void>;
   onUrlSubmit: (url: string) => Promise<{ teaser?: boolean; message?: string; url?: string } | void>;
   onFullSitePaywallOpen?: () => void;
@@ -47,21 +49,25 @@ interface AppShellProps {
 const SIDEBAR_WIDTH = "min(280px, 85vw)";
 
 function SidebarContent({
-  workspaceHeaders,
+  sources,
+  sourcesLoading,
+  sourcesError,
   scopedSourceId,
-  onScopedSourceChange,
-  refreshToken,
-  onSourcesChange,
+  onToggleScope,
+  onDeleteSource,
+  onReprocessSource,
   onUpload,
   onUrlSubmit,
   onFullSitePaywallOpen,
 }: Pick<
   AppShellProps,
-  | "workspaceHeaders"
+  | "sources"
+  | "sourcesLoading"
+  | "sourcesError"
   | "scopedSourceId"
-  | "onScopedSourceChange"
-  | "refreshToken"
-  | "onSourcesChange"
+  | "onToggleScope"
+  | "onDeleteSource"
+  | "onReprocessSource"
   | "onUpload"
   | "onUrlSubmit"
   | "onFullSitePaywallOpen"
@@ -70,11 +76,13 @@ function SidebarContent({
     <>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <SourceList
-          workspaceHeaders={workspaceHeaders}
+          sources={sources}
+          isLoading={sourcesLoading}
+          error={sourcesError}
           scopedSourceId={scopedSourceId}
-          onScopedSourceChange={onScopedSourceChange}
-          refreshToken={refreshToken}
-          onSourcesChange={onSourcesChange}
+          onToggleScope={onToggleScope}
+          onReprocess={onReprocessSource}
+          onDelete={onDeleteSource}
         />
       </div>
 
@@ -95,10 +103,12 @@ export function AppShell({
   activeWorkspaceId,
   workspaceSwitcherProps,
   sources,
-  refreshToken,
+  sourcesLoading,
+  sourcesError,
   scopedSourceId,
-  onScopedSourceChange,
-  onSourcesChange,
+  onToggleScope,
+  onDeleteSource,
+  onReprocessSource,
   onUpload,
   onUrlSubmit,
   onFullSitePaywallOpen,
@@ -192,7 +202,7 @@ export function AppShell({
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
           <Link
             href="/"
-            className="min-w-0 shrink rounded-md outline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
+            className="focus-visible:outline-ring min-w-0 shrink rounded-md outline-offset-4 focus-visible:outline-2"
             aria-label="RagBase home"
           >
             <RagBaseLogo markSize={28} className="min-w-0 shrink max-sm:[&_p]:text-xs" />
@@ -248,15 +258,15 @@ export function AppShell({
           aria-label="Documents panel"
           aria-hidden={!sidebarVisible}
         >
-          <div
-            className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2.5 overflow-hidden p-2.5 sm:gap-3 sm:p-3"
-          >
+          <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2.5 overflow-hidden p-2.5 sm:gap-3 sm:p-3">
             <SidebarContent
-              workspaceHeaders={workspaceHeaders}
+              sources={sources}
+              sourcesLoading={sourcesLoading}
+              sourcesError={sourcesError}
               scopedSourceId={scopedSourceId}
-              onScopedSourceChange={onScopedSourceChange}
-              refreshToken={refreshToken}
-              onSourcesChange={onSourcesChange}
+              onToggleScope={onToggleScope}
+              onDeleteSource={onDeleteSource}
+              onReprocessSource={onReprocessSource}
               onUpload={onUpload}
               onUrlSubmit={onUrlSubmit}
               onFullSitePaywallOpen={onFullSitePaywallOpen}

@@ -2,7 +2,7 @@ import {
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_TAGLINE,
-} from "@/app/lib/site";
+} from "@/lib/domain/site";
 
 export const ogImageSize = {
   width: 1200,

@@ -3,7 +3,7 @@ import {
   OgImageContent,
   ogImageAlt,
   ogImageSize,
-} from "@/app/lib/og-image-content";
+} from "@/lib/domain/og-image-content";
 
 export const alt = ogImageAlt;
 export const size = ogImageSize;

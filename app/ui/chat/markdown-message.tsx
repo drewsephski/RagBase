@@ -3,15 +3,15 @@
 import {
   linkifyCitationMarkers,
   parseCitationLinkHref,
-} from "@/lib/chat/citation-markdown";
-import type { ParsedMessageCitation } from "@/lib/chat/parse-message";
+  type DisplayCitation,
+} from "@/lib/chat/citations";
 import { MarkdownContent } from "@/components/markdown-content";
 import { CitationBadge } from "@/app/ui/chat/citation-badge";
 
 interface MarkdownMessageProps {
   content: string;
-  citations: ParsedMessageCitation[];
-  onCitationClick: (citation: ParsedMessageCitation) => void;
+  citations: DisplayCitation[];
+  onCitationClick: (citation: DisplayCitation) => void;
   className?: string;
 }
 

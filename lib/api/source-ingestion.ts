@@ -1,4 +1,4 @@
-import type { Source } from "@/app/lib/definitions";
+import type { Source } from "@/lib/domain/definitions";
 import {
   runIngestionPipeline,
   type IngestionPipelineOptions,

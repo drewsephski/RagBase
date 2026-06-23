@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { LIMITS } from "@/app/lib/definitions";
+import { LIMITS } from "@/lib/domain/definitions";
 import { deleteInactiveWorkspaces } from "@/lib/workspace/delete";
 import { jsonError } from "@/lib/api/errors";
 

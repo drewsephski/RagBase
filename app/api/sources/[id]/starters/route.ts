@@ -10,8 +10,8 @@ import {
 } from "@/lib/chat/starters";
 import { createServiceClient } from "@/lib/supabase/server";
 import { handleRouteError, jsonError } from "@/lib/api/errors";
-import type { StarterQuestion } from "@/app/lib/definitions";
-import type { TemplateId } from "@/app/lib/templates";
+import type { StarterQuestion } from "@/lib/domain/definitions";
+import type { TemplateId } from "@/lib/domain/templates";
 
 interface RouteParams {
   params: Promise<{ id: string }>;

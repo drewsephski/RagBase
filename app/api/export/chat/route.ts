@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import type { Message } from "@/app/lib/definitions";
+import type { Message } from "@/lib/domain/definitions";
 import {
   authErrorResponse,
   requireWorkspace,

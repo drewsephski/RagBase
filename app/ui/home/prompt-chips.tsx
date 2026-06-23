@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Link2 } from "lucide-react";
 import { useCallback, useState } from "react";
-import type { TemplateId } from "@/app/lib/templates";
+import type { TemplateId } from "@/lib/domain/templates";
 import { Button } from "@/components/ui/button";
 import { LANDING_PROMPT_CHIPS } from "@/lib/chat/starter-prompts";
 import { trackEvent } from "@/lib/analytics/track";

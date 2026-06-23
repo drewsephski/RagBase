@@ -1,6 +1,6 @@
 "use client";
 
-import type { ParsedMessageCitation } from "@/lib/chat/parse-message";
+import type { DisplayCitation } from "@/lib/chat/citations";
 import { MarkdownContent } from "@/components/markdown-content";
 import {
   Dialog,
@@ -12,7 +12,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface CitationDrawerProps {
-  citation: ParsedMessageCitation | null;
+  citation: DisplayCitation | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

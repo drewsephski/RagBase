@@ -1,91 +1,112 @@
-import { RETRIEVAL } from "@/lib/retrieval/config";
 import {
-  dedupeChunks,
-  trimChunksToTokenBudget,
-  uniqueSourceIds,
-} from "@/lib/retrieval/expand";
-import {
-  countSourceChunks,
-  fetchAdjacentChunks,
-  fetchSourceChunksOrdered,
-  searchChunks,
+  createSupabaseSearchBackend,
   type MatchChunkResult,
+  type SearchBackend,
   type SearchChunksOptions,
-} from "@/lib/retrieval/search";
+} from "@/lib/retrieval/backend";
+import { RETRIEVAL } from "@/lib/retrieval/config";
+import { uniqueSourceIds } from "@/lib/retrieval/expand";
+import {
+  finalizeRetrievalChunks,
+  getSmallSourceIds,
+  isSmallSource,
+  mergeRetrievalChunks,
+} from "@/lib/retrieval/plan";
 
-async function loadSmallSourceIfApplicable(
-  workspaceId: string,
-  sourceId: string,
-): Promise<MatchChunkResult[] | null> {
-  const chunkCount = await countSourceChunks(sourceId);
+function createCachedChunkCounter(backend: SearchBackend) {
+  const cache = new Map<string, number>();
 
-  if (chunkCount === 0 || chunkCount > RETRIEVAL.SMALL_DOC_MAX_CHUNKS) {
-    return null;
-  }
+  return async (sourceId: string): Promise<number> => {
+    const cached = cache.get(sourceId);
 
-  return fetchSourceChunksOrdered(workspaceId, sourceId);
-}
-
-async function expandSmallSourcesFromSeeds(
-  workspaceId: string,
-  seeds: MatchChunkResult[],
-): Promise<MatchChunkResult[]> {
-  const expanded = [...seeds];
-  const sourceIds = uniqueSourceIds(seeds);
-
-  for (const sourceId of sourceIds) {
-    const chunkCount = await countSourceChunks(sourceId);
-
-    if (chunkCount === 0 || chunkCount > RETRIEVAL.SMALL_DOC_MAX_CHUNKS) {
-      continue;
+    if (cached !== undefined) {
+      return cached;
     }
 
-    const allChunks = await fetchSourceChunksOrdered(workspaceId, sourceId);
-    expanded.push(...allChunks);
+    const count = await backend.countSourceChunks(sourceId);
+    cache.set(sourceId, count);
+    return count;
+  };
+}
+
+async function loadSmallSources(
+  workspaceId: string,
+  sourceIds: string[],
+  backend: SearchBackend,
+): Promise<MatchChunkResult[]> {
+  const chunks: MatchChunkResult[] = [];
+
+  for (const sourceId of sourceIds) {
+    const sourceChunks = await backend.fetchSourceChunksOrdered(
+      workspaceId,
+      sourceId,
+    );
+    chunks.push(...sourceChunks);
   }
 
-  return expanded;
+  return chunks;
 }
 
 export async function retrieveForChat(
   options: SearchChunksOptions,
+  backend: SearchBackend = createSupabaseSearchBackend(),
 ): Promise<MatchChunkResult[]> {
   const { workspaceId, sourceId = null } = options;
+  const getChunkCount = createCachedChunkCounter(backend);
 
   if (sourceId) {
-    const smallSourceChunks = await loadSmallSourceIfApplicable(
-      workspaceId,
-      sourceId,
-    );
+    const scopedChunkCount = await getChunkCount(sourceId);
 
-    if (smallSourceChunks) {
-      return trimChunksToTokenBudget(
-        smallSourceChunks,
+    if (isSmallSource(scopedChunkCount, RETRIEVAL.SMALL_DOC_MAX_CHUNKS)) {
+      const scopedChunks = await backend.fetchSourceChunksOrdered(
+        workspaceId,
+        sourceId,
+      );
+
+      return finalizeRetrievalChunks(
+        scopedChunks,
         RETRIEVAL.MAX_CONTEXT_TOKENS,
       );
     }
   }
 
-  const initialMatches = await searchChunks({
+  const initialMatches = await backend.searchChunks({
     ...options,
     matchCount: options.matchCount ?? RETRIEVAL.INITIAL_MATCH_COUNT,
   });
 
-  const adjacentMatches = await fetchAdjacentChunks(
+  const adjacentMatches = await backend.fetchAdjacentChunks(
     initialMatches,
     RETRIEVAL.ADJACENT_CHUNK_RADIUS,
   );
 
-  const withSmallSourceExpansion = await expandSmallSourcesFromSeeds(
-    workspaceId,
-    initialMatches,
+  const seedSourceIds = uniqueSourceIds(initialMatches);
+  const chunkCountBySourceId = new Map<string, number>();
+
+  for (const seedSourceId of seedSourceIds) {
+    chunkCountBySourceId.set(
+      seedSourceId,
+      await getChunkCount(seedSourceId),
+    );
+  }
+
+  const smallSourceIds = getSmallSourceIds(
+    seedSourceIds,
+    chunkCountBySourceId,
+    RETRIEVAL.SMALL_DOC_MAX_CHUNKS,
   );
 
-  const merged = dedupeChunks([
-    ...initialMatches,
-    ...adjacentMatches,
-    ...withSmallSourceExpansion,
-  ]);
+  const smallSourceChunks = await loadSmallSources(
+    workspaceId,
+    smallSourceIds,
+    backend,
+  );
 
-  return trimChunksToTokenBudget(merged, RETRIEVAL.MAX_CONTEXT_TOKENS);
+  const merged = mergeRetrievalChunks(
+    initialMatches,
+    adjacentMatches,
+    smallSourceChunks,
+  );
+
+  return finalizeRetrievalChunks(merged, RETRIEVAL.MAX_CONTEXT_TOKENS);
 }

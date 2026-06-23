@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { RagBaseLogo } from "@/components/brand/ragbase-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { APP_PATH } from "@/app/lib/site";
+import { APP_PATH } from "@/lib/domain/site";
 
 export function LandingHeader() {
   return (

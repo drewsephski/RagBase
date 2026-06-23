@@ -1,4 +1,4 @@
-import { LIMITS } from "@/app/lib/definitions";
+import { LIMITS } from "@/lib/domain/definitions";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export class LimitError extends Error {

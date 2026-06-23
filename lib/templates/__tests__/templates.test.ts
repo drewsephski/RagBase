@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { parseTemplateId, TEMPLATE_LIST } from "@/app/lib/templates";
+import { parseTemplateId, TEMPLATE_LIST } from "@/lib/domain/templates";
 import {
   consumePendingPrompt,
   peekPendingPrompt,

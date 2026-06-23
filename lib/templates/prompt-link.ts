@@ -1,5 +1,5 @@
-import type { TemplateId } from "@/app/lib/templates";
-import { APP_PATH } from "@/app/lib/site";
+import type { TemplateId } from "@/lib/domain/templates";
+import { APP_PATH } from "@/lib/domain/site";
 
 export const PROMPT_URL_PARAM = "prompt";
 export const MAX_SHAREABLE_PROMPT_LENGTH = 500;

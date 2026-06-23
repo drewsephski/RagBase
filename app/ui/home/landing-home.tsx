@@ -1,7 +1,7 @@
 "use client";
 
 import { Settings } from "lucide-react";
-import type { WorkspaceTemplate } from "@/app/lib/templates";
+import type { WorkspaceTemplate } from "@/lib/domain/templates";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { RagBaseLogo } from "@/components/brand/ragbase-logo";

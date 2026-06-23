@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { App } from "@/app/ui/app";
-import { SITE_NAME } from "@/app/lib/site";
+import { SITE_NAME } from "@/lib/domain/site";
 
 export const metadata: Metadata = {
   title: "Workspace",

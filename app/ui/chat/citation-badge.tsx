@@ -1,12 +1,12 @@
 "use client";
 
-import type { ParsedMessageCitation } from "@/lib/chat/parse-message";
+import type { DisplayCitation } from "@/lib/chat/citations";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface CitationBadgeProps {
-  citation: ParsedMessageCitation;
-  onClick: (citation: ParsedMessageCitation) => void;
+  citation: DisplayCitation;
+  onClick: (citation: DisplayCitation) => void;
 }
 
 export function CitationBadge({ citation, onClick }: CitationBadgeProps) {

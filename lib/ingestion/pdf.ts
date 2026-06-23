@@ -1,6 +1,6 @@
 import pdfParse from "pdf-parse";
 
-import { LIMITS } from "@/app/lib/definitions";
+import { LIMITS } from "@/lib/domain/definitions";
 import { checkPdfPages } from "@/lib/limits";
 
 export interface PdfPage {

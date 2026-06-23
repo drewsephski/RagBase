@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Download, KeyRound, Trash2 } from "lucide-react";
-import { DEFAULT_MODEL, LIMITS } from "@/app/lib/definitions";
+import { DEFAULT_MODEL, LIMITS } from "@/lib/domain/definitions";
 import type { WorkspaceHeaders } from "@/hooks/use-workspace";
 import {
   clearOpenRouterKey,

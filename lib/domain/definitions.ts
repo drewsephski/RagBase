@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { templateIdSchema, type TemplateId } from "@/app/lib/templates";
+import { templateIdSchema, type TemplateId } from "@/lib/domain/templates";
 
 export interface CreateWorkspaceOptions {
   name?: string;

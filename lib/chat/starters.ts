@@ -4,12 +4,12 @@ import { z } from "zod";
 import {
   DEFAULT_MODEL,
   type StarterQuestion,
-} from "@/app/lib/definitions";
+} from "@/lib/domain/definitions";
 import {
   getWorkspaceTemplate,
   parseTemplateId,
   type TemplateId,
-} from "@/app/lib/templates";
+} from "@/lib/domain/templates";
 import {
   createOpenRouter,
   createOpenRouterWithKey,

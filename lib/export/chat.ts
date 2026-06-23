@@ -1,4 +1,4 @@
-import type { Citation, Message } from "@/app/lib/definitions";
+import type { Citation, Message } from "@/lib/domain/definitions";
 import { formatCitationFootnote } from "@/lib/chat/citations";
 import { createServiceClient } from "@/lib/supabase/server";
 

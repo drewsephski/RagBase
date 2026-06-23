@@ -1,5 +1,6 @@
 import {
   OcrPageCapError,
+  getOcrPageCap,
   prepareOcrRun,
   selectOcrProvider,
 } from "@/lib/ingestion/ocr/caps";
@@ -8,41 +9,19 @@ import {
   trackOcrCompleted,
   trackOcrFailed,
 } from "@/lib/ingestion/ocr/analytics";
-import { ocrPdfWithFirecrawl } from "@/lib/ingestion/ocr/firecrawl-ocr";
-import { OcrProviderError } from "@/lib/ingestion/ocr/errors";
-import { ocrPdfWithVision } from "@/lib/ingestion/ocr/vision-ocr";
+import { extractOcrPages } from "@/lib/ingestion/ocr/providers";
 import type {
-  OcrFailureCategory,
   OcrProvider,
   OcrRunResult,
   OcrTier,
 } from "@/lib/ingestion/ocr/types";
+import { classifyOcrAnalyticsFailure } from "@/lib/ingestion/user-errors";
 
 export interface RunPdfOcrOptions {
   buffer: Buffer;
   filename: string;
   pageCount: number;
   openRouterKey?: string;
-}
-
-function classifyOcrFailure(error: unknown): OcrFailureCategory {
-  if (error instanceof OcrPageCapError) {
-    return "over_cap";
-  }
-
-  if (error instanceof OcrProviderError) {
-    if (/key is required|openrouter key/i.test(error.message)) {
-      return "missing_key";
-    }
-
-    if (/no readable text|no text/i.test(error.message)) {
-      return "empty_result";
-    }
-
-    return "provider_error";
-  }
-
-  return "unknown";
 }
 
 export async function runPdfOcr(options: RunPdfOcrOptions): Promise<OcrRunResult> {
@@ -75,28 +54,13 @@ export async function runPdfOcr(options: RunPdfOcrOptions): Promise<OcrRunResult
       provider,
     });
 
-    let pages;
-
-    if (provider === "openrouter_vision") {
-      if (!openRouterKey) {
-        throw new OcrProviderError(
-          "OpenRouter API key is required for larger scans.",
-        );
-      }
-
-      pages = await ocrPdfWithVision(
-        options.buffer,
-        options.filename,
-        options.pageCount,
-        openRouterKey,
-      );
-    } else {
-      pages = await ocrPdfWithFirecrawl(
-        options.buffer,
-        options.filename,
-        options.pageCount,
-      );
-    }
+    const pages = await extractOcrPages(provider, {
+      buffer: options.buffer,
+      filename: options.filename,
+      pageCount: options.pageCount,
+      maxPages: getOcrPageCap(tier),
+      openRouterKey,
+    });
 
     await trackOcrCompleted({
       pageCount: options.pageCount,
@@ -110,7 +74,7 @@ export async function runPdfOcr(options: RunPdfOcrOptions): Promise<OcrRunResult
       pageCount: options.pageCount,
       tier,
       provider,
-      failureCategory: classifyOcrFailure(error),
+      failureCategory: classifyOcrAnalyticsFailure(error),
     });
 
     throw error;
