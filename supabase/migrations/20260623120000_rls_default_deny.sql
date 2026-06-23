@@ -52,9 +52,8 @@ grant execute on function public.match_chunks(vector, integer, uuid, uuid, uuid)
 -- ---------------------------------------------------------------------------
 -- Storage — private uploads bucket; no client policies
 -- ---------------------------------------------------------------------------
-
-alter table storage.objects enable row level security;
-alter table storage.buckets enable row level security;
+-- Hosted Supabase already enables RLS on storage.objects/buckets, and the
+-- migration role is not owner of those tables, so skip ALTER here.
 
 revoke all on table storage.objects from anon, authenticated;
 revoke all on table storage.buckets from anon, authenticated;
