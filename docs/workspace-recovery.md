@@ -1,6 +1,6 @@
 # Workspace recovery link (design stub)
 
-> **Status:** Not implemented. Spec for the next phase after public-beta hardening.
+> **Status:** Spec'd for Phase 6c. Implementation plan: [`docs/superpowers/plans/2026-06-23-phase-6c-stripe-recovery-plan.md`](./superpowers/plans/2026-06-23-phase-6c-stripe-recovery-plan.md). Superseded by roadmap spec §Recovery for product UX; this file retains API/table notes.
 
 ## Problem
 
