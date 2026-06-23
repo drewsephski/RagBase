@@ -16,8 +16,9 @@ import { trackEvent } from "@/lib/analytics/track";
 import { trackPaidIntent } from "@/lib/analytics/paid-intent";
 import {
   getDisplayContent,
-  resolveDisplayCitations,
+  getMessageDisplayCitations,
 } from "@/lib/chat/citations";
+import { getUiMessageCitations } from "@/lib/chat/messages";
 import { reconcileLatestAssistantMessage } from "@/lib/chat/reconcile-assistant";
 import { getIngestionProgressMessage } from "@/lib/sources/ingestion-status";
 import {
@@ -196,8 +197,9 @@ export function ChatPanel({
           .find((message) => message.role === "assistant");
 
         if (lastAssistantMessage) {
-          const citations = resolveDisplayCitations(
+          const citations = getMessageDisplayCitations(
             lastAssistantMessage.content,
+            getUiMessageCitations(lastAssistantMessage),
           );
           const displayContent = getDisplayContent(lastAssistantMessage.content);
 
