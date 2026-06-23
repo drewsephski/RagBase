@@ -20,6 +20,19 @@ export class SubscriptionReclaimError extends Error {
   }
 }
 
+export function assertReclaimSubscriptionAvailable(
+  linkedWorkspace: { id: string } | null,
+  workspaceId: string,
+): void {
+  if (linkedWorkspace && linkedWorkspace.id !== workspaceId) {
+    throw new SubscriptionReclaimError(
+      "Your RagBase Pro subscription is linked to another workspace.",
+      409,
+      "subscription_linked_elsewhere",
+    );
+  }
+}
+
 export async function reclaimOrphanSubscriptionForWorkspace(
   supabase: SupabaseClient,
   workspaceId: string,
@@ -40,6 +53,22 @@ export async function reclaimOrphanSubscriptionForWorkspace(
   if (!orphan) {
     return { reclaimed: false };
   }
+
+  const { data: linkedWorkspace, error: linkedError } = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("stripe_subscription_id", orphan.id)
+    .maybeSingle();
+
+  if (linkedError) {
+    throw new SubscriptionReclaimError(
+      "Could not verify subscription ownership.",
+      502,
+      "subscription_lookup_failed",
+    );
+  }
+
+  assertReclaimSubscriptionAvailable(linkedWorkspace, workspaceId);
 
   const customerId =
     typeof orphan.customer === "string"

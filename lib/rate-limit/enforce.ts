@@ -149,3 +149,20 @@ export async function enforceRecoveryExchangeRateLimit(
     "Too many recovery attempts from this connection.",
   );
 }
+
+export async function enforceBillingReclaimRateLimit(
+  request: NextRequest,
+  workspaceId: string,
+): Promise<void> {
+  const ip = getClientIp(request);
+  await enforce(
+    `billing:reclaim:workspace:${workspaceId}`,
+    RATE_LIMIT_CONFIG.billingReclaimPerWorkspace,
+    "Too many Pro subscription restore attempts for this workspace.",
+  );
+  await enforce(
+    `billing:reclaim:ip:${ip}`,
+    RATE_LIMIT_CONFIG.billingReclaimPerIp,
+    "Too many Pro subscription restore attempts from this connection.",
+  );
+}

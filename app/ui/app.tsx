@@ -39,12 +39,15 @@ import { Loader2 } from "lucide-react";
 import { SettingsPanel } from "@/app/ui/settings/settings-panel";
 import { useAuth } from "@/hooks/use-auth";
 import { reclaimSubscriptionForWorkspace, linkWorkspaceToAccount } from "@/lib/workspace/account-sync";
+import { ReclaimNoticeBanner } from "@/app/ui/billing/reclaim-notice-banner";
 
 interface AppContentProps {
   workspace: UseWorkspacesState;
   subscription: SubscriptionStatusResponse | null;
   refreshSubscription: () => Promise<void>;
   auth: ReturnType<typeof useAuth>;
+  reclaimNotice?: string | null;
+  onDismissReclaimNotice?: () => void;
 }
 
 function AppContent({
@@ -52,6 +55,8 @@ function AppContent({
   subscription,
   refreshSubscription,
   auth,
+  reclaimNotice = null,
+  onDismissReclaimNotice,
 }: AppContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -328,6 +333,7 @@ function AppContent({
     onCreate: handleCreateWorkspace,
     onRename: renameWorkspace,
     onDelete: deleteWorkspace,
+    isProActive: subscription?.isProActive ?? false,
   };
 
   if (showAppShell) {
@@ -356,12 +362,22 @@ function AppContent({
           onWorkspaceDeleted={handleWorkspaceDeleted}
           template={template}
           recoveryBanner={
-            showRecoveryBanner ? (
-              <RecoveryBanner
-                onSaveRecoveryLink={handleOpenRecoverySetup}
-                dismissible={!subscription?.isProActive}
-                onDismiss={handleDismissRecoveryBanner}
-              />
+            showRecoveryBanner || reclaimNotice ? (
+              <div className="space-y-2">
+                {reclaimNotice ? (
+                  <ReclaimNoticeBanner
+                    message={reclaimNotice}
+                    onDismiss={() => onDismissReclaimNotice?.()}
+                  />
+                ) : null}
+                {showRecoveryBanner ? (
+                  <RecoveryBanner
+                    onSaveRecoveryLink={handleOpenRecoverySetup}
+                    dismissible={!subscription?.isProActive}
+                    onDismiss={handleDismissRecoveryBanner}
+                  />
+                ) : null}
+              </div>
             ) : null
           }
           onOpenRecoverySetup={handleOpenRecoverySetup}
@@ -429,6 +445,7 @@ export function App({ checkoutReturn: initialReturn }: AppProps) {
   const auth = useAuth();
   const workspace = useWorkspaces();
   const activeWorkspaceId = workspace.activeWorkspace?.id ?? null;
+  const [reclaimNotice, setReclaimNotice] = useState<string | null>(null);
 
   const checkoutFlow = useCheckoutFlow({
     initialReturn,
@@ -437,6 +454,10 @@ export function App({ checkoutReturn: initialReturn }: AppProps) {
     isReady: workspace.isReady,
     onSwitchWorkspace: workspace.switchWorkspace,
   });
+
+  useEffect(() => {
+    setReclaimNotice(null);
+  }, [activeWorkspaceId]);
 
   useEffect(() => {
     if (!auth.user || auth.isLoading) {
@@ -461,10 +482,15 @@ export function App({ checkoutReturn: initialReturn }: AppProps) {
         return;
       }
 
-      const reclaimed = await reclaimSubscriptionForWorkspace(workspace.headers);
+      const reclaimResult = await reclaimSubscriptionForWorkspace(workspace.headers);
 
-      if (reclaimed) {
+      if (reclaimResult.reclaimed) {
         await checkoutFlow.refreshSubscription();
+        return;
+      }
+
+      if (reclaimResult.error) {
+        setReclaimNotice(reclaimResult.error.message);
       }
     }
 
@@ -496,6 +522,8 @@ export function App({ checkoutReturn: initialReturn }: AppProps) {
           subscription={checkoutFlow.subscription}
           refreshSubscription={checkoutFlow.refreshSubscription}
           auth={auth}
+          reclaimNotice={reclaimNotice}
+          onDismissReclaimNotice={() => setReclaimNotice(null)}
         />
       </Suspense>
     </>

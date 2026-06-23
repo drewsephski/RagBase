@@ -25,13 +25,23 @@ function applyWorkspaceHeaders(
   }
 }
 
-async function readErrorMessage(response: Response): Promise<string | null> {
+async function readErrorBody(
+  response: Response,
+): Promise<{ message: string | null; code: string | null }> {
   try {
-    const body = (await response.json()) as { error?: string };
-    return body.error ?? null;
+    const body = (await response.json()) as { error?: string; code?: string };
+    return {
+      message: body.error ?? null,
+      code: body.code ?? null,
+    };
   } catch {
-    return null;
+    return { message: null, code: null };
   }
+}
+
+async function readErrorMessage(response: Response): Promise<string | null> {
+  const { message } = await readErrorBody(response);
+  return message;
 }
 
 async function executeFetch(
@@ -97,12 +107,12 @@ export async function apiJson<T>(
   const response = await apiFetch(path, options);
 
   if (!response.ok) {
-    const message = await readApiErrorMessage(
-      response,
-      "Something went wrong. Please try again.",
+    const { message, code } = await readErrorBody(response);
+    const apiError = new ApiError(
+      message ?? "Something went wrong. Please try again.",
+      response.status,
+      code ?? undefined,
     );
-
-    const apiError = new ApiError(message, response.status);
     trackLimitBoundary(apiError);
     throw apiError;
   }

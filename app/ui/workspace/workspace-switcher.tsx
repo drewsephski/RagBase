@@ -29,10 +29,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/api-error";
+import { ProWorkspaceBadge } from "@/app/ui/billing/pro-workspace-badge";
 import {
   TemplateSelector,
   type TemplateSelectorValue,
 } from "@/app/ui/workspace/template-selector";
+import { WorkspaceDeleteDialog } from "@/app/ui/workspace/workspace-delete-dialog";
+import { workspaceDeleteCancelSubscription } from "@/lib/workspace/delete-dialog";
 
 export interface WorkspaceSwitcherProps {
   workspaces: StoredWorkspace[];
@@ -44,6 +47,7 @@ export interface WorkspaceSwitcherProps {
     id: string,
     options?: { cancelSubscription?: boolean },
   ) => Promise<void>;
+  isProActive?: boolean;
   className?: string;
 }
 
@@ -54,6 +58,7 @@ export function WorkspaceSwitcher({
   onCreate,
   onRename,
   onDelete,
+  isProActive = false,
   className,
 }: WorkspaceSwitcherProps) {
   const [createOpen, setCreateOpen] = useState(false);
@@ -70,6 +75,8 @@ export function WorkspaceSwitcher({
 
   const canCreateMore = workspaces.length < LIMITS.MAX_WORKSPACES;
   const activeName = activeWorkspace?.name ?? "Workspace";
+  const targetIsActiveWorkspace = targetWorkspace?.id === activeWorkspace?.id;
+  const targetIsProActive = targetIsActiveWorkspace && isProActive;
 
   // TODO(workspace-recovery): optional "Save recovery link" per workspace — docs/workspace-recovery.md
 
@@ -162,7 +169,10 @@ export function WorkspaceSwitcher({
 
     try {
       await onDelete(targetWorkspace.id, {
-        cancelSubscription: mustCancelSubscription,
+        cancelSubscription: workspaceDeleteCancelSubscription({
+          isProActive: targetIsProActive,
+          mustCancelSubscription,
+        }),
       });
       setDeleteOpen(false);
       setTargetWorkspace(null);
@@ -180,7 +190,7 @@ export function WorkspaceSwitcher({
     } finally {
       setIsSubmitting(false);
     }
-  }, [mustCancelSubscription, onDelete, targetWorkspace]);
+  }, [mustCancelSubscription, onDelete, targetIsProActive, targetWorkspace]);
 
   return (
     <>
@@ -191,12 +201,15 @@ export function WorkspaceSwitcher({
             variant="outline"
             size="sm"
             className={cn(
-              "surface-panel max-w-[10rem] justify-between gap-1 rounded-xl px-2 sm:max-w-[14rem]",
+              "surface-panel max-w-[12rem] justify-between gap-1 rounded-xl px-2 sm:max-w-[16rem]",
               className,
             )}
             aria-label={`Current workspace: ${activeName}. Switch workspace.`}
           >
-            <span className="truncate">{activeName}</span>
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate">{activeName}</span>
+              {isProActive ? <ProWorkspaceBadge /> : null}
+            </span>
             <ChevronDown className="size-4 shrink-0 opacity-60" aria-hidden />
           </Button>
         </DropdownMenuTrigger>
@@ -367,54 +380,23 @@ export function WorkspaceSwitcher({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete {targetWorkspace?.name}?</DialogTitle>
-            <DialogDescription>
-              {mustCancelSubscription
-                ? "This workspace has a Pro subscription. Deleting it will cancel billing immediately and permanently remove all documents and messages."
-                : "All documents and messages in this workspace will be permanently removed from our servers. Other workspaces on this device are not affected."}
-            </DialogDescription>
-          </DialogHeader>
-
-          {mustCancelSubscription ? (
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              To keep Pro access on another workspace, switch to it first or use
-              Manage billing before deleting.
-            </p>
-          ) : null}
-
-          {error ? (
-            <p className="text-destructive text-sm" role="alert">
-              {error}
-            </p>
-          ) : null}
-
-          <DialogFooter className="gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDeleteOpen(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => void handleDelete()}
-              disabled={isSubmitting}
-            >
-              {isSubmitting
-                ? "Deleting…"
-                : mustCancelSubscription
-                  ? "Cancel Pro and delete"
-                  : "Delete workspace"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <WorkspaceDeleteDialog
+        open={deleteOpen}
+        onOpenChange={(nextOpen) => {
+          setDeleteOpen(nextOpen);
+          if (!nextOpen) {
+            setError(null);
+            setMustCancelSubscription(false);
+            setTargetWorkspace(null);
+          }
+        }}
+        workspaceName={targetWorkspace?.name ?? "this workspace"}
+        isProActive={targetIsProActive}
+        mustCancelSubscription={mustCancelSubscription}
+        isDeleting={isSubmitting}
+        error={error}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }

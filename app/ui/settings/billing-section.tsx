@@ -50,35 +50,49 @@ export function BillingSection({
 
   if (isLoading && !subscription) {
     return (
-      <section aria-label="Billing" className="space-y-2">
-        <h3 className="text-sm font-semibold">Billing</h3>
-        <p className="text-muted-foreground text-xs">Loading plan details…</p>
+      <section aria-label="Billing" className="settings-section space-y-2">
+        <div className="settings-section-header">
+          <h3>Billing</h3>
+        </div>
+        <p className="settings-section-desc">Loading plan details…</p>
       </section>
     );
   }
 
   const isPro = subscription?.isProActive ?? false;
   const periodEnd = formatBillingPeriodEnd(subscription?.currentPeriodEnd ?? null);
+  const billingStatusLabel = (() => {
+    if (!isPro) {
+      return "Free workspace";
+    }
+
+    if (subscription?.stripeSubscriptionStatus === "past_due") {
+      return periodEnd ? `Payment issue — access until ${periodEnd}` : "Payment issue";
+    }
+
+    if (subscription?.stripeSubscriptionStatus === "trialing") {
+      return periodEnd ? `Pro trial — renews ${periodEnd}` : "Pro trial";
+    }
+
+    return periodEnd ? `Renews ${periodEnd}` : "Active Pro subscription";
+  })();
 
   return (
-    <section aria-label="Billing" className="space-y-3">
-      <h3 className="text-sm font-semibold">Billing</h3>
+    <section aria-label="Billing" className="settings-section space-y-2">
+      <div className="settings-section-header">
+        <h3>Billing</h3>
+      </div>
+      <p className="settings-section-desc">
+        Current plan and subscription status for this workspace.
+      </p>
 
-      <div className="rounded-md border px-3 py-2">
-        <p className="text-sm font-medium">
-          {isPro ? "RagBase Pro" : "Free workspace"}
+      <div className="rounded-xl border px-3 py-2">
+        <p className="text-sm font-medium">{isPro ? "RagBase Pro" : "Free workspace"}</p>
+        <p className="text-muted-foreground mt-1 text-xs">
+          {isPro
+            ? billingStatusLabel
+            : `Upgrade to RagBase Pro · ${proPrice} for full-site crawling.`}
         </p>
-        {isPro && periodEnd ? (
-          <p className="text-muted-foreground mt-1 text-xs">
-            {subscription?.stripeSubscriptionStatus === "past_due"
-              ? `Payment issue — access until ${periodEnd}`
-              : `Renews ${periodEnd}`}
-          </p>
-        ) : (
-          <p className="text-muted-foreground mt-1 text-xs">
-            Upgrade to RagBase Pro · {proPrice} for full-site crawling.
-          </p>
-        )}
       </div>
 
       {isPro && subscription?.crawlQuota ? (

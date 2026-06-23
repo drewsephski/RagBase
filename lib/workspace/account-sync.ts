@@ -6,6 +6,11 @@ import type { AccountWorkspaceSummary } from "@/lib/workspace/account";
 import { loadRegistry, notifyWorkspaceRegistryUpdated } from "@/lib/workspace/registry";
 import { WORKSPACE_REGISTRY_KEY } from "@/lib/workspace/keys";
 import { apiJson } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/api-error";
+import {
+  getReclaimErrorMessage,
+  type ReclaimSubscriptionResult,
+} from "@/lib/billing/reclaim-result";
 
 export function createAccountLinkedWorkspace(
   summary: AccountWorkspaceSummary,
@@ -81,15 +86,34 @@ export async function syncAccountWorkspacesToRegistry(): Promise<StoredWorkspace
 
 export async function reclaimSubscriptionForWorkspace(
   workspaceHeaders: { "X-Workspace-Id": string; "X-Workspace-Secret"?: string },
-): Promise<boolean> {
+): Promise<ReclaimSubscriptionResult> {
   try {
     const result = await apiJson<{ reclaimed: boolean }>("/api/billing/reclaim", {
       method: "POST",
       workspaceHeaders,
     });
-    return result.reclaimed;
-  } catch {
-    return false;
+    return { reclaimed: result.reclaimed };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return {
+        reclaimed: false,
+        error: {
+          code: error.code ?? "reclaim_failed",
+          message: getReclaimErrorMessage(
+            error.code ?? "reclaim_failed",
+            error.message,
+          ),
+        },
+      };
+    }
+
+    return {
+      reclaimed: false,
+      error: {
+        code: "reclaim_failed",
+        message: "Could not restore your RagBase Pro subscription. Try again from Settings or contact support.",
+      },
+    };
   }
 }
 

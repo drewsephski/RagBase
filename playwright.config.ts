@@ -21,6 +21,11 @@ export default defineConfig({
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: {
+      RATE_LIMIT_WORKSPACE_CREATE_PER_IP: "0",
+      RATE_LIMIT_BILLING_RECLAIM_PER_WORKSPACE: "5",
+      RATE_LIMIT_BILLING_RECLAIM_PER_IP: "100",
+    },
   },
   projects: [
     {

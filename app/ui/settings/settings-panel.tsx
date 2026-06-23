@@ -22,13 +22,10 @@ import { AccountSection } from "@/app/ui/settings/account-section";
 import type { UseAuthState } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { ApiError } from "@/lib/api/api-error";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { BillingSection } from "@/app/ui/settings/billing-section";
+import { WorkspaceDeleteDialog } from "@/app/ui/workspace/workspace-delete-dialog";
+import { workspaceDeleteCancelSubscription } from "@/lib/workspace/delete-dialog";
 
 const MODEL_OPTIONS = [
   { value: DEFAULT_MODEL, label: "Gemini 2.5 Flash (default)" },
@@ -203,7 +200,10 @@ export function SettingsPanel({
 
     try {
       await onWorkspaceDeleted({
-        cancelSubscription: mustCancelSubscription || isProActive,
+        cancelSubscription: workspaceDeleteCancelSubscription({
+          isProActive,
+          mustCancelSubscription,
+        }),
       });
       setShowDeleteDialog(false);
       setMustCancelSubscription(false);
@@ -357,6 +357,8 @@ export function SettingsPanel({
               ) : null}
             </SettingsSection>
 
+            <BillingSection workspaceHeaders={workspaceHeaders} open={open} />
+
             <SettingsSection
               icon={Download}
               title="Export chat"
@@ -406,7 +408,7 @@ export function SettingsPanel({
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <WorkspaceDeleteDialog
         open={showDeleteDialog}
         onOpenChange={(nextOpen) => {
           setShowDeleteDialog(nextOpen);
@@ -415,53 +417,13 @@ export function SettingsPanel({
             setMustCancelSubscription(false);
           }
         }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete {activeWorkspaceName ?? "this workspace"}?</DialogTitle>
-            <DialogDescription>
-              {mustCancelSubscription || isProActive
-                ? "This workspace has RagBase Pro. Deleting it cancels your subscription immediately and permanently removes all documents and messages."
-                : "All documents and messages in this workspace will be permanently removed from our servers. Your other workspaces on this device are not affected."}
-            </DialogDescription>
-          </DialogHeader>
-
-          {mustCancelSubscription || isProActive ? (
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Switch to another workspace first if you want to keep Pro access there.
-            </p>
-          ) : null}
-
-          {deleteError ? (
-            <p className="text-destructive text-sm" role="alert">
-              {deleteError}
-            </p>
-          ) : null}
-
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => void handleDeleteWorkspace()}
-              disabled={isDeleting}
-            >
-              {isDeleting
-                ? "Deleting…"
-                : mustCancelSubscription || isProActive
-                  ? "Cancel Pro and delete"
-                  : "Delete workspace"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        workspaceName={activeWorkspaceName ?? "this workspace"}
+        isProActive={isProActive}
+        mustCancelSubscription={mustCancelSubscription}
+        isDeleting={isDeleting}
+        error={deleteError}
+        onConfirm={handleDeleteWorkspace}
+      />
     </>
   );
 }

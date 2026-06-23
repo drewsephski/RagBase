@@ -56,8 +56,8 @@ test.describe("Critical path", () => {
     await page.getByRole("button", { name: "Close" }).click();
 
     await page.getByLabel("Open settings").click();
+    await page.getByRole("button", { name: "Delete current workspace" }).click();
     await page.getByRole("button", { name: "Delete workspace" }).click();
-    await page.getByRole("button", { name: "Delete everything" }).click();
 
     await expect(page.getByLabel("Public page URL")).toBeVisible({
       timeout: 30_000,

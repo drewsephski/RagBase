@@ -21,4 +21,6 @@ export const RATE_LIMIT_CONFIG = {
   waitlistPerIp: readInt("RATE_LIMIT_WAITLIST_PER_IP", 10),
   recoveryCreatePerWorkspace: readInt("RATE_LIMIT_RECOVERY_CREATE_PER_WORKSPACE", 5),
   recoveryExchangePerIp: readInt("RATE_LIMIT_RECOVERY_EXCHANGE_PER_IP", 10),
+  billingReclaimPerWorkspace: readInt("RATE_LIMIT_BILLING_RECLAIM_PER_WORKSPACE", 5),
+  billingReclaimPerIp: readInt("RATE_LIMIT_BILLING_RECLAIM_PER_IP", 10),
 } as const;

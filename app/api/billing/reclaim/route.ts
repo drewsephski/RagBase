@@ -9,6 +9,7 @@ import {
 } from "@/lib/billing/reclaim-subscription";
 import { isBillingEnabled } from "@/lib/billing/flags";
 import { createServiceClient } from "@/lib/supabase/server";
+import { enforceBillingReclaimRateLimit } from "@/lib/rate-limit/enforce";
 import {
   AuthenticationRequiredError,
   requireAuthenticatedUser,
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   try {
     const workspace = await requireWorkspace(request);
+    await enforceBillingReclaimRateLimit(request, workspace.id);
     const user = await requireAuthenticatedUser();
     if (!user) {
       throw new AuthenticationRequiredError();
