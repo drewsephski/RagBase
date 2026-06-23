@@ -1,4 +1,3 @@
-import type { Citation } from "@/lib/domain/definitions";
 import { embedQuery } from "@/lib/openrouter/client";
 import type {
   MatchChunkResult,
@@ -17,6 +16,7 @@ export async function searchChunks(
     query,
     workspaceId,
     sourceId = null,
+    documentId = null,
     matchCount = DEFAULT_MATCH_COUNT,
     apiKey,
   } = options;
@@ -29,6 +29,7 @@ export async function searchChunks(
     match_count: matchCount,
     filter_workspace_id: workspaceId,
     filter_source_id: sourceId,
+    filter_document_id: documentId,
   });
 
   if (error) {
@@ -204,15 +205,4 @@ export async function fetchAdjacentChunks(
   }
 
   return adjacent;
-}
-
-export function chunksToCitations(chunks: MatchChunkResult[]): Citation[] {
-  return chunks.map((chunk) => ({
-    chunkId: chunk.id,
-    sourceId: chunk.source_id,
-    sourceName: chunk.source_name,
-    pageNumber: chunk.page_number,
-    snippet: chunk.chunk_text.slice(0, 200),
-    context: chunk.chunk_text,
-  }));
 }

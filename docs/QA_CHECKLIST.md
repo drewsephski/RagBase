@@ -99,6 +99,21 @@ Flags must stay off until webhook QA passes: `STRIPE_WEBHOOKS_ENABLED=false`, `N
 | Flags off | Default env | Paywall shows waitlist, not checkout |
 | Flags on (after QA) | Enable billing + webhooks | Paywall opens Stripe Payment Link with workspace id |
 
+## Full-site crawl (phase 6d)
+
+Requires Pro workspace (`requireProPlan`) and `FIRECRAWL_API_KEY`.
+
+| Scenario | Steps | Expected |
+| --- | --- | --- |
+| Pro crawl start | Pro user → root URL → Crawl entire site | Bundled source created; status progresses queued → crawling → ready |
+| Free user blocked | Non-Pro → Crawl entire site | Paywall opens; no crawl API call |
+| Crawl quota | Settings → Billing | Shows `N/3` crawls and pages used this period |
+| Expandable pages | Open crawl source in sidebar | Page list expands; click page scopes chat to that page |
+| Partial failure | Crawl site with some blocked pages | Source ready with failed page count notice |
+| Cancel crawl | Cancel during in-progress crawl | Status canceled; indexed pages kept if any |
+| Crawl limit | Exhaust period crawl count | 403/limit error before Firecrawl call |
+| Subscription canceled | Cancel Pro after crawl | Existing crawl sources readable; new crawl blocked |
+
 ## Analytics (production smoke)
 
 | Scenario | Steps | Expected |

@@ -10,7 +10,7 @@ import { trackLimitBoundary } from "@/lib/analytics/limit-boundary";
 import { isRootUrl } from "@/lib/ingestion/url-utils";
 import { getOpenRouterKey } from "@/lib/openrouter/client-key";
 
-export interface UrlIngestResult {
+interface UrlIngestResult {
   source?: Source;
   teaser?: boolean;
   message?: string;
@@ -20,11 +20,13 @@ export interface UrlIngestResult {
 
 interface UseIngestionOptions {
   headers: WorkspaceHeaders | null;
+  isProActive?: boolean;
   onIngestionSuccess: () => void | Promise<void>;
 }
 
 export function useIngestion({
   headers,
+  isProActive = false,
   onIngestionSuccess,
 }: UseIngestionOptions) {
   const [urlChoiceOpen, setUrlChoiceOpen] = useState(false);
@@ -106,6 +108,30 @@ export function useIngestion({
     [headers, notifySuccess],
   );
 
+  const submitCrawl = useCallback(
+    async (url: string) => {
+      if (!headers) {
+        throw new Error("Workspace is not ready yet.");
+      }
+
+      const data = await apiJson<{ source: Source }>("/api/sources/crawl", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+        workspaceHeaders: headers,
+      });
+
+      trackEvent("crawl_started", {
+        is_homepage: isRootUrl(url),
+      });
+      trackPaidIntent("full_site_crawl", { surface: "pro_crawl" });
+
+      await notifySuccess();
+      return data;
+    },
+    [headers, notifySuccess],
+  );
+
   const submitUrlWithChoice = useCallback(
     async (url: string) => {
       try {
@@ -152,9 +178,18 @@ export function useIngestion({
 
   const handleRootUrlCrawlSite = useCallback(
     (url: string) => {
+      if (isProActive) {
+        void submitCrawl(url).catch((error) => {
+          if (error instanceof ApiError) {
+            trackLimitBoundary(error);
+          }
+        });
+        return;
+      }
+
       openFullSitePaywall(url, "root_url_choice");
     },
-    [openFullSitePaywall],
+    [isProActive, openFullSitePaywall, submitCrawl],
   );
 
   const handlePaywallAddPageOnly = useCallback(() => {
@@ -168,6 +203,7 @@ export function useIngestion({
   return {
     upload,
     submitUrl,
+    submitCrawl,
     submitUrlWithChoice,
     submitSinglePage,
     urlChoiceOpen,

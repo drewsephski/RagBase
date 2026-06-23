@@ -51,8 +51,20 @@ export async function retrieveForChat(
   options: SearchChunksOptions,
   backend: SearchBackend = createSupabaseSearchBackend(),
 ): Promise<MatchChunkResult[]> {
-  const { workspaceId, sourceId = null } = options;
+  const { workspaceId, sourceId = null, documentId = null } = options;
   const getChunkCount = createCachedChunkCounter(backend);
+
+  if (documentId) {
+    const initialMatches = await backend.searchChunks({
+      ...options,
+      matchCount: options.matchCount ?? RETRIEVAL.INITIAL_MATCH_COUNT,
+    });
+
+    return finalizeRetrievalChunks(
+      initialMatches,
+      RETRIEVAL.MAX_CONTEXT_TOKENS,
+    );
+  }
 
   if (sourceId) {
     const scopedChunkCount = await getChunkCount(sourceId);

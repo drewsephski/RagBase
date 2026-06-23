@@ -55,6 +55,7 @@ function AppContent() {
     isLoading: sourcesLoading,
     error: sourcesError,
     scopedSourceId,
+    scopedDocumentId,
     showAppShell,
     refresh,
     bumpRefresh,
@@ -62,6 +63,8 @@ function AppContent() {
     deleteSource,
     reprocessSource,
     toggleScope,
+    scopePage,
+    cancelCrawl,
   } = useSources({
     headers,
     activeWorkspaceId,
@@ -72,11 +75,6 @@ function AppContent() {
     await refresh();
     bumpRefresh();
   }, [bumpRefresh, refresh]);
-
-  const ingestion = useIngestion({
-    headers,
-    onIngestionSuccess: handleIngestionSuccess,
-  });
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showRecoverySetup, setShowRecoverySetup] = useState(false);
@@ -92,6 +90,12 @@ function AppContent() {
       enabled: isReady && Boolean(headers),
       pollWhilePending: isCheckoutSuccess && !checkoutHandled,
     });
+
+  const ingestion = useIngestion({
+    headers,
+    isProActive: subscription?.isProActive ?? false,
+    onIngestionSuccess: handleIngestionSuccess,
+  });
 
   useEffect(() => {
     if (checkoutParam !== "cancel" || checkoutCancelTrackedRef.current) {
@@ -264,6 +268,10 @@ function AppContent() {
         pendingUrl={ingestion.paywallPendingUrl}
         workspaceHeaders={headers}
         workspaceId={activeWorkspaceId}
+        isProActive={subscription?.isProActive ?? false}
+        onStartCrawl={(url) => {
+          void ingestion.submitCrawl(url).catch(() => undefined);
+        }}
         onAddPageOnly={
           ingestion.paywallPendingUrl
             ? ingestion.handlePaywallAddPageOnly
@@ -333,7 +341,10 @@ function AppContent() {
           sourcesLoading={sourcesLoading}
           sourcesError={sourcesError}
           scopedSourceId={scopedSourceId}
+          scopedDocumentId={scopedDocumentId}
           onToggleScope={toggleScope}
+          onScopePage={scopePage}
+          onCancelCrawl={cancelCrawl}
           onDeleteSource={deleteSource}
           onReprocessSource={reprocessSource}
           onUpload={ingestion.upload}

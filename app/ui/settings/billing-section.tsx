@@ -102,6 +102,14 @@ export function BillingSection({
         )}
       </div>
 
+      {isPro && subscription?.crawlQuota ? (
+        <p className="text-muted-foreground text-xs leading-relaxed">
+          Site crawls this period: {subscription.crawlQuota.crawlsUsed}/
+          {subscription.crawlQuota.crawlsLimit} · Pages indexed:{" "}
+          {subscription.crawlQuota.pagesUsed}/{subscription.crawlQuota.pagesLimit}
+        </p>
+      ) : null}
+
       {subscription?.hasStripeCustomer ? (
         <Button
           type="button"

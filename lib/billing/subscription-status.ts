@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { buildCrawlQuotaSummary, getCrawlLimitsConfig } from "@/lib/billing/crawl-limits";
 import { isProActive } from "@/lib/billing/pro-plan";
 import {
   mapBillingRow,
@@ -28,6 +29,7 @@ export function buildSubscriptionStatusResponse(
   row: WorkspaceBillingRow,
 ): SubscriptionStatusResponse {
   const billing = mapBillingRow(row);
+  const limits = getCrawlLimitsConfig();
 
   return {
     plan: row.plan,
@@ -36,5 +38,6 @@ export function buildSubscriptionStatusResponse(
     currentPeriodEnd: billing.stripeCurrentPeriodEnd,
     hasStripeCustomer: Boolean(billing.stripeCustomerId),
     recoveryLinkConfirmed: Boolean(billing.recoveryAcknowledgedAt),
+    crawlQuota: buildCrawlQuotaSummary(billing, limits),
   };
 }

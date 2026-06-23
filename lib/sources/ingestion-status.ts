@@ -4,11 +4,16 @@ import {
   classifyIngestionError,
   getIngestionFailureDisplay,
   getIngestionRecoveryAction,
-  getSourceIngestionFailure,
 } from "@/lib/ingestion/user-errors";
+import { getCrawlSourceStatusLabel } from "@/lib/sources/crawl-status";
 
 export function getStatusLabel(source: Source | SourceStatus): string {
   if (typeof source === "object") {
+    const crawlLabel = getCrawlSourceStatusLabel(source);
+    if (crawlLabel) {
+      return crawlLabel;
+    }
+
     if (isSourceOcrProcessing(source)) {
       return "Reading scanned pages…";
     }
@@ -97,4 +102,3 @@ export function getIngestionErrorHint(
   return getIngestionRecoveryAction(classifyIngestionError(sourceOrMessage));
 }
 
-export { getSourceIngestionFailure };

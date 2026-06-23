@@ -29,6 +29,7 @@ import { enforceFreeChatRateLimit } from "@/lib/rate-limit/enforce";
 const chatBodySchema = z.object({
   message: z.string().min(1).max(4000),
   sourceId: z.string().uuid().optional(),
+  documentId: z.string().uuid().optional(),
   model: z.string().optional(),
   openRouterKey: z.string().optional(),
 });
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       return jsonError("Invalid request body", 400);
     }
 
-    const { message, sourceId, model, openRouterKey } = parsed.data;
+    const { message, sourceId, documentId, model, openRouterKey } = parsed.data;
     const hasUserKey = Boolean(openRouterKey?.trim());
     const apiKey = openRouterKey?.trim() || getServerApiKey();
 
@@ -69,10 +70,47 @@ export async function POST(request: NextRequest): Promise<Response> {
       }
     }
 
+    if (documentId) {
+      const { data: document, error: documentError } = await supabase
+        .from("documents")
+        .select("id, source_id")
+        .eq("id", documentId)
+        .maybeSingle();
+
+      if (documentError) {
+        return jsonError("Failed to verify document scope", 500);
+      }
+
+      if (!document) {
+        return jsonError("Document not found", 404);
+      }
+
+      const { data: documentSource, error: documentSourceError } =
+        await getSourceInWorkspace(
+          supabase,
+          workspace.id,
+          document.source_id,
+          "id",
+        );
+
+      if (documentSourceError) {
+        return jsonError("Failed to verify document scope", 500);
+      }
+
+      if (!documentSource) {
+        return jsonError("Document not found", 404);
+      }
+
+      if (sourceId && document.source_id !== sourceId) {
+        return jsonError("Document does not belong to the scoped source", 400);
+      }
+    }
+
     const chunks = await retrieveForChat({
       query: message,
       workspaceId: workspace.id,
       sourceId: sourceId ?? null,
+      documentId: documentId ?? null,
       apiKey,
     });
 

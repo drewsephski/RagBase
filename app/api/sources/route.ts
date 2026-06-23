@@ -3,12 +3,14 @@ import {
   authErrorResponse,
   requireWorkspace,
 } from "@/lib/workspace/auth";
+import { syncActiveCrawlsForWorkspace } from "@/lib/ingestion/crawl/sync";
 import { createServiceClient } from "@/lib/supabase/server";
 import { handleRouteError, jsonError } from "@/lib/api/errors";
 
 export async function GET(request: NextRequest): Promise<Response> {
   try {
     const workspace = await requireWorkspace(request);
+    await syncActiveCrawlsForWorkspace(workspace.id);
     const supabase = createServiceClient();
 
     const { data: sources, error } = await supabase

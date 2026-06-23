@@ -2,8 +2,9 @@ import { NextRequest } from "next/server";
 import {
   authErrorResponse,
   requireWorkspace,
+  WorkspaceAuthError,
 } from "@/lib/workspace/auth";
-import { syncCrawlSource } from "@/lib/ingestion/crawl/sync";
+import { listCrawlPages } from "@/lib/ingestion/crawl/page-ingest";
 import { parseCrawlMetadata } from "@/lib/ingestion/crawl/types";
 import { createServiceClient } from "@/lib/supabase/server";
 import { handleRouteError, jsonError } from "@/lib/api/errors";
@@ -23,13 +24,13 @@ export async function GET(
 
     const { data: source, error } = await supabase
       .from("sources")
-      .select("id, name, type, status, error_message, metadata, created_at")
+      .select("id, metadata")
       .eq("id", id)
       .eq("workspace_id", workspace.id)
       .maybeSingle();
 
     if (error) {
-      return jsonError("Failed to fetch source status", 500);
+      return jsonError("Failed to fetch crawl pages", 500);
     }
 
     if (!source) {
@@ -40,27 +41,15 @@ export async function GET(
       source.metadata as Record<string, unknown> | null,
     );
 
-    if (
-      crawlMeta &&
-      !["ready", "failed", "canceled"].includes(crawlMeta.crawlStatus)
-    ) {
-      await syncCrawlSource(id);
-
-      const { data: refreshed, error: refreshError } = await supabase
-        .from("sources")
-        .select("id, name, type, status, error_message, metadata, created_at")
-        .eq("id", id)
-        .eq("workspace_id", workspace.id)
-        .maybeSingle();
-
-      if (!refreshError && refreshed) {
-        return Response.json({ source: refreshed });
-      }
+    if (!crawlMeta) {
+      return jsonError("This source is not a site crawl", 400);
     }
 
-    return Response.json({ source });
+    const pages = await listCrawlPages(id);
+
+    return Response.json({ pages, crawl: crawlMeta });
   } catch (error) {
-    if (error instanceof Error && error.name === "WorkspaceAuthError") {
+    if (error instanceof WorkspaceAuthError) {
       return authErrorResponse(error);
     }
     return handleRouteError(error);

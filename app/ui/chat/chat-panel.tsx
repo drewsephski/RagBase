@@ -40,6 +40,7 @@ interface ChatPanelProps {
   workspaceHeaders: WorkspaceHeaders | null;
   sources: Source[];
   scopedSourceId: string | null;
+  scopedDocumentId: string | null;
   template?: WorkspaceTemplate | null;
 }
 
@@ -51,6 +52,7 @@ export function ChatPanel({
   workspaceHeaders,
   sources,
   scopedSourceId,
+  scopedDocumentId,
   template = null,
 }: ChatPanelProps) {
   const pendingPromptSentRef = useRef(false);
@@ -95,6 +97,7 @@ export function ChatPanel({
       return {
         message: lastMessage?.content ?? "",
         sourceId: scopedSourceId ?? undefined,
+        documentId: scopedDocumentId ?? undefined,
         model: hasOpenRouterKey() ? getSelectedModel() : undefined,
         openRouterKey: openRouterKey ?? undefined,
       };
@@ -233,9 +236,10 @@ export function ChatPanel({
     handleSubmit(undefined, {
       body: {
         sourceId: scopedSourceId ?? undefined,
+        documentId: scopedDocumentId ?? undefined,
       },
     });
-  }, [handleSubmit, hasReadySource, input, scopedSourceId, sources.length]);
+  }, [handleSubmit, hasReadySource, input, scopedDocumentId, scopedSourceId, sources.length]);
 
   const chatDisabled = !workspaceHeaders || !hasAnySource;
   const selectedModel = hasOpenRouterKey() ? getSelectedModel() : "free";

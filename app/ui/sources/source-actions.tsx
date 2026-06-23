@@ -27,6 +27,7 @@ interface SourceActionsProps {
   onReprocess: () => Promise<void>;
   onDelete: () => Promise<void>;
   disabled?: boolean;
+  showReprocess?: boolean;
 }
 
 function ActionTooltip({
@@ -51,6 +52,7 @@ export function SourceActions({
   onReprocess,
   onDelete,
   disabled = false,
+  showReprocess = true,
 }: SourceActionsProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReprocessing, setIsReprocessing] = useState(false);
@@ -104,7 +106,7 @@ export function SourceActions({
           </ActionTooltip>
         ) : null}
 
-        {canReprocess ? (
+        {canReprocess && showReprocess ? (
           <ActionTooltip label="Re-read and re-index this document">
             <Button
               type="button"
@@ -175,7 +177,7 @@ export function SourceActions({
   );
 }
 
-export function getStatusBadgeVariant(
+function getStatusBadgeVariant(
   status: SourceStatus,
 ): "secondary" | "warning" | "success" | "destructive" {
   switch (status) {

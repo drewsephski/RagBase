@@ -34,6 +34,12 @@ export interface SubscriptionStatusResponse {
   currentPeriodEnd: string | null;
   hasStripeCustomer: boolean;
   recoveryLinkConfirmed: boolean;
+  crawlQuota?: {
+    crawlsUsed: number;
+    crawlsLimit: number;
+    pagesUsed: number;
+    pagesLimit: number;
+  };
 }
 
 export interface WorkspaceBillingRow {

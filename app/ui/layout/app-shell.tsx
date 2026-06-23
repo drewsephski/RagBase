@@ -36,7 +36,10 @@ interface AppShellProps {
   sourcesLoading: boolean;
   sourcesError: string | null;
   scopedSourceId: string | null;
+  scopedDocumentId: string | null;
   onToggleScope: (sourceId: string) => void;
+  onScopePage: (sourceId: string, documentId: string) => void;
+  onCancelCrawl: (sourceId: string) => Promise<void>;
   onDeleteSource: (sourceId: string) => Promise<void>;
   onReprocessSource: (sourceId: string) => Promise<void>;
   onUpload: (file: File) => Promise<void>;
@@ -51,11 +54,15 @@ interface AppShellProps {
 const SIDEBAR_WIDTH = "min(280px, 85vw)";
 
 function SidebarContent({
+  workspaceHeaders,
   sources,
   sourcesLoading,
   sourcesError,
   scopedSourceId,
+  scopedDocumentId,
   onToggleScope,
+  onScopePage,
+  onCancelCrawl,
   onDeleteSource,
   onReprocessSource,
   onUpload,
@@ -63,11 +70,15 @@ function SidebarContent({
   onFullSitePaywallOpen,
 }: Pick<
   AppShellProps,
+  | "workspaceHeaders"
   | "sources"
   | "sourcesLoading"
   | "sourcesError"
   | "scopedSourceId"
+  | "scopedDocumentId"
   | "onToggleScope"
+  | "onScopePage"
+  | "onCancelCrawl"
   | "onDeleteSource"
   | "onReprocessSource"
   | "onUpload"
@@ -79,10 +90,14 @@ function SidebarContent({
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <SourceList
           sources={sources}
+          workspaceHeaders={workspaceHeaders}
           isLoading={sourcesLoading}
           error={sourcesError}
           scopedSourceId={scopedSourceId}
+          scopedDocumentId={scopedDocumentId}
           onToggleScope={onToggleScope}
+          onScopePage={onScopePage}
+          onCancelCrawl={onCancelCrawl}
           onReprocess={onReprocessSource}
           onDelete={onDeleteSource}
         />
@@ -108,7 +123,10 @@ export function AppShell({
   sourcesLoading,
   sourcesError,
   scopedSourceId,
+  scopedDocumentId,
   onToggleScope,
+  onScopePage,
+  onCancelCrawl,
   onDeleteSource,
   onReprocessSource,
   onUpload,
@@ -264,11 +282,15 @@ export function AppShell({
         >
           <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2.5 overflow-hidden p-2.5 sm:gap-3 sm:p-3">
             <SidebarContent
+              workspaceHeaders={workspaceHeaders}
               sources={sources}
               sourcesLoading={sourcesLoading}
               sourcesError={sourcesError}
               scopedSourceId={scopedSourceId}
+              scopedDocumentId={scopedDocumentId}
               onToggleScope={onToggleScope}
+              onScopePage={onScopePage}
+              onCancelCrawl={onCancelCrawl}
               onDeleteSource={onDeleteSource}
               onReprocessSource={onReprocessSource}
               onUpload={onUpload}
@@ -287,6 +309,7 @@ export function AppShell({
             workspaceHeaders={workspaceHeaders}
             sources={sources}
             scopedSourceId={scopedSourceId}
+            scopedDocumentId={scopedDocumentId}
             template={template}
           />
         </main>

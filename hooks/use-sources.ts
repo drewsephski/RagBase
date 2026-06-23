@@ -30,6 +30,7 @@ export function useSources({
   const [error, setError] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
   const [scopedSourceId, setScopedSourceId] = useState<string | null>(null);
+  const [scopedDocumentId, setScopedDocumentId] = useState<string | null>(null);
   const trackedErrorSourceIdsRef = useRef<Set<string>>(new Set());
 
   const fetchSources = useCallback(async () => {
@@ -78,6 +79,7 @@ export function useSources({
     setSources([]);
     setHasLoadedSources(false);
     setScopedSourceId(null);
+    setScopedDocumentId(null);
     setError(null);
     trackedErrorSourceIdsRef.current = new Set();
     void fetchSources();
@@ -112,6 +114,7 @@ export function useSources({
     setSources([]);
     setHasLoadedSources(false);
     setScopedSourceId(null);
+    setScopedDocumentId(null);
     setError(null);
   }, []);
 
@@ -128,6 +131,7 @@ export function useSources({
 
       if (scopedSourceId === sourceId) {
         setScopedSourceId(null);
+        setScopedDocumentId(null);
       }
 
       await fetchSources();
@@ -156,8 +160,38 @@ export function useSources({
   );
 
   const toggleScope = useCallback((sourceId: string) => {
-    setScopedSourceId((current) => (current === sourceId ? null : sourceId));
+    setScopedSourceId((current) => {
+      if (current === sourceId) {
+        setScopedDocumentId(null);
+        return null;
+      }
+      setScopedDocumentId(null);
+      return sourceId;
+    });
   }, []);
+
+  const scopePage = useCallback((sourceId: string, documentId: string) => {
+    setScopedSourceId(sourceId);
+    setScopedDocumentId((current) =>
+      current === documentId ? null : documentId,
+    );
+  }, []);
+
+  const cancelCrawl = useCallback(
+    async (sourceId: string) => {
+      if (!headers) {
+        return;
+      }
+
+      await apiJson(`/api/sources/${sourceId}/crawl/cancel`, {
+        method: "POST",
+        workspaceHeaders: headers,
+      });
+
+      await fetchSources();
+    },
+    [fetchSources, headers],
+  );
 
   const showAppShell = hasLoadedSources && sources.length > 0;
 
@@ -182,6 +216,7 @@ export function useSources({
     error,
     refreshToken,
     scopedSourceId,
+    scopedDocumentId,
     setScopedSourceId,
     showAppShell,
     readySources,
@@ -192,5 +227,7 @@ export function useSources({
     deleteSource,
     reprocessSource,
     toggleScope,
+    scopePage,
+    cancelCrawl,
   };
 }

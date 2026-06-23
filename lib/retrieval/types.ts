@@ -14,6 +14,7 @@ export interface SearchChunksOptions {
   query: string;
   workspaceId: string;
   sourceId?: string | null;
+  documentId?: string | null;
   matchCount?: number;
   apiKey?: string;
 }

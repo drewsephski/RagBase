@@ -25,6 +25,8 @@ interface FullSitePaywallDialogProps {
   pendingUrl?: string;
   workspaceHeaders?: WorkspaceHeaders | null;
   workspaceId?: string | null;
+  isProActive?: boolean;
+  onStartCrawl?: (url: string) => void;
   onAddPageOnly?: () => void;
   surface?: string;
 }
@@ -35,6 +37,8 @@ export function FullSitePaywallDialog({
   pendingUrl,
   workspaceHeaders,
   workspaceId,
+  isProActive = false,
+  onStartCrawl,
   onAddPageOnly,
   surface = "paywall_dialog",
 }: FullSitePaywallDialogProps) {
@@ -143,6 +147,21 @@ export function FullSitePaywallDialog({
     onOpenChange(false);
   }, [onAddPageOnly, onOpenChange]);
 
+  const handleStartCrawl = useCallback(() => {
+    if (!pendingUrl) {
+      setError("Paste a site URL first, then choose site crawling.");
+      return;
+    }
+
+    trackEvent("crawl_started", {
+      surface,
+      has_pending_url: true,
+    });
+
+    onStartCrawl?.(pendingUrl);
+    onOpenChange(false);
+  }, [onOpenChange, onStartCrawl, pendingUrl, surface]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -186,7 +205,40 @@ export function FullSitePaywallDialog({
           access it later.
         </p>
 
-        {checkoutAvailable ? (
+        {isProActive ? (
+          <div className="space-y-3">
+            {error ? (
+              <p className="text-destructive text-sm" role="alert">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button
+                type="button"
+                disabled={!pendingUrl}
+                className="sm:flex-1"
+                onClick={handleStartCrawl}
+              >
+                Start site crawl
+              </Button>
+              {pendingUrl && onAddPageOnly ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-muted-foreground"
+                  onClick={handleAddPageOnly}
+                >
+                  Add this page only
+                </Button>
+              ) : null}
+            </div>
+
+            <p className="text-muted-foreground text-[11px] leading-relaxed">
+              RagBase Pro · up to 25 pages per crawl
+            </p>
+          </div>
+        ) : checkoutAvailable ? (
           <div className="space-y-3">
             {error ? (
               <p className="text-destructive text-sm" role="alert">

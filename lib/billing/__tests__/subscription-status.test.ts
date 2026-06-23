@@ -30,6 +30,12 @@ describe("buildSubscriptionStatusResponse", () => {
     expect(response.hasStripeCustomer).toBe(true);
     expect(response.recoveryLinkConfirmed).toBe(false);
     expect(response.currentPeriodEnd).toBe("2026-07-01T00:00:00.000Z");
+    expect(response.crawlQuota).toEqual({
+      crawlsUsed: 0,
+      crawlsLimit: 3,
+      pagesUsed: 0,
+      pagesLimit: 75,
+    });
   });
 
   test("marks recovery as confirmed when acknowledged", () => {

@@ -33,11 +33,13 @@ export const ANALYTICS_EVENTS = [
   "billing_portal_opened",
   "billing_portal_failed",
   "paywall_subscribe_clicked",
+  "crawl_started",
+  "crawl_canceled",
 ] as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 
-export const PAID_INTENT_FEATURES = [
+const PAID_INTENT_FEATURES = [
   "full_site_crawl",
   "ocr",
   "larger_limits",

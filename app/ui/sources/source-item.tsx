@@ -6,12 +6,19 @@ import { FileText, Globe, Loader2 } from "lucide-react";
 import { trackPaidIntent } from "@/lib/analytics/paid-intent";
 import { cn } from "@/lib/utils";
 import { getIngestionFailureDisplay } from "@/lib/ingestion/user-errors";
+import { parseCrawlMetadata } from "@/lib/ingestion/crawl/types";
 import { SourceActions, StatusBadge } from "@/app/ui/sources/source-actions";
+import { CrawlSourceItem } from "@/app/ui/sources/crawl-source-item";
+import type { WorkspaceHeaders } from "@/lib/api/types";
 
 interface SourceItemProps {
   source: Source;
+  workspaceHeaders?: WorkspaceHeaders | null;
   isScoped: boolean;
+  scopedDocumentId?: string | null;
   onToggleScope: () => void;
+  onScopePage?: (documentId: string) => void;
+  onCancelCrawl?: () => Promise<void>;
   onReprocess: () => Promise<void>;
   onDelete: () => Promise<void>;
   disabled?: boolean;
@@ -27,12 +34,36 @@ function SourceIcon({ type }: { type: Source["type"] }) {
 
 export function SourceItem({
   source,
+  workspaceHeaders = null,
   isScoped,
+  scopedDocumentId = null,
   onToggleScope,
+  onScopePage,
+  onCancelCrawl,
   onReprocess,
   onDelete,
   disabled = false,
 }: SourceItemProps) {
+  const crawlMeta = parseCrawlMetadata(
+    source.metadata as Record<string, unknown> | null,
+  );
+
+  if (crawlMeta && onScopePage && onCancelCrawl) {
+    return (
+      <CrawlSourceItem
+        source={source}
+        workspaceHeaders={workspaceHeaders}
+        isScoped={isScoped}
+        scopedDocumentId={scopedDocumentId}
+        onToggleScope={onToggleScope}
+        onScopePage={onScopePage}
+        onCancelCrawl={onCancelCrawl}
+        onDelete={onDelete}
+        disabled={disabled}
+      />
+    );
+  }
+
   const isLoading =
     source.status === "pending" || source.status === "processing";
   const failure = getIngestionFailureDisplay(source);
