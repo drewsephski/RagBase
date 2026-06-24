@@ -164,6 +164,114 @@
     );
   }
 
+  .chat-thread {
+    background-image:
+      radial-gradient(
+        ellipse 70% 45% at 50% 0%,
+        oklch(0.5 0 0 / 2.5%),
+        transparent 65%
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--border) 35%, transparent) 1px,
+        transparent 1px
+      );
+    background-size:
+      100% 100%,
+      100% 3.25rem;
+    background-position: center top, 0 0.5rem;
+  }
+
+  .dark .chat-thread {
+    background-image:
+      radial-gradient(
+        ellipse 70% 45% at 50% 0%,
+        oklch(1 0 0 / 2%),
+        transparent 65%
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--border) 50%, transparent) 1px,
+        transparent 1px
+      );
+  }
+
+  .chat-context-bar {
+    background: color-mix(in oklch, var(--surface-elevated) 82%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--border) 75%, transparent),
+      0 4px 20px oklch(0.5 0 0 / 4%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .dark .chat-context-bar {
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--border) 85%, transparent),
+      0 6px 24px oklch(0 0 0 / 18%);
+  }
+
+  .chat-empty-glow {
+    background: radial-gradient(
+      ellipse 60% 50% at 50% 40%,
+      color-mix(in oklch, var(--foreground) 4%, transparent),
+      transparent 70%
+    );
+  }
+
+  .dark .chat-empty-glow {
+    background: radial-gradient(
+      ellipse 60% 50% at 50% 40%,
+      color-mix(in oklch, var(--foreground) 6%, transparent),
+      transparent 70%
+    );
+  }
+
+  .chat-message-assistant {
+    background: color-mix(in oklch, var(--surface-elevated) 88%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--border) 78%, transparent),
+      0 4px 16px oklch(0.5 0 0 / 3.5%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .dark .chat-message-assistant {
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--border) 88%, transparent),
+      0 6px 20px oklch(0 0 0 / 16%);
+  }
+
+  .chat-message-user {
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--primary) 12%, transparent),
+      0 4px 14px oklch(0.5 0 0 / 8%);
+  }
+
+  .dark .chat-message-user {
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent),
+      0 6px 18px oklch(0 0 0 / 22%);
+  }
+
+  .chat-status-pill {
+    background: color-mix(in oklch, var(--surface-elevated) 90%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--border) 70%, transparent),
+      0 2px 8px oklch(0.5 0 0 / 3%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .chat-thinking-pill {
+    background: color-mix(in oklch, var(--surface-elevated) 92%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--border) 72%, transparent),
+      0 4px 16px oklch(0.5 0 0 / 4%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
   .surface-premium,
   .chat-composer,
   .ingest-composer {

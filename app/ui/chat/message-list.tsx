@@ -79,19 +79,21 @@ function resolveCitationFromStoredMessages(
 function ThinkingIndicator() {
   return (
     <div
-      className="flex items-center gap-2.5 px-1 py-1"
+      className="flex justify-start px-0.5 py-1"
       aria-live="polite"
       aria-busy="true"
       aria-label="Generating answer"
     >
-      <div className="flex items-center gap-1" aria-hidden>
-        <span className="thinking-dot bg-muted-foreground/60 size-1.5 rounded-full" />
-        <span className="thinking-dot bg-muted-foreground/60 size-1.5 rounded-full" />
-        <span className="thinking-dot bg-muted-foreground/60 size-1.5 rounded-full" />
+      <div className="chat-thinking-pill inline-flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3">
+        <div className="flex items-center gap-1" aria-hidden>
+          <span className="thinking-dot bg-muted-foreground/70 size-1.5 rounded-full" />
+          <span className="thinking-dot bg-muted-foreground/70 size-1.5 rounded-full" />
+          <span className="thinking-dot bg-muted-foreground/70 size-1.5 rounded-full" />
+        </div>
+        <span className="text-muted-foreground text-[13px] tracking-wide">
+          Reading your documents…
+        </span>
       </div>
-      <span className="text-muted-foreground text-[13px] tracking-wide">
-        Reading your documents…
-      </span>
     </div>
   );
 }
@@ -145,18 +147,24 @@ function MessageBubble({
     >
       <div
         className={cn(
-          "flex flex-col gap-1.5",
+          "flex flex-col gap-2",
           isUser
             ? "max-w-[min(88%,22rem)] sm:max-w-[75%]"
             : "max-w-[min(92%,36rem)] sm:max-w-[85%]",
         )}
       >
+        {!isUser ? (
+          <span className="text-muted-foreground px-1 text-[10px] font-medium tracking-widest uppercase">
+            Answer
+          </span>
+        ) : null}
+
         <div
           className={cn(
             "px-3.5 py-2.5 text-[15px] leading-[1.65] sm:px-4 sm:py-3 sm:text-[15px]",
             isUser
-              ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md shadow-sm"
-              : "bg-card/70 text-foreground border-border/60 rounded-2xl rounded-bl-md border shadow-sm backdrop-blur-sm",
+              ? "chat-message-user bg-primary text-primary-foreground rounded-2xl rounded-br-md"
+              : "chat-message-assistant text-foreground rounded-2xl rounded-bl-md",
           )}
         >
           {isUser ? (
@@ -178,7 +186,7 @@ function MessageBubble({
                 variant="ghost"
                 size="sm"
                 onClick={() => void handleCopyClick()}
-                className="text-muted-foreground hover:text-foreground h-7 gap-1.5 px-2 text-xs"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted/50 h-7 gap-1.5 rounded-lg px-2 text-xs"
                 aria-label={copied ? "Answer copied" : "Copy answer"}
               >
                 {copied ? (
@@ -307,10 +315,10 @@ export function MessageList({
 
   return (
     <>
-      <ScrollArea className="min-h-0 flex-1 px-3 py-4 sm:px-5 sm:py-6">
-        <div className="mx-auto flex max-w-3xl flex-col gap-4 sm:gap-5">
+      <ScrollArea className="chat-thread min-h-0 flex-1 px-3 py-4 sm:px-5 sm:py-5">
+        <div className="mx-auto flex max-w-3xl flex-col gap-5 sm:gap-6">
           {messages.length === 0 ? (
-            <p className="text-muted-foreground text-center text-sm">
+            <p className="text-muted-foreground text-center text-sm leading-relaxed">
               Ask a question to get started. Answers include quotes from your
               documents.
             </p>

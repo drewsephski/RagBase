@@ -89,14 +89,20 @@ export function AnswerFeedback({
 
   if (submitted) {
     return (
-      <p className="text-muted-foreground text-xs" aria-live="polite">
+      <p
+        className="text-muted-foreground chat-status-pill inline-flex rounded-lg px-2.5 py-1.5 text-xs"
+        aria-live="polite"
+      >
         Thanks for the feedback.
       </p>
     );
   }
 
   return (
-    <div className="space-y-2" aria-label="Answer feedback">
+    <div
+      className="chat-status-pill space-y-2 rounded-xl px-3 py-2.5"
+      aria-label="Answer feedback"
+    >
       {!showReasons ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-muted-foreground text-xs">Was this helpful?</span>
@@ -106,7 +112,7 @@ export function AnswerFeedback({
               variant="ghost"
               size="sm"
               onClick={() => handleHelpful(true)}
-              className="text-muted-foreground hover:text-foreground h-7 px-2 text-xs"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted/50 h-7 rounded-lg px-2 text-xs"
               aria-label="Mark answer as helpful"
             >
               Yes
@@ -116,7 +122,7 @@ export function AnswerFeedback({
               variant="ghost"
               size="sm"
               onClick={() => handleHelpful(false)}
-              className="text-muted-foreground hover:text-foreground h-7 px-2 text-xs"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted/50 h-7 rounded-lg px-2 text-xs"
               aria-label="Mark answer as not helpful"
             >
               No
@@ -134,7 +140,7 @@ export function AnswerFeedback({
                 variant="outline"
                 size="sm"
                 onClick={() => handleReason(reason.id)}
-                className={cn("h-7 px-2 text-xs")}
+                className={cn("surface-panel h-7 rounded-lg px-2 text-xs")}
                 aria-label={`Feedback reason: ${reason.label}`}
               >
                 {reason.label}

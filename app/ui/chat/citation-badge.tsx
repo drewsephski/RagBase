@@ -17,8 +17,8 @@ export function CitationBadge({ citation, onClick }: CitationBadgeProps) {
       size="sm"
       className={cn(
         "text-muted-foreground hover:text-foreground mx-0.5 inline-flex h-5 min-w-5 px-1 align-baseline",
-        "bg-muted/50 hover:bg-muted border-border/50 rounded-md border text-[11px] font-medium tabular-nums",
-        "transition-colors",
+        "chat-status-pill hover:border-primary/25 rounded-md border-0 text-[11px] font-semibold tabular-nums",
+        "transition-[color,box-shadow]",
       )}
       onClick={() => onClick(citation)}
       aria-label={`View source ${citation.ref}: ${citation.snippet}`}

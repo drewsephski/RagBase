@@ -30,10 +30,10 @@ import { consumePendingPrompt } from "@/lib/templates/pending-prompt";
 import { MessageList } from "@/app/ui/chat/message-list";
 import { ChatInput } from "@/app/ui/chat/chat-input";
 import { ChatEmptyState } from "@/app/ui/chat/chat-empty-state";
+import { ChatContextBar } from "@/app/ui/chat/chat-context-bar";
 import { PromptChips } from "@/app/ui/home/prompt-chips";
 import { SafeUseNote } from "@/app/ui/templates/safe-use-note";
 import { TemplateBanner } from "@/app/ui/templates/template-banner";
-import { RagBaseLogo } from "@/components/brand/ragbase-logo";
 import { BetaFeedbackCta } from "@/app/ui/feedback/beta-feedback-cta";
 import { QualityDebugPanel } from "@/app/ui/chat/quality-debug-panel";
 import { isDebugPanelEnabled } from "@/lib/env/public";
@@ -318,6 +318,14 @@ export function ChatPanel({
   const selectedModel = hasOpenRouterKey() ? getSelectedModel() : "free";
   const showDebugPanel = isDebugPanelEnabled();
 
+  const scopedSourceName = useMemo(() => {
+    if (!scopedSourceId) {
+      return null;
+    }
+
+    return sources.find((source) => source.id === scopedSourceId)?.name ?? null;
+  }, [scopedSourceId, sources]);
+
   return (
     <section
       aria-label="Chat"
@@ -327,7 +335,7 @@ export function ChatPanel({
         <div className="flex min-h-0 flex-1 flex-col">
           <ChatEmptyState description="Loading your conversation…">
             <div
-              className="text-muted-foreground flex items-center justify-center gap-2 text-sm"
+              className="chat-status-pill text-muted-foreground inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm"
               aria-live="polite"
             >
               <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
@@ -348,7 +356,7 @@ export function ChatPanel({
             >
               {hasAnySource ? (
                 <div
-                  className="text-muted-foreground flex items-center justify-center gap-2 text-sm"
+                  className="chat-status-pill text-muted-foreground inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm"
                   aria-live="polite"
                 >
                   <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
@@ -385,7 +393,7 @@ export function ChatPanel({
                 </div>
               ) : isLoadingStarters && !sourcePrompts ? (
                 <div
-                  className="text-muted-foreground flex items-center justify-center gap-2 text-sm"
+                  className="chat-status-pill text-muted-foreground inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm"
                   aria-live="polite"
                 >
                   <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
@@ -405,18 +413,11 @@ export function ChatPanel({
         </div>
       ) : (
         <>
-          <div className="border-border/60 bg-surface-elevated/40 border-b px-4 py-3 backdrop-blur-sm sm:px-5 sm:py-3.5">
-            <RagBaseLogo markSize={22} />
-            {scopedSourceId ? (
-              <p className="text-muted-foreground mt-1.5 text-xs tracking-wide sm:mt-2">
-                Answers use only the selected document.
-              </p>
-            ) : (
-              <p className="text-muted-foreground mt-1.5 text-xs tracking-wide sm:mt-2">
-                Answers draw from all ready documents, with citations.
-              </p>
-            )}
-          </div>
+          <ChatContextBar
+            scopedSourceName={scopedSourceName}
+            readySourceCount={readySources.length}
+            totalSourceCount={sources.length}
+          />
 
           <MessageList
             messages={messages}
@@ -430,12 +431,15 @@ export function ChatPanel({
       )}
 
       {error ? (
-        <p className="text-destructive px-4 pb-2 text-sm" role="alert">
-          {error.message}
-        </p>
+        <div
+          className="surface-panel border-destructive/25 mx-3 mb-2 rounded-xl border px-3.5 py-2.5 sm:mx-5 sm:px-4"
+          role="alert"
+        >
+          <p className="text-destructive text-sm leading-relaxed">{error.message}</p>
+        </div>
       ) : null}
 
-      <BetaFeedbackCta className="px-4 pb-2" />
+      <BetaFeedbackCta className="mx-auto max-w-3xl px-3 pb-1 sm:px-5" />
 
       <ChatInput
         value={input}
